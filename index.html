@@ -1178,10 +1178,12 @@
   <div id="vhs-scanlines"></div>
   <div id="vhs-tracking-bar"></div>
   <canvas id="static-canvas"></canvas>
+  <div id="flashburst-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:radial-gradient(circle at center, rgba(235,245,255,0.95) 0%, rgba(165,90,255,0.75) 60%, rgba(0,229,255,0.4) 100%); pointer-events:none; opacity:0; transition:opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1); z-index:26; mix-blend-mode:screen;"></div>
 
   <!-- Reticle & Subtle Prompt -->
   <div id="reticle"></div>
   <div id="interact-prompt">[E] Interaksi</div>
+  <div id="waypoint-marker" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; display:none; z-index:27; font-family:monospace; font-size:10px; font-weight:bold; color:#00ffcc; text-shadow:0 0 8px #00ffcc; background:rgba(4,14,22,0.86); border:1px solid rgba(0,255,204,0.75); padding:3px 9px; border-radius:6px; box-shadow:0 0 14px rgba(0,255,204,0.35); white-space:nowrap;">🎯 ★ 12M</div>
   <div id="hud-notification" style="position:fixed; top:58%; left:50%; transform:translateX(-50%); font-size:11px; letter-spacing:1.5px; color:#00ffcc; text-shadow:0 0 8px #00ffcc; background:rgba(4,10,14,0.88); border:1px solid rgba(0,255,200,0.45); padding:5px 16px; border-radius:12px; pointer-events:none; opacity:0; transition:opacity 0.25s ease; z-index:28; font-family:monospace; white-space:nowrap; backdrop-filter:blur(4px);"></div>
 
   <!-- Minimal Fullscreen Button -->
@@ -1197,6 +1199,7 @@
           <span class="rec-dot"></span>
           <span>REC</span>
           <span id="tape-time" style="color:#aaa; font-weight:normal; margin-left:6px;">00:00:00</span>
+          <span id="bpm-meter" style="color:#ff5577; font-size:9px; margin-left:8px;">♥ 72 BPM</span>
           <span id="db-meter" style="color:#00ff88; font-size:9px; margin-left:8px;">[▮▮▯▯▯▯] -38dB</span>
           <span id="emf-meter" style="color:#00e5ff; font-size:9px; margin-left:8px;">EMF 0.2 mG</span>
           <span id="rad-meter" style="color:#00ff88; font-size:9px; margin-left:8px;">RAD 0.08 μSv</span>
@@ -1206,7 +1209,7 @@
       </div>
 
       <!-- Tactical 1996 Camcorder Compass Tape -->
-      <div id="compass-tape" style="color:rgba(180,240,255,0.78); font-size:10px; font-family:'Courier New', monospace; letter-spacing:2px; background:rgba(6,12,18,0.72); border:1px solid rgba(0,229,255,0.3); padding:3px 12px; border-radius:10px; backdrop-filter:blur(3px);">
+      <div id="compass-tape" onclick="if(window.triggerSpatialScan)window.triggerSpatialScan()" title="Klik / Tekan [H] untuk Pindai Waypoint 3D" style="color:rgba(180,240,255,0.78); font-size:10px; font-family:'Courier New', monospace; letter-spacing:2px; background:rgba(6,12,18,0.72); border:1px solid rgba(0,229,255,0.3); padding:3px 12px; border-radius:10px; backdrop-filter:blur(3px); cursor:pointer; pointer-events:auto;">
         U / N • 000°
       </div>
 
@@ -1244,6 +1247,8 @@
 
       <div style="display:flex; align-items:center; gap:10px;">
         <span id="mug-hud" style="color: #ffdd88; font-size:10px; display:none;">CANGKIR: <span id="mug-count">0</span>x</span>
+        <span id="tripwire-hud" style="color: #ff5566; font-size:10px;">LASER: <span id="tripwire-count">2</span>x</span>
+        <span id="photo-hud" style="color: #d946ef; font-size:10px;">📸 BUKTI: <span id="photo-count">0</span></span>
         <span id="zoom-level" style="color: rgba(255,255,255,0.5); font-size:10px;">1.0X</span>
         <span id="glowstick-hud" style="color: #00ffcc; font-size:10px;">GLOW: <span id="glowstick-count">3</span></span>
         <span id="chalk-hud" style="color: #00ffcc; font-size:10px; cursor:pointer;" title="Klik untuk ganti simbol">KAPUR: <span id="chalk-count">6</span>x [<span id="chalk-sym">→</span>]</span>
@@ -1282,6 +1287,12 @@
 
     <!-- Secondary Tactical Utility Bar (Top of Thumb Zone) -->
     <div class="mobile-util-bar">
+      <button type="button" class="m-btn m-btn-sm" id="m-btn-scan" title="Pindai Waypoint Objektif 3D (LiDAR Scan)" style="border-color:rgba(0,255,204,0.6) !important; color:#00ffcc !important;">SCAN</button>
+      <button type="button" class="m-btn m-btn-sm" id="m-btn-flash" title="UV Strobe Flashburst (Stun Anomali)" style="border-color:rgba(217,70,239,0.55) !important; color:#f0abfc !important;">FLASH</button>
+      <button type="button" class="m-btn m-btn-sm" id="m-btn-tripwire" title="Pasang Jebakan Sensor Laser EMP" style="border-color:rgba(255,85,102,0.55) !important; color:#ff7788 !important;">
+        LASER
+        <span class="m-btn-badge" id="m-tripwire-badge">2</span>
+      </button>
       <button type="button" class="m-btn m-btn-sm" id="m-btn-glowstick" title="Glowstick Penanda">
         GLOW
         <span class="m-btn-badge" id="m-glowstick-badge">3</span>
@@ -1330,9 +1341,9 @@
       <div style="position:relative; width:100%; display:flex; justify-content:center;">
         <canvas id="blueprint-canvas" width="300" height="300" style="background:#030810; border:1px solid rgba(0,229,255,0.3); border-radius:4px; max-width:100%;"></canvas>
       </div>
-      <div style="margin-top:12px; display:flex; justify-content:space-between; font-size:10px; color:#88b0cc; line-height:1.6;">
-        <div><span style="color:#00ff88;">▲</span> Posisi Anda &bull; <span style="color:#00e5ff;">■</span> Ruangan &bull; <span style="color:#ffcc00;">★</span> Objektif</div>
-        <div>[M] Toggle Denah</div>
+      <div style="margin-top:12px; display:flex; justify-content:space-between; font-size:10px; color:#88b0cc; line-height:1.6; flex-wrap:wrap; gap:4px;">
+        <div><span style="color:#00ff88;">▲</span> Anda &bull; <span style="color:#ffcc00;">★</span> Objektif &bull; <span style="color:#d946ef;">◉</span> UV Aman &bull; <span style="color:#00e5ff;">⚡</span> Panel Listrik</div>
+        <div>[M / DENAH] Tutup</div>
       </div>
     </div>
   </div>
@@ -1418,6 +1429,26 @@
         Gunakan Headphone &bull; Mode Landscape Layar Penuh
       </p>
 
+      <div id="sector-select-wrap" style="margin-bottom: 10px; width: 100%;">
+        <div style="font-size: 9px; letter-spacing: 2px; color: #88b0cc; margin-bottom: 6px; text-transform: uppercase;">PILIH SEKTOR REKAMAN (CHECKPOINT)</div>
+        <div id="sector-select-bar" style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="gfx-btn active" data-sector="1" onclick="if(window.selectStartSector)window.selectStartSector(1)" style="padding: 5px 10px; font-size: 10px;">SEKTOR I</button>
+          <button type="button" class="gfx-btn" data-sector="2" onclick="if(window.selectStartSector)window.selectStartSector(2)" style="padding: 5px 10px; font-size: 10px;">SEKTOR II</button>
+          <button type="button" class="gfx-btn" data-sector="3" onclick="if(window.selectStartSector)window.selectStartSector(3)" style="padding: 5px 10px; font-size: 10px;">SEKTOR III</button>
+          <button type="button" class="gfx-btn" data-sector="4" onclick="if(window.selectStartSector)window.selectStartSector(4)" style="padding: 5px 10px; font-size: 10px;">SEKTOR IV</button>
+          <button type="button" class="gfx-btn" data-sector="5" onclick="if(window.selectStartSector)window.selectStartSector(5)" style="padding: 5px 10px; font-size: 10px;">SEKTOR V</button>
+        </div>
+      </div>
+
+      <div id="difficulty-select-wrap" style="margin-bottom: 14px; width: 100%;">
+        <div style="font-size: 9px; letter-spacing: 2px; color: #88b0cc; margin-bottom: 6px; text-transform: uppercase;">TINGKAT ANCAMAN (DIFFICULTY)</div>
+        <div id="difficulty-select-bar" style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="gfx-btn" data-diff="explore" onclick="if(window.selectDifficulty)window.selectDifficulty('explore')" style="padding: 5px 10px; font-size: 10px;">EKSPLORASI (SANTAI)</button>
+          <button type="button" class="gfx-btn active" data-diff="normal" onclick="if(window.selectDifficulty)window.selectDifficulty('normal')" style="padding: 5px 10px; font-size: 10px;">STANDAR (1996)</button>
+          <button type="button" class="gfx-btn" data-diff="nightmare" onclick="if(window.selectDifficulty)window.selectDifficulty('nightmare')" style="padding: 5px 10px; font-size: 10px; color:#ff7788;">NIGHTMARE</button>
+        </div>
+      </div>
+
       <button id="btn-start" class="btn-play" onclick="if(window.startGameNow)window.startGameNow(event)" onpointerdown="if(window.startGameNow)window.startGameNow(event)" ontouchstart="if(window.startGameNow)window.startGameNow(event)">
         <span class="btn-play-icon">▶</span> MULAI REKAMAN
       </button>
@@ -1440,6 +1471,9 @@
         <div class="guide-row"><span>X / KOCOK</span>: Kocok Senter (Daya Darurat)</div>
         <div class="guide-row"><span>M / DENAH</span>: Buka Denah Arsitektur</div>
         <div class="guide-row"><span>Q / KAPUR</span>: Gores Kapur Luminesen (Penanda Dinding)</div>
+        <div class="guide-row"><span>V / FLASH</span>: UV Strobe Flashburst (Stun Anomali 5.5s)</div>
+        <div class="guide-row"><span>H / SCAN</span>: Pindai AR Waypoint Objektif 3D</div>
+        <div class="guide-row"><span>B / LASER</span>: Pasang Jebakan Sensor Laser EMP</div>
         <div class="guide-row"><span>Klik Badge KAPUR</span>: Ganti Simbol (Panah / Bahaya / Aman)</div>
       </div>
     </div>
@@ -1451,7 +1485,10 @@
     <p style="color:#aaa; max-width: 440px; margin-bottom: 22px; font-size: 13px; line-height: 1.6;">
       Jiwa Anda telah 'dibersihkan' oleh Anomali. Rekaman pita kaset terputus.
     </p>
-    <button id="btn-retry" class="btn-play" style="background:#880000;">ULANGI REKAMAN</button>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+      <button id="btn-retry-sector" class="btn-play" style="background:#007755; border-color:#00ffaa;">▶ ULANGI SEKTOR INI</button>
+      <button id="btn-retry" class="btn-play" style="background:#880000;">↺ ULANGI DARI SEKTOR 1</button>
+    </div>
   </div>
 
   <!-- Win Screen -->
@@ -1466,6 +1503,8 @@
     <div id="win-stats-card" style="background: rgba(10,25,20,0.72); border: 1px solid rgba(0,255,136,0.35); border-radius: 8px; padding: 14px 22px; margin-bottom: 22px; font-family: monospace; font-size: 12px; color: #ccffdd; max-width: 360px; width: 100%; text-align: left; line-height: 1.8; box-shadow: 0 0 20px rgba(0,255,136,0.15);">
       <div>⏱️ DURASI TAPE: <span id="win-tape-time" style="color:#00ff88; font-weight:bold;">00:00:00</span></div>
       <div>💠 SEKTOR: <span style="color:#00ff88; font-weight:bold;">5 / 5 LENGKAP (100%)</span></div>
+      <div>⚔️ MODE ANCAMAN: <span id="win-diff-badge" style="color:#00e5ff; font-weight:bold;">STANDAR (1996)</span></div>
+      <div>📸 BUKTI ANOMALI: <span id="win-photo-count" style="color:#f0abfc; font-weight:bold;">0 FOTO</span></div>
       <div>🧠 SISA SANITY: <span id="win-sanity-pct" style="color:#00ff88; font-weight:bold;">100%</span></div>
       <div>🔋 SISA DAYA BATERAI: <span id="win-battery-pct" style="color:#00ff88; font-weight:bold;">100%</span></div>
     </div>
@@ -1475,6 +1514,36 @@
   <!-- Main Game Script -->
   <script>
   window.gameStarted = false;
+  window.selectedStartSector = 1;
+  window.gameDifficulty = 'normal';
+  try {
+    const savedSec = parseInt(localStorage.getItem('hellroom_checkpoint_sector') || '1', 10);
+    if (savedSec >= 1 && savedSec <= 5) window.selectedStartSector = savedSec;
+  } catch (e) {}
+
+  window.selectDifficulty = function(diff) {
+    window.gameDifficulty = diff || 'normal';
+    const btns = document.querySelectorAll('#difficulty-select-bar .gfx-btn');
+    btns.forEach(b => {
+      b.classList.toggle('active', b.dataset.diff === window.gameDifficulty);
+    });
+  };
+
+  window.selectStartSector = function(lvl) {
+    window.selectedStartSector = lvl;
+    const btns = document.querySelectorAll('#sector-select-bar .gfx-btn');
+    btns.forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.sector, 10) === lvl);
+    });
+    if (typeof loadLevel === 'function' && !window.gameStarted) {
+      try { loadLevel(lvl); } catch (e) {}
+    }
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.selectedStartSector > 1) {
+      window.selectStartSector(window.selectedStartSector);
+    }
+  });
   window.isMobileOrTouchDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent)
       || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -2565,6 +2634,162 @@
         osc.stop(now + 0.018);
       }
 
+      playFlashburst() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // High-voltage Xenon capacitor discharge pop
+        const pop = this.ctx.createOscillator();
+        const popGain = this.ctx.createGain();
+        pop.type = 'sawtooth';
+        pop.frequency.setValueAtTime(2800, now);
+        pop.frequency.exponentialRampToValueAtTime(90, now + 0.09);
+        popGain.gain.setValueAtTime(0.48, now);
+        popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+        pop.connect(popGain);
+        popGain.connect(this.master);
+        pop.start(now);
+        pop.stop(now + 0.12);
+
+        // Capacitor recharge whine (classic 1990s camera flash whine)
+        const whine = this.ctx.createOscillator();
+        const wGain = this.ctx.createGain();
+        whine.type = 'sine';
+        whine.frequency.setValueAtTime(950, now + 0.08);
+        whine.frequency.exponentialRampToValueAtTime(4800, now + 1.15);
+        wGain.gain.setValueAtTime(0.08, now + 0.08);
+        wGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        whine.connect(wGain);
+        wGain.connect(this.master);
+        whine.start(now + 0.08);
+        whine.stop(now + 1.25);
+      }
+
+      playBreakerSwitch() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Heavy mechanical steel clunk
+        const clunk = this.ctx.createOscillator();
+        const cGain = this.ctx.createGain();
+        clunk.type = 'square';
+        clunk.frequency.setValueAtTime(160, now);
+        clunk.frequency.exponentialRampToValueAtTime(42, now + 0.12);
+        cGain.gain.setValueAtTime(0.45, now);
+        cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        clunk.connect(cGain);
+        cGain.connect(this.master);
+        clunk.start(now);
+        clunk.stop(now + 0.15);
+
+        // Power transformer surge hum
+        const surge = this.ctx.createOscillator();
+        const sGain = this.ctx.createGain();
+        surge.type = 'triangle';
+        surge.frequency.setValueAtTime(60, now + 0.08);
+        surge.frequency.exponentialRampToValueAtTime(240, now + 0.55);
+        sGain.gain.setValueAtTime(0.28, now + 0.08);
+        sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        surge.connect(sGain);
+        sGain.connect(this.master);
+        surge.start(now + 0.08);
+        surge.stop(now + 0.65);
+      }
+
+      playBoomboxDecoy() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Retro 1996 lo-fi FM radio chime sequence + tape warble
+        const notes = [440, 554.37, 659.25, 587.33, 493.88, 392.0];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'triangle';
+          const t0 = now + idx * 0.22;
+          osc.frequency.setValueAtTime(freq, t0);
+          osc.frequency.linearRampToValueAtTime(freq * 0.985, t0 + 0.2);
+          g.gain.setValueAtTime(0.24, t0);
+          g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.21);
+          osc.connect(g);
+          g.connect(this.master);
+          osc.start(t0);
+          osc.stop(t0 + 0.22);
+        });
+      }
+
+      playSpatialScan() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // High-tech 1996 LiDAR sonar sweep ping
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(1680, now + 0.28);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.55);
+        gain.gain.setValueAtTime(0.32, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
+        osc.connect(gain);
+        gain.connect(this.master);
+        osc.start(now);
+        osc.stop(now + 0.6);
+      }
+
+      playTripwireDeploy() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.setValueAtTime(960, now + 0.08);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(gain);
+        gain.connect(this.master);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      }
+
+      playTripwireTrigger() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // EMP discharge + alarm chirp
+        for (let i = 0; i < 3; i++) {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          const t = now + i * 0.12;
+          osc.frequency.setValueAtTime(1850, t);
+          osc.frequency.exponentialRampToValueAtTime(420, t + 0.1);
+          g.gain.setValueAtTime(0.38, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+          osc.connect(g);
+          g.connect(this.master);
+          osc.start(t);
+          osc.stop(t + 0.12);
+        }
+      }
+
+      playDoorBang() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 0.16);
+        g.gain.setValueAtTime(0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(g);
+        g.connect(this.master);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+
     }
 
     const audio = new SoundEngine();
@@ -3600,8 +3825,13 @@
       tapesTotal: 3,
       mugsHeld: 0,
       glowstickAmmo: 3,
+      tripwireAmmo: 2,
       chalkAmmo: 6,
       chalkSymbolIndex: 0,
+      anomaliesCaptured: 0,
+      flashCooldown: 0,
+      scanTimer: 0,
+      scanCooldown: 0,
       radiationLevel: 0.08,
       lastGeigerClick: 0,
       stepDistance: 0,
@@ -3643,7 +3873,8 @@
       patrolTimer: 0,
       alertLevel: 0,
       twitchTime: 0,
-      clickTimer: 0
+      clickTimer: 0,
+      stunTimer: 0
     };
 
     const mannequin = {
@@ -3653,7 +3884,8 @@
       z: 0,
       speed: 6.5,
       isObserved: false,
-      isActive: false
+      isActive: false,
+      stunTimer: 0
     };
 
     // Level 2 Entity
@@ -3665,7 +3897,8 @@
       speed: 3.5,
       chaseSpeed: 5.4,
       state: 'PATROL',
-      patrolTimer: 0
+      patrolTimer: 0,
+      stunTimer: 0
     };
 
     // Level 3 Entity: SCP-9921 (The Static Seraph)
@@ -3677,7 +3910,8 @@
       speed: 2.8,
       state: 'PATROL',
       patrolTimer: 0,
-      rotAngle: 0
+      rotAngle: 0,
+      stunTimer: 0
     };
 
     // Level 4 Climax Entity: SCP-000 (The Architect of Purity)
@@ -3693,7 +3927,8 @@
       state: 'PATROL',
       patrolTimer: 0,
       ringRot: 0,
-      spotlight: null
+      spotlight: null,
+      stunTimer: 0
     };
 
     // Level 5 Entity: The Mirror Doppelganger (Bayangan Cermin Liminal)
@@ -3707,7 +3942,8 @@
       speed: 3.6,
       chaseSpeed: 6.0,
       state: 'STALK',
-      patrolTimer: 0
+      patrolTimer: 0,
+      stunTimer: 0
     };
 
     const lockers = [];
@@ -3721,6 +3957,7 @@
     const anomalousPhones = [];
     let isMapOpen = false;
     const chalkDecals = [];
+    const tripwires = [];
 
     let wallColliders = [];
 
@@ -3887,7 +4124,7 @@
       scene.add(playerBodyGlow);
 
       preloadBlenderAssets();
-      loadLevel(1);
+      loadLevel(window.selectedStartSector || 1);
 
       window.addEventListener('resize', onWindowResize, false);
     }
@@ -3930,13 +4167,26 @@
       footprintDecals.length = 0;
       anomalousPhones.length = 0;
       chalkDecals.length = 0;
+      tripwires.length = 0;
       player.adrenalineRushTimer = 0;
+      player.scanTimer = 0;
+      const wpMarker = document.getElementById('waypoint-marker');
+      if (wpMarker) wpMarker.style.display = 'none';
       if (isMapOpen) toggleBlueprintMap();
     }
 
     function loadLevel(lvl) {
       currentLevel = lvl;
+      window.selectedStartSector = lvl;
+      try {
+        localStorage.setItem('hellroom_checkpoint_sector', String(lvl));
+      } catch (e) {}
       clearLevel();
+      player.tripwireAmmo = Math.max(player.tripwireAmmo || 0, 2);
+      const twCount = document.getElementById('tripwire-count');
+      const twBadge = document.getElementById('m-tripwire-badge');
+      if (twCount) twCount.innerText = player.tripwireAmmo;
+      if (twBadge) twBadge.innerText = player.tripwireAmmo;
       generateProceduralMap();
 
       if (lvl === 1) {
@@ -4406,8 +4656,249 @@
       spawnAlmondWater(lvl);
       spawnAnomalousTelephone(lvl);
 
-      // 9. Spawns Collectible Luminescent Chalk Box
+      // 9. Spawns Collectible Luminescent Chalk Box, Emergency Power Breaker Box, Acoustic Boombox Decoy & M.E.G. Supply Safe
       spawnChalkBox(lvl);
+      spawnEmergencyBreakerBox(lvl);
+      spawnAcousticBoombox(lvl);
+      spawnSecuritySupplySafe(lvl);
+    }
+
+    function spawnSecuritySupplySafe(lvl) {
+      if (rooms.length < 3) return;
+      const safeRoom = rooms[Math.max(1, rooms.length - 2)];
+      const sx = safeRoom.cx * TILE_SIZE - 1.3;
+      const sz = safeRoom.cy * TILE_SIZE - 1.3;
+
+      const group = new THREE.Group();
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(0.56, 0.52, 0.44),
+        new THREE.MeshStandardMaterial({ color: 0x1e262c, metalness: 0.88, roughness: 0.24 })
+      );
+      box.position.y = 0.26;
+      group.add(box);
+
+      const keypad = new THREE.Mesh(
+        new THREE.BoxGeometry(0.16, 0.2, 0.04),
+        new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 1.4 })
+      );
+      keypad.position.set(0.12, 0.3, 0.23);
+      group.add(keypad);
+
+      group.position.set(sx, 0, sz);
+      levelMeshesGroup.add(group);
+
+      const codePin = String(100 + lvl * 217);
+      interactiveObjects.push({
+        type: 'supply_safe',
+        mesh: group,
+        x: sx,
+        z: sz,
+        radius: 2.2,
+        opened: false,
+        label: `[E / AKSI] Buka Brankas Logistik M.E.G. [PIN OTORISASI #${codePin}]`,
+        interact: function() {
+          if (this.opened) {
+            showHUDNotification('📦 BRANKAS LOGISTIK SUDAH DIKOSONGKAN');
+            return false;
+          }
+          this.opened = true;
+          keypad.material.color = new THREE.Color(0x00ff88);
+          keypad.material.emissive = new THREE.Color(0x00ff88);
+          audio.playItemPickup();
+          triggerHaptic([50, 30, 80]);
+
+          player.tripwireAmmo = (player.tripwireAmmo || 0) + 1;
+          player.glowstickAmmo = (player.glowstickAmmo || 0) + 2;
+          player.mugsHeld = (player.mugsHeld || 0) + 1;
+          player.battery = Math.min(100, player.battery + 35);
+          player.sanity = Math.min(player.sanityMax, player.sanity + 25);
+
+          const twCount = document.getElementById('tripwire-count');
+          const twBadge = document.getElementById('m-tripwire-badge');
+          if (twCount) twCount.innerText = player.tripwireAmmo;
+          if (twBadge) twBadge.innerText = player.tripwireAmmo;
+
+          const gCount = document.getElementById('glowstick-count');
+          const gBadge = document.getElementById('m-glowstick-badge');
+          if (gCount) gCount.innerText = player.glowstickAmmo;
+          if (gBadge) gBadge.innerText = player.glowstickAmmo;
+
+          const mCount = document.getElementById('mug-count');
+          const mHud = document.getElementById('mug-hud');
+          if (mCount) mCount.innerText = player.mugsHeld;
+          if (mHud) mHud.style.display = 'inline';
+
+          this.label = '[TERBUKA] Brankas Logistik M.E.G. Kosong';
+          showHUDNotification('📦 BRANKAS TERBUKA: +1 LASER, +2 GLOW, +1 CANGKIR, +35% BAT & +25 SANITY!');
+          return false;
+        }
+      });
+    }
+
+    function spawnAcousticBoombox(lvl) {
+      if (rooms.length < 3) return;
+      const decoyRoom = rooms[Math.floor((rooms.length - 1) * 0.65)];
+      const dx = decoyRoom.cx * TILE_SIZE + 1.3;
+      const dz = decoyRoom.cy * TILE_SIZE - 1.3;
+
+      const group = new THREE.Group();
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.46, 0.24, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0x20242c, metalness: 0.75, roughness: 0.3 })
+      );
+      body.position.y = 0.12;
+      group.add(body);
+
+      const spkMat = new THREE.MeshStandardMaterial({ color: 0x111318, metalness: 0.9, roughness: 0.4 });
+      const spkL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 12), spkMat);
+      spkL.rotation.x = Math.PI / 2;
+      spkL.position.set(-0.13, 0.12, 0.095);
+      group.add(spkL);
+
+      const spkR = spkL.clone();
+      spkR.position.set(0.13, 0.12, 0.095);
+      group.add(spkR);
+
+      const led = new THREE.Mesh(
+        new THREE.SphereGeometry(0.03, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 1.6 })
+      );
+      led.position.set(0, 0.21, 0.095);
+      group.add(led);
+
+      group.position.set(dx, 0, dz);
+      levelMeshesGroup.add(group);
+
+      interactiveObjects.push({
+        type: 'boombox_decoy',
+        mesh: group,
+        x: dx,
+        z: dz,
+        radius: 2.2,
+        activeTimer: 0,
+        label: '[E / AKSI] Nyalakan Radio Boombox Umpan Akustik (Pancing Entitas 18 Detik)',
+        interact: function() {
+          if (this.activeTimer > 0) {
+            showHUDNotification('📻 RADIO UMPAN SEDANG MEMANCARKAN FREKUENSI');
+            return false;
+          }
+          this.activeTimer = 18.0;
+          led.material.color = new THREE.Color(0xffaa00);
+          led.material.emissive = new THREE.Color(0xffaa00);
+          audio.playBoomboxDecoy();
+          triggerHaptic([45, 30, 65]);
+          this.label = '[AKTIF] Radio Boombox Sedang Memancing Anomali...';
+
+          // Force current level entity to investigate boombox coordinates
+          if (currentLevel === 1 && entity.state !== 'DORMANT') {
+            entity.state = 'PATROL';
+            entity.targetX = dx;
+            entity.targetZ = dz;
+            entity.patrolTimer = 18.0;
+          } else if (currentLevel === 2) {
+            gildedDiver.state = 'PATROL';
+            gildedDiver.targetX = dx;
+            gildedDiver.targetZ = dz;
+            gildedDiver.patrolTimer = 18.0;
+          } else if (currentLevel === 3) {
+            staticSeraph.targetX = dx;
+            staticSeraph.targetZ = dz;
+          } else if (currentLevel === 4) {
+            scpArchitect.state = 'PATROL';
+            scpArchitect.targetX = dx;
+            scpArchitect.targetZ = dz;
+            scpArchitect.patrolTimer = 18.0;
+          } else if (currentLevel === 5) {
+            mirrorDoppelganger.state = 'PATROL';
+            mirrorDoppelganger.targetX = dx;
+            mirrorDoppelganger.targetZ = dz;
+            mirrorDoppelganger.patrolTimer = 18.0;
+          }
+          showHUDNotification('📻 BOOMBOX AKTIF! ENTITAS TERPANCING KE TITIK RADIO (18 DETIK)');
+          setTimeout(() => {
+            this.activeTimer = 0;
+            led.material.color = new THREE.Color(0x00e5ff);
+            led.material.emissive = new THREE.Color(0x00e5ff);
+            this.label = '[E / AKSI] Nyalakan Radio Boombox Umpan Akustik (Pancing Entitas 18 Detik)';
+          }, 18000);
+          return false;
+        }
+      });
+    }
+
+    function spawnEmergencyBreakerBox(lvl) {
+      if (rooms.length < 3) return;
+      const bRoom = rooms[Math.min(2, rooms.length - 2)];
+      const bx = bRoom.cx * TILE_SIZE - 1.4;
+      const bz = bRoom.cy * TILE_SIZE + 1.4;
+
+      const group = new THREE.Group();
+      const cabinet = new THREE.Mesh(
+        new THREE.BoxGeometry(0.46, 0.64, 0.22),
+        new THREE.MeshStandardMaterial({ color: 0x2b3138, metalness: 0.85, roughness: 0.25 })
+      );
+      cabinet.position.y = 1.35;
+      group.add(cabinet);
+
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.38, 0.1, 0.23),
+        new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.45 })
+      );
+      stripe.position.y = 1.52;
+      group.add(stripe);
+
+      const leverHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.24, 0.12),
+        new THREE.MeshStandardMaterial({ color: 0xff2222, roughness: 0.3, metalness: 0.5 })
+      );
+      leverHandle.position.set(0, 1.32, 0.14);
+      leverHandle.rotation.x = -0.35;
+      group.add(leverHandle);
+
+      const statusLed = new THREE.Mesh(
+        new THREE.SphereGeometry(0.045, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 1.8 })
+      );
+      statusLed.position.set(0.14, 1.52, 0.13);
+      group.add(statusLed);
+
+      group.position.set(bx, 0, bz);
+      levelMeshesGroup.add(group);
+
+      interactiveObjects.push({
+        type: 'breaker_box',
+        mesh: group,
+        x: bx,
+        z: bz,
+        radius: 2.2,
+        activated: false,
+        label: '[E / AKSI] Tarik Sakelar Panel Listrik Darurat (+25% Baterai & Overdrive Lampu)',
+        interact: function() {
+          if (this.activated) {
+            audio.playDoor(false);
+            showHUDNotification('⚡ PANEL LISTRIK SEKTOR INI SUDAH AKTIF');
+            return false;
+          }
+          this.activated = true;
+          leverHandle.rotation.x = 0.45;
+          leverHandle.material.color = new THREE.Color(0x00ff88);
+          statusLed.material.color = new THREE.Color(0x00ff88);
+          statusLed.material.emissive = new THREE.Color(0x00ff88);
+          this.label = '[AKTIF] Panel Listrik Darurat Menyala';
+
+          audio.playBreakerSwitch();
+          triggerHaptic([60, 30, 80]);
+
+          blackoutTimer = 110;
+          lights.forEach(l => {
+            if (l.light) l.light.intensity = 1.85;
+          });
+          player.battery = Math.min(100, player.battery + 25);
+          player.sanity = Math.min(player.sanityMax, player.sanity + 20);
+          showHUDNotification('⚡ LISTRIK PULIH PENUH! +25% BATERAI & +20 SANITY');
+          return false;
+        }
+      });
     }
 
     function spawnClassifiedLogs(lvl) {
@@ -4750,9 +5241,13 @@
       if (isMapOpen) {
         audio.playPaperRustle();
         renderBlueprintMap();
-        if (document.exitPointerLock) document.exitPointerLock();
+        if (document.exitPointerLock) {
+          try { document.exitPointerLock(); } catch (err) {}
+        }
       } else {
-        if (window.innerWidth > 900 && canvas) canvas.requestPointerLock?.();
+        if (!(window.isMobileOrTouchDevice && window.isMobileOrTouchDevice()) && canvas) {
+          try { canvas.requestPointerLock?.(); } catch (err) {}
+        }
       }
     }
 
@@ -4763,6 +5258,7 @@
       const w = bCanvas.width;
       const h = bCanvas.height;
       const cellSize = w / GRID_SIZE;
+      const worldSpan = GRID_SIZE * TILE_SIZE;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -4806,20 +5302,95 @@
         ctx.fillText(idx === 0 ? 'START' : `R-${String(idx).padStart(2, '0')}`, rx + rw / 2, rz + rh / 2 + 3);
       });
 
-      // Exit Room / Elevator marker
-      if (rooms.length > 0) {
-        const exitRoom = rooms[rooms.length - 1];
-        const ex = exitRoom.cx * cellSize;
-        const ez = exitRoom.cy * cellSize;
-        ctx.fillStyle = '#ffcc00';
-        ctx.font = 'bold 11px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('★ LIFT', ex, ez - 10);
+      // Draw UV Safe Zones (Purple Rings)
+      uvZones.forEach(uv => {
+        const ux = (uv.x / worldSpan) * w;
+        const uz = (uv.z / worldSpan) * h;
+        ctx.strokeStyle = 'rgba(217, 70, 239, 0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ux, uz, 7, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Draw Interactive Objectives & Utility Stations
+      interactiveObjects.forEach(obj => {
+        const ox = (obj.x / worldSpan) * w;
+        const oz = (obj.z / worldSpan) * h;
+        if (obj.type === 'key' || obj.type === 'valve' || obj.type === 'master_tape' || (obj.type === 'purity_primer' && !obj.activated) || (obj.type === 'mirror_shard' && !obj.collected)) {
+          ctx.fillStyle = '#ffcc00';
+          ctx.font = 'bold 11px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('★', ox, oz + 4);
+        } else if (obj.type === 'elevator' || obj.type === 'hatch' || obj.type === 'final_gate' || obj.type === 'final_elevator' || obj.type === 'mirror_exit') {
+          ctx.fillStyle = '#00ff88';
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('EXIT', ox, oz - 6);
+        } else if (obj.type === 'charger' || (obj.type === 'breaker_box' && !obj.activated)) {
+          ctx.fillStyle = '#00e5ff';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚡', ox, oz + 3);
+        } else if (obj.type === 'supply_safe' && !obj.opened) {
+          ctx.fillStyle = '#ffaa00';
+          ctx.font = '9px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('📦', ox, oz + 3);
+        }
+      });
+
+      // Draw Active Laser Tripwires
+      tripwires.forEach(tw => {
+        if (tw.triggered) return;
+        const tx = (tw.x / worldSpan) * w;
+        const tz = (tw.z / worldSpan) * h;
+        ctx.fillStyle = '#ff3355';
+        ctx.beginPath();
+        ctx.arc(tx, tz, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Dropped Glowsticks & Chalk Marks
+      glowsticks.forEach(gs => {
+        const gx = (gs.position.x / worldSpan) * w;
+        const gz = (gs.position.z / worldSpan) * h;
+        ctx.fillStyle = '#00ffcc';
+        ctx.beginPath();
+        ctx.arc(gx, gz, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      chalkDecals.forEach(cd => {
+        const cx = (cd.position.x / worldSpan) * w;
+        const cz = (cd.position.z / worldSpan) * h;
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillRect(cx - 2, cz - 2, 4, 4);
+      });
+
+      // Draw Sonar Radar Entity Threat Contact if Radar is Active
+      if (player.radarActive) {
+        const plotEntity = (ent) => {
+          if (!ent || !ent.mesh || ent.state === 'DORMANT') return;
+          const dist = Math.hypot(player.x - ent.x, player.z - ent.z);
+          if (dist <= 20) {
+            const ex = (ent.x / worldSpan) * w;
+            const ez = (ent.z / worldSpan) * h;
+            ctx.fillStyle = '#ff2222';
+            ctx.beginPath();
+            ctx.arc(ex, ez, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        };
+        if (currentLevel === 1) { plotEntity(entity); if (mannequin.isActive) plotEntity(mannequin); }
+        else if (currentLevel === 2) plotEntity(gildedDiver);
+        else if (currentLevel === 3) plotEntity(staticSeraph);
+        else if (currentLevel === 4) plotEntity(scpArchitect);
+        else if (currentLevel === 5) plotEntity(mirrorDoppelganger);
       }
 
       // Draw Player Position & Direction Cone
-      const px = (player.x / (GRID_SIZE * TILE_SIZE)) * w;
-      const pz = (player.z / (GRID_SIZE * TILE_SIZE)) * h;
+      const px = (player.x / worldSpan) * w;
+      const pz = (player.z / worldSpan) * h;
 
       // Heading cone
       ctx.fillStyle = 'rgba(0, 255, 136, 0.25)';
@@ -4840,6 +5411,80 @@
       ctx.stroke();
     }
 
+    function triggerFlashburst() {
+      if (!player.alive || player.escaped || isPaused) return;
+      if (player.flashCooldown > 0) {
+        showHUDNotification(`⏳ UV FLASHBURST RECHARGING (${player.flashCooldown.toFixed(1)}s)`);
+        return;
+      }
+      if (player.battery < 18) {
+        audio.playDoor(false);
+        showHUDNotification('🪫 BATERAI KURANG DARI 18%! KOCOK SENTER [X / KOCOK]');
+        return;
+      }
+
+      player.battery = Math.max(0, player.battery - 18);
+      player.flashCooldown = 9.0;
+      audio.playFlashburst();
+      triggerHaptic([80, 40, 120]);
+
+      const fbOverlay = document.getElementById('flashburst-overlay');
+      if (fbOverlay) {
+        fbOverlay.style.transition = 'none';
+        fbOverlay.style.opacity = '0.92';
+        setTimeout(() => {
+          fbOverlay.style.transition = 'opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
+          fbOverlay.style.opacity = '0';
+        }, 40);
+      }
+
+      // Temporary 3D High-Output UV Xenon Burst Light
+      const burstLight = new THREE.PointLight(0xd946ef, 8.5, 22, 1.5);
+      burstLight.position.set(player.x, player.y, player.z);
+      scene.add(burstLight);
+      setTimeout(() => {
+        scene.remove(burstLight);
+      }, 220);
+
+      // Check if any hostile entity is within 12.5m to stun & capture anomaly evidence
+      let stunnedCount = 0;
+      const tryStun = (ent) => {
+        if (!ent || !ent.mesh) return;
+        if (ent === entity && ent.state === 'DORMANT') return;
+        if (ent === mannequin && !ent.isActive) return;
+        const d = Math.hypot(player.x - ent.x, player.z - ent.z);
+        if (d <= 12.5) {
+          ent.stunTimer = 5.5;
+          if (ent.state === 'CHASE') ent.state = 'PATROL';
+          stunnedCount++;
+        }
+      };
+
+      if (currentLevel === 1) {
+        tryStun(entity);
+        tryStun(mannequin);
+      } else if (currentLevel === 2) {
+        tryStun(gildedDiver);
+      } else if (currentLevel === 3) {
+        tryStun(staticSeraph);
+      } else if (currentLevel === 4) {
+        tryStun(scpArchitect);
+      } else if (currentLevel === 5) {
+        tryStun(mirrorDoppelganger);
+      }
+
+      if (stunnedCount > 0) {
+        player.anomaliesCaptured++;
+        player.sanity = Math.min(player.sanityMax, player.sanity + 15);
+        const pCountEl = document.getElementById('photo-count');
+        if (pCountEl) pCountEl.innerText = player.anomaliesCaptured;
+        audio.playEntityScreech();
+        showHUDNotification(`📸 ANOMALI TEREKAM & TER-STUN (5.5s)! +15 SANITY [BUKTI: ${player.anomaliesCaptured}]`);
+      } else {
+        showHUDNotification('⚡ UV STROBE FLASHBURST! (TIDAK ADA ANOMALI DALAM 12M)');
+      }
+    }
+
     function triggerDynamoShake() {
       if (player.battery < 28) {
         player.battery = Math.min(28, player.battery + 8);
@@ -4852,6 +5497,104 @@
       } else {
         showHUDNotification('🔋 DAYA BATERAI MASIH CUKUP (>25%)');
       }
+    }
+
+    function triggerSpatialScan() {
+      if (!player.alive || player.escaped || isPaused) return;
+      if (player.scanCooldown > 0) {
+        showHUDNotification(`⏳ SCANNER RECHARGING (${player.scanCooldown.toFixed(1)}s)`);
+        return;
+      }
+      if (player.battery < 5) {
+        audio.playDoor(false);
+        showHUDNotification('🪫 DAYA BATERAI KRITIS UNTUK LIDAR SCAN!');
+        return;
+      }
+      player.battery = Math.max(0, player.battery - 5);
+      player.scanTimer = 7.0;
+      player.scanCooldown = 4.5;
+      audio.playSpatialScan();
+      triggerHaptic([35, 20, 45]);
+
+      // 3D Expanding Holographic Scan Wave Ring
+      const ringGeo = new THREE.RingGeometry(0.4, 0.75, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x00ffcc,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.set(player.x, 0.12, player.z);
+      scene.add(ringMesh);
+
+      const startT = performance.now();
+      const animWave = () => {
+        const el = (performance.now() - startT) / 1000;
+        if (el >= 1.1) {
+          scene.remove(ringMesh);
+        } else {
+          const s = 1 + el * 26;
+          ringMesh.scale.set(s, s, 1);
+          ringMat.opacity = 0.85 * (1 - el / 1.1);
+          requestAnimationFrame(animWave);
+        }
+      };
+      requestAnimationFrame(animWave);
+      showHUDNotification('📡 PEMINDAIAN WAYPOINT 3D AKTIF (7 DETIK)');
+    }
+    window.triggerSpatialScan = triggerSpatialScan;
+
+    function deployLaserTripwire() {
+      if (!player.alive || player.escaped || isPaused) return;
+      if ((player.tripwireAmmo || 0) <= 0) {
+        audio.playDoor(false);
+        showHUDNotification('❌ SENSOR LASER HABIS! Cari di Brankas Logistik M.E.G.');
+        return;
+      }
+      player.tripwireAmmo--;
+      const twCount = document.getElementById('tripwire-count');
+      const twBadge = document.getElementById('m-tripwire-badge');
+      if (twCount) twCount.innerText = player.tripwireAmmo;
+      if (twBadge) twBadge.innerText = player.tripwireAmmo;
+
+      audio.playTripwireDeploy();
+      triggerHaptic([45, 25, 45]);
+
+      const group = new THREE.Group();
+      const emitter = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.15, 0.14, 10),
+        new THREE.MeshStandardMaterial({ color: 0x22262e, metalness: 0.85, roughness: 0.25 })
+      );
+      emitter.position.y = 0.07;
+      group.add(emitter);
+
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, 3.2, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff1133, transparent: true, opacity: 0.78, blending: THREE.AdditiveBlending })
+      );
+      beam.rotation.z = Math.PI / 2;
+      beam.rotation.y = player.yaw;
+      beam.position.y = 0.22;
+      group.add(beam);
+
+      const tLight = new THREE.PointLight(0xff1133, 1.4, 5.5);
+      tLight.position.y = 0.28;
+      group.add(tLight);
+
+      group.position.set(player.x, currentLevel === 2 ? 0.25 : 0.02, player.z);
+      levelMeshesGroup.add(group);
+
+      tripwires.push({
+        mesh: group,
+        x: player.x,
+        z: player.z,
+        triggered: false
+      });
+      showHUDNotification('🚨 SENSOR LASER EMP DIPASANG! (MELUMPUHKAN ANOMALI 5 DETIK)');
     }
 
     const chalkSymbolNames = ['ARAH PANAH (➔)', 'BAHAYA ANOMALI (⚠)', 'AREA AMAN (✓)'];
@@ -5759,6 +6502,27 @@
       if (currentLevel === 2 && gildedDiver.mesh) targets.push({ x: gildedDiver.x, z: gildedDiver.z });
       if (currentLevel === 3 && staticSeraph.mesh) targets.push({ x: staticSeraph.x, z: staticSeraph.z });
       if (currentLevel === 4 && scpArchitect.mesh) targets.push({ x: scpArchitect.x, z: scpArchitect.z });
+      if (currentLevel === 5 && mirrorDoppelganger.mesh) targets.push({ x: mirrorDoppelganger.x, z: mirrorDoppelganger.z });
+
+      // Plot nearby Objectives (Gold) and Exit (Cyan) on Sonar Radar
+      interactiveObjects.forEach(obj => {
+        const isObj = (obj.type === 'key' || obj.type === 'valve' || obj.type === 'master_tape' || obj.type === 'primer' || obj.type === 'mirror_shard') && !obj.isTurned && !obj.activated;
+        const isExit = (obj.type === 'elevator' || obj.type === 'hatch' || obj.type === 'ascension_gate' || obj.type === 'sector0_elevator' || obj.type === 'mirror_portal');
+        if (!isObj && !isExit) return;
+        const dx = obj.x - player.x;
+        const dz = obj.z - player.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= 24) {
+          const angle = Math.atan2(dz, dx) + player.yaw + Math.PI / 2;
+          const rDist = Math.min(radius - 2, (dist / 24) * radius);
+          const bx = cx + Math.cos(angle) * rDist;
+          const by = cy + Math.sin(angle) * rDist;
+          rCtx.fillStyle = isExit ? '#00e5ff' : '#ffcc00';
+          rCtx.beginPath();
+          rCtx.arc(bx, by, 2.3, 0, Math.PI * 2);
+          rCtx.fill();
+        }
+      });
 
       targets.forEach(tgt => {
         const dx = tgt.x - player.x;
@@ -6258,6 +7022,9 @@
         if (e.code === 'KeyR') toggleRadar();
         if (e.code === 'KeyZ') toggleZoom();
         if (e.code === 'KeyX') triggerDynamoShake();
+        if (e.code === 'KeyV') triggerFlashburst();
+        if (e.code === 'KeyH') triggerSpatialScan();
+        if (e.code === 'KeyB') deployLaserTripwire();
         if (e.code === 'KeyM') toggleBlueprintMap();
         if (e.code === 'KeyQ') drawChalkMark();
         if (e.code === 'Escape' || e.code === 'KeyP') {
@@ -6722,6 +7489,9 @@
       };
 
       bindBtn('m-btn-interact', checkInteraction);
+      bindBtn('m-btn-scan', triggerSpatialScan);
+      bindBtn('m-btn-flash', triggerFlashburst);
+      bindBtn('m-btn-tripwire', deployLaserTripwire);
       bindBtn('m-btn-throw', throwMug);
       bindBtn('m-btn-whistle', triggerWhistle);
       bindBtn('m-btn-glowstick', dropGlowstick);
@@ -6905,23 +7675,107 @@
       }
     }
 
-    function closeNote() {
+    function closeNote(e) {
+      if (e && e.cancelable && e.preventDefault) e.preventDefault();
       document.getElementById('note-modal').style.display = 'none';
     }
     document.getElementById('close-note').addEventListener('click', closeNote);
+    document.getElementById('close-note').addEventListener('touchend', closeNote, { passive: false });
     document.getElementById('note-ok-btn').addEventListener('click', closeNote);
+    document.getElementById('note-ok-btn').addEventListener('touchend', closeNote, { passive: false });
 
     /* ==========================================================================
        8. ENTITY AI LOGIC (LEVEL 1, 2, AND 3)
        ========================================================================== */
+    function checkDoorBlockingEntity(ent, delta) {
+      if (!ent || !doors || doors.length === 0) return false;
+      for (let i = 0; i < doors.length; i++) {
+        const d = doors[i];
+        if (!d.isOpen) {
+          const dist = Math.hypot(ent.x - d.x, ent.z - (d.z + 0.8));
+          if (dist < 1.35) {
+            d.breachTimer = (d.breachTimer || 0) + delta;
+            if (!d.lastBang || clock.getElapsedTime() - d.lastBang > 0.65) {
+              d.lastBang = clock.getElapsedTime();
+              audio.playDoorBang();
+            }
+            if (d.breachTimer >= 2.5) {
+              d.isOpen = true;
+              d.targetAngle = -Math.PI / 2;
+              d.breachTimer = 0;
+              audio.playDoor(true);
+              showHUDNotification('⚠️ PINTU DIDOBRAK OLEH ENTITAS!');
+              return false;
+            }
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function checkTripwireCollision(ent) {
+      if (!ent || !ent.mesh || tripwires.length === 0) return;
+      for (let i = tripwires.length - 1; i >= 0; i--) {
+        const tw = tripwires[i];
+        if (tw.triggered) continue;
+        const d = Math.hypot(ent.x - tw.x, ent.z - tw.z);
+        if (d <= 2.6) {
+          tw.triggered = true;
+          ent.stunTimer = 5.0;
+          if (ent.state === 'CHASE') ent.state = 'PATROL';
+          audio.playTripwireTrigger();
+          triggerHaptic([90, 40, 120]);
+          if (tw.mesh && tw.mesh.parent) tw.mesh.parent.remove(tw.mesh);
+          tripwires.splice(i, 1);
+          showHUDNotification('🚨 SENSOR LASER EMP MELEDAK! ENTITAS LUMPUH 5.0 DETIK!');
+          break;
+        }
+      }
+    }
+
     function updateEntities(delta) {
       if (!player.alive) return;
+      if (player.flashCooldown > 0) {
+        player.flashCooldown = Math.max(0, player.flashCooldown - delta);
+      }
+      if (player.scanCooldown > 0) {
+        player.scanCooldown = Math.max(0, player.scanCooldown - delta);
+      }
+      const diffMult = window.gameDifficulty === 'explore' ? 0.75 : (window.gameDifficulty === 'nightmare' ? 1.18 : 1.0);
+      const effDelta = delta * diffMult;
+
+      if (currentLevel === 1) {
+        if (entity.mesh && entity.state !== 'DORMANT') {
+          checkTripwireCollision(entity);
+          if (checkDoorBlockingEntity(entity, delta)) return;
+        }
+        if (mannequin.isActive && mannequin.mesh) {
+          checkTripwireCollision(mannequin);
+        }
+      } else if (currentLevel === 2 && gildedDiver.mesh) {
+        checkTripwireCollision(gildedDiver);
+        if (checkDoorBlockingEntity(gildedDiver, delta)) return;
+      } else if (currentLevel === 3 && staticSeraph.mesh) {
+        checkTripwireCollision(staticSeraph);
+      } else if (currentLevel === 4 && scpArchitect.mesh) {
+        checkTripwireCollision(scpArchitect);
+        if (checkDoorBlockingEntity(scpArchitect, delta)) return;
+      } else if (currentLevel === 5 && mirrorDoppelganger.mesh) {
+        checkTripwireCollision(mirrorDoppelganger);
+        if (checkDoorBlockingEntity(mirrorDoppelganger, delta)) return;
+      }
+      delta = effDelta;
 
       if (currentLevel === 1) {
         if (entity.state === 'DORMANT') {
           player.explorationTimer += delta;
           if (player.explorationTimer > 80) awakenSCPEntity();
         } else if (entity.mesh) {
+          if (entity.stunTimer > 0) {
+            entity.stunTimer -= delta;
+            entity.mesh.rotation.y += (Math.random() - 0.5) * 0.7;
+          } else {
           const distToPlayer = Math.hypot(player.x - entity.x, player.z - entity.z);
 
           entity.twitchTime += delta;
@@ -7027,9 +7881,14 @@
 
           audio.updateThreat(distToPlayer, entity.state === 'CHASE');
           updateProximityGlitch(distToPlayer);
+          }
         }
 
         if (mannequin.isActive && mannequin.mesh) {
+          if (mannequin.stunTimer > 0) {
+            mannequin.stunTimer -= delta;
+            mannequin.mesh.rotation.y += (Math.random() - 0.5) * 0.5;
+          } else {
           const toMannequin = new THREE.Vector3(mannequin.x - player.x, 0, mannequin.z - player.z);
           const distToMannequin = toMannequin.length();
 
@@ -7063,10 +7922,16 @@
               triggerDeath(mannequin);
             }
           }
+          }
         }
       }
 
       else if (currentLevel === 2 && gildedDiver.mesh) {
+        if (gildedDiver.stunTimer > 0) {
+          gildedDiver.stunTimer -= delta;
+          gildedDiver.mesh.rotation.y += (Math.random() - 0.5) * 0.5;
+          return;
+        }
         const dist = Math.hypot(player.x - gildedDiver.x, player.z - gildedDiver.z);
         if (!gildedDiver.lastBreathTime) gildedDiver.lastBreathTime = 0;
         if (clock.getElapsedTime() - gildedDiver.lastBreathTime > 4.5 && dist < 24) {
@@ -7134,6 +7999,11 @@
       }
 
       else if (currentLevel === 3 && staticSeraph.mesh) {
+        if (staticSeraph.stunTimer > 0) {
+          staticSeraph.stunTimer -= delta;
+          staticSeraph.mesh.rotation.y += delta * 12.0;
+          return;
+        }
         // Rotating seraph rings
         staticSeraph.rotAngle += delta * 2.0;
         staticSeraph.mesh.rotation.y = staticSeraph.rotAngle;
@@ -7165,6 +8035,11 @@
       }
 
       else if (currentLevel === 4 && scpArchitect.mesh) {
+        if (scpArchitect.stunTimer > 0) {
+          scpArchitect.stunTimer -= delta;
+          scpArchitect.mesh.rotation.y += delta * 10.0;
+          return;
+        }
         scpArchitect.ringRot += delta * 2.2;
         scpArchitect.mesh.rotation.y = scpArchitect.ringRot;
         scpArchitect.mesh.position.y = 1.4 + Math.sin(clock.getElapsedTime() * 1.8) * 0.25;
@@ -7219,6 +8094,11 @@
       }
 
       else if (currentLevel === 5 && mirrorDoppelganger.mesh) {
+        if (mirrorDoppelganger.stunTimer > 0) {
+          mirrorDoppelganger.stunTimer -= delta;
+          mirrorDoppelganger.mesh.rotation.y += (Math.random() - 0.5) * 0.7;
+          return;
+        }
         mirrorDoppelganger.pulseTimer += delta;
         mirrorDoppelganger.mesh.position.y = Math.sin(mirrorDoppelganger.pulseTimer * 3.0) * 0.1;
 
@@ -7663,6 +8543,8 @@
 
     function handleSanity(delta) {
       if (!player.alive || player.escaped) return;
+      const diffSanMult = window.gameDifficulty === 'explore' ? 0.55 : (window.gameDifficulty === 'nightmare' ? 1.25 : 1.0);
+      delta = delta * diffSanMult;
 
       // 1. Check if inside any UV Safe Zone
       let insideUV = false;
@@ -7929,8 +8811,9 @@
     }
 
     function handleFlashlight(delta) {
+      const diffBatMult = window.gameDifficulty === 'explore' ? 0.5 : (window.gameDifficulty === 'nightmare' ? 1.3 : 1.0);
       if (player.flashlightOn) {
-        player.battery -= delta * 0.36;
+        player.battery -= delta * 0.36 * diffBatMult;
         if (player.battery <= 0) {
           player.battery = 0;
           player.flashlightOn = false;
@@ -8089,14 +8972,83 @@
       const secs = String(Math.floor(tapeSeconds % 60)).padStart(2, '0');
       document.getElementById('tape-time').innerText = `${hrs}:${mins}:${secs}`;
 
-      // Real-time Tactical 1996 Camcorder Heading & Compass Tape
+      // Real-time Tactical 1996 Camcorder Heading & Objective Waypoint Compass Tape
       const compassEl = document.getElementById('compass-tape');
       if (compassEl) {
         let deg = Math.round((-player.yaw * 180 / Math.PI) % 360);
         if (deg < 0) deg += 360;
         const dirs = ['U / N', 'TL / NE', 'T / E', 'TG / SE', 'S', 'BD / SW', 'B / W', 'BL / NW'];
         const dirIdx = Math.round(deg / 45) % 8;
-        compassEl.innerText = `${dirs[dirIdx]} • ${String(deg).padStart(3, '0')}°`;
+
+        // Find closest active objective or Exit gate
+        let nearestTarget = null;
+        let nearestObjDist = 9999;
+        let exitTarget = null;
+        for (let i = 0; i < interactiveObjects.length; i++) {
+          const o = interactiveObjects[i];
+          if ((o.type === 'key' || o.type === 'valve' || o.type === 'master_tape' || o.type === 'primer' || o.type === 'purity_primer' || o.type === 'mirror_shard') && !o.isTurned && !o.activated && !o.collected) {
+            const d = Math.hypot(o.x - player.x, o.z - player.z);
+            if (d < nearestObjDist) {
+              nearestObjDist = d;
+              nearestTarget = { x: o.x, z: o.z, label: '★ OBJEKTIF' };
+            }
+          } else if (o.type === 'elevator' || o.type === 'hatch' || o.type === 'final_gate' || o.type === 'ascension_gate' || o.type === 'final_elevator' || o.type === 'sector0_elevator' || o.type === 'mirror_exit' || o.type === 'mirror_portal') {
+            exitTarget = { x: o.x, z: o.z, label: '🚪 EXIT' };
+          }
+        }
+        const wp = nearestTarget || exitTarget;
+        let wpText = '';
+        if (wp) {
+          const wpDist = Math.round(Math.hypot(wp.x - player.x, wp.z - player.z));
+          const targetAngle = Math.atan2(wp.x - player.x, wp.z - player.z);
+          const lookAngle = Math.atan2(-Math.sin(player.yaw), -Math.cos(player.yaw));
+          let rel = targetAngle - lookAngle;
+          while (rel > Math.PI) rel -= Math.PI * 2;
+          while (rel < -Math.PI) rel += Math.PI * 2;
+          const arrow = Math.abs(rel) < 0.35 ? '↑' : (rel > 0 ? (rel > 1.8 ? '↙' : '←') : (rel < -1.8 ? '↘' : '→'));
+          wpText = `  |  ${wp.label} ${wpDist}m ${arrow}`;
+        }
+        compassEl.innerText = `${dirs[dirIdx]} • ${String(deg).padStart(3, '0')}°${wpText}`;
+
+        // 3D-to-2D AR Waypoint Projection Marker (#waypoint-marker) when Spatial Scan is active
+        const wpMarkerEl = document.getElementById('waypoint-marker');
+        if (wpMarkerEl) {
+          if (player.scanTimer > 0 && wp && camera) {
+            player.scanTimer = Math.max(0, player.scanTimer - delta);
+            const worldPos = new THREE.Vector3(wp.x, 1.4, wp.z);
+            const proj = worldPos.clone().project(camera);
+            const wpDist = Math.round(Math.hypot(wp.x - player.x, wp.z - player.z));
+            if (proj.z < 1.0) {
+              const sx = Math.max(48, Math.min(window.innerWidth - 48, (proj.x * 0.5 + 0.5) * window.innerWidth));
+              const sy = Math.max(48, Math.min(window.innerHeight - 48, (-proj.y * 0.5 + 0.5) * window.innerHeight));
+              wpMarkerEl.style.display = 'block';
+              wpMarkerEl.style.left = `${sx}px`;
+              wpMarkerEl.style.top = `${sy}px`;
+              wpMarkerEl.innerText = `🎯 ${wp.label} • ${wpDist}M`;
+            } else {
+              wpMarkerEl.style.display = 'block';
+              wpMarkerEl.style.left = '50%';
+              wpMarkerEl.style.top = '82%';
+              wpMarkerEl.innerText = `⬇ DI BELAKANG: ${wp.label} • ${wpDist}M`;
+            }
+          } else {
+            wpMarkerEl.style.display = 'none';
+          }
+        }
+      }
+
+      // Biometric Heart Rate (BPM) Telemetry
+      const bpmEl = document.getElementById('bpm-meter');
+      if (bpmEl) {
+        let targetBpm = 70;
+        if (player.actuallySprinting) targetBpm += 38;
+        else if (player.wasMoving) targetBpm += 12;
+        if (player.sanity < 50) targetBpm += Math.round((50 - player.sanity) * 0.6);
+        if (emfDist < 15) targetBpm += Math.round((15 - emfDist) * 3.8);
+        const jitter = Math.round(Math.sin(clock.getElapsedTime() * 3.5) * 2);
+        const bpm = Math.min(188, Math.max(62, targetBpm + jitter));
+        bpmEl.innerText = `♥ ${bpm} BPM`;
+        bpmEl.style.color = bpm > 130 ? '#ff2244' : (bpm > 100 ? '#ffaa44' : '#ff5577');
       }
 
       const batEl = document.getElementById('battery-pct');
@@ -8167,6 +9119,12 @@
 
       const winTimeEl = document.getElementById('win-tape-time');
       if (winTimeEl) winTimeEl.innerText = tTime;
+      const winPhotoEl = document.getElementById('win-photo-count');
+      if (winPhotoEl) winPhotoEl.innerText = `${player.anomaliesCaptured || 0} FOTO`;
+      const winDiffEl = document.getElementById('win-diff-badge');
+      if (winDiffEl) {
+        winDiffEl.innerText = window.gameDifficulty === 'nightmare' ? '★ NIGHTMARE SURVIVOR' : (window.gameDifficulty === 'explore' ? 'EKSPLORASI' : 'STANDAR (1996)');
+      }
       const winSanEl = document.getElementById('win-sanity-pct');
       if (winSanEl) winSanEl.innerText = `${Math.ceil(player.sanity)}%`;
       const winBatEl = document.getElementById('win-battery-pct');
@@ -8176,8 +9134,34 @@
       if (document.exitPointerLock) document.exitPointerLock();
     }
 
+    function retryCurrentSector() {
+      document.getElementById('death-overlay').style.display = 'none';
+      player.alive = true;
+      player.escaped = false;
+      player.battery = 100;
+      player.sanity = 100;
+      player.stamina = 100;
+      player.keysFound = 0;
+      player.valvesTurned = 0;
+      player.tapesCollected = 0;
+      player.primersActivated = 0;
+      player.mirrorShardsCollected = 0;
+      player.adrenalineRushTimer = 0;
+      player.flashCooldown = 0;
+      loadLevel(currentLevel || 1);
+      if (!(window.isMobileOrTouchDevice && window.isMobileOrTouchDevice()) && canvas) {
+        try { canvas.requestPointerLock?.(); } catch (e) {}
+      }
+    }
+
     function resetGame() {
+      try { localStorage.setItem('hellroom_checkpoint_sector', '1'); } catch (e) {}
       window.location.reload();
+    }
+    const btnRetrySec = document.getElementById('btn-retry-sector');
+    if (btnRetrySec) {
+      btnRetrySec.addEventListener('click', retryCurrentSector);
+      btnRetrySec.addEventListener('touchend', (e) => { if (e && e.cancelable) e.preventDefault(); retryCurrentSector(); });
     }
     document.getElementById('btn-retry').addEventListener('click', resetGame);
     document.getElementById('btn-play-again').addEventListener('click', () => {
