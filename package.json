@@ -1,0 +1,10 @@
+{
+  "name": "the-hellroom",
+  "version": "0.1.0",
+  "private": true,
+  "description": "THE HELLROOM - browser horror game (Three.js)",
+  "scripts": {
+    "assets": "\"/Applications/Blender.app/Contents/MacOS/Blender\" -b --factory-startup -P blender/build_assets.py",
+    "serve": "python3 -m http.server 8080"
+  }
+}
