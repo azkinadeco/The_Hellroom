@@ -7,8 +7,8 @@ import { POOL_Y, BLOCK, CELL, WALL_T } from '../config.js';
 import { RNG } from '../util/rng.js';
 import { LevelMap, DIRS, EDGE } from './map.js';
 
-const SIDE_N = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] }; // inward normals
-const yawFor = (fx, fz) => Math.atan2(fx, fz); // rotation that points model +Z along (fx,fz)
+export const SIDE_N = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] }; // inward normals
+export const yawFor = (fx, fz) => Math.atan2(fx, fz); // rotation that points model +Z along (fx,fz)
 
 export function generateLevel(def, seed = def.seed) {
   const rng = new RNG(seed);
@@ -310,7 +310,7 @@ export function generateLevel(def, seed = def.seed) {
 // Room furnishing. Each room gets a local frame: u runs along its "front" wall,
 // v points inward. Props are emitted in world space with AABB colliders.
 // ---------------------------------------------------------------------------
-function roomFrame(r, side) {
+export function roomFrame(r, side) {
   const n = SIDE_N[side];
   const x0 = r.x0 * CELL, z0 = r.z0 * CELL, x1 = (r.x1 + 1) * CELL, z1 = (r.z1 + 1) * CELL;
   const alongX = side === 'N' || side === 'S';
@@ -327,7 +327,7 @@ function roomFrame(r, side) {
   return { side, n, width, depth, toWorld, alongX };
 }
 
-function doorSides(r) {
+export function doorSides(r) {
   const s = new Set();
   for (const d of r.doors) {
     // door inward vector points from hall into room; side is the opposite
@@ -338,7 +338,7 @@ function doorSides(r) {
 }
 
 // does the wall segment (u from a to b, on frame's front side) contain a door?
-function sideHasDoorNear(r, frame, uA, uB) {
+export function sideHasDoorNear(r, frame, uA, uB) {
   for (const d of r.doors) {
     const ds = d.inX === 1 ? 'W' : d.inX === -1 ? 'E' : d.inZ === 1 ? 'N' : 'S';
     if (ds !== frame.side) continue;
@@ -349,7 +349,7 @@ function sideHasDoorNear(r, frame, uA, uB) {
   return false;
 }
 
-function emitProp(out, type, wx, wz, rot, size, opts = {}) {
+export function emitProp(out, type, wx, wz, rot, size, opts = {}) {
   out.props.push({ type, x: wx, z: wz, y: opts.y || 0, rot, ...opts });
   if (size) {
     const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
@@ -358,7 +358,7 @@ function emitProp(out, type, wx, wz, rot, size, opts = {}) {
   }
 }
 
-function furnishRoom(r, map, rng, out) {
+export function furnishRoom(r, map, rng, out) {
   const ds = doorSides(r);
   const sides = ['N', 'S', 'W', 'E'];
   const free = sides.filter((s) => !ds.has(s));
@@ -592,13 +592,13 @@ function furnishRoom(r, map, rng, out) {
   if (!r.spots.length) { const [x, z] = at(W_ / 2, D / 2); r.spots.push([x, 0.02, z]); }
 }
 
-function aabb(x, z, w, d, rot) {
+export function aabb(x, z, w, d, rot) {
   const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
   const hx = (w * c + d * s) / 2, hz = (w * s + d * c) / 2;
   return { minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz, h: 2 };
 }
 
-function dressHalls(map, rng, out, reserved, clean = false, reach = 3) {
+export function dressHalls(map, rng, out, reserved, clean = false, reach = 3) {
   const { W, H } = map;
   const hideCount = new Map(); // corridor-run id -> lockers
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {

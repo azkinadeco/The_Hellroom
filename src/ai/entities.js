@@ -127,6 +127,7 @@ export class Entity {
   updateCommon(dt) {
     this.mixer.update(dt);
     this.obj.position.copy(this.pos);
+    if (this.game.stairs && this.game.stairs.length) this.obj.position.y += this.game.groundY(this.pos.x, this.pos.z);
     this.obj.rotation.y = this.yaw;
     this.bakeT -= dt;
     if (this.bakeT <= 0) {
@@ -136,7 +137,7 @@ export class Entity {
     }
     // procedural fallback animation when the model has no clips
     if (!Object.keys(this.actions).length) {
-      this.obj.position.y = Math.abs(Math.sin(performance.now() * 0.006)) * 0.05 * Math.min(1, (this.velocity || 0));
+      this.obj.position.y += Math.abs(Math.sin(performance.now() * 0.006)) * 0.05 * Math.min(1, (this.velocity || 0));
     }
   }
 

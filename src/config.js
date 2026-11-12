@@ -43,19 +43,19 @@ export const DIFFICULTY = {
   sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6 },
 };
 
-// Test rooms in the main menu: every level unlocked, resident override and
-// invulnerability. Set to false for the public release.
+// Test rooms in the main menu (Pilih Room): every map playable, resident
+// override and invulnerability. Pilih Level itself stays unlocked in order. Set to false for the public release.
 export const DEV_ROOMS = true;
 
 // Level definitions. Every level has exactly ONE resident. Layouts are
 // generated from the seed so every run of a level is identical.
 export const LEVELS = [
   {
-    id: 1, code: 'LEVEL 0', name: 'Lorong Tak Berujung',
-    subtitle: 'Sekolah ini tidak pernah selesai dibangun.',
-    seed: 1996, blocksX: 3, blocksZ: 3,
-    lightsOff: 0.12, flicker: 0.12, fog: 0.055,
-    fuses: 3, keys: 1, batteries: 3, notes: 3, erasers: 5,
+    id: 1, code: 'LEVEL 0', name: 'Sekolah Malam',
+    subtitle: 'Dua lantai, satu lapangan, dan tidak ada yang pulang.',
+    seed: 1996, layout: 'school', size: [26, 22], floors: 2, rail: 'parapet',
+    lightsOff: 0.14, flicker: 0.12, fog: 0.05,
+    fuses: 3, keys: 1, batteries: 4, notes: 3, erasers: 5,
     entities: [{ type: 'pale' }], hallTheme: 'hall',
   },
   {

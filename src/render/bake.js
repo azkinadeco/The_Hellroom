@@ -62,6 +62,7 @@ export class LightField {
   constructor(map, lights) {
     this.map = map;
     this.lights = lights.filter((l) => l.state !== 'off');
+    this.tall = this.lights.filter((l) => l.tall);
     // spatial hash by cell for fast lookups
     this.buckets = new Map();
     for (const l of this.lights) {
@@ -81,18 +82,31 @@ export class LightField {
       const b = this.buckets.get((cx + dx) + ',' + (cz + dz));
       if (!b) continue;
       for (const l of b) {
-        const lx = l.x - px, ly = 2.92 - py, lz = l.z - pz;
+        if (l.tall) continue;
+        const lx = l.x - px, ly = (l.y ?? 2.92) - py, lz = l.z - pz;
         const d2 = lx * lx + ly * ly + lz * lz;
-        if (d2 > 110) continue;
+        if (d2 > (l.reach2 || 110)) continue;
         const d = Math.sqrt(d2);
         let lam = 1;
         if (nx !== null) lam = Math.max(0, (lx * nx + ly * ny + lz * nz) / d) * 0.8 + 0.2;
-        const fall = 1 / (1 + d2 * 0.16);
+        const fall = 1 / (1 + d2 * (l.fall || 0.16));
         const val = lam * fall;
         if (val < 0.01) continue;
         if (!this.map.los(l.x, l.z, sx, sz)) continue;
         if (l.state === 'flicker') flick += val; else steady += val;
       }
+    }
+    // lights hung high in tall spaces reach much further
+    for (const l of this.tall) {
+      const lx = l.x - px, ly = l.y - py, lz = l.z - pz;
+      const d2 = lx * lx + ly * ly + lz * lz;
+      if (d2 > l.reach2) continue;
+      const d = Math.sqrt(d2);
+      let lam = 1;
+      if (nx !== null) lam = Math.max(0, (lx * nx + ly * ny + lz * nz) / d) * 0.8 + 0.2;
+      const val = lam / (1 + d2 * l.fall);
+      if (val < 0.01 || !this.map.los(l.x, l.z, sx, sz)) continue;
+      if (l.state === 'flicker') flick += val; else steady += val;
     }
     return [Math.min(steady * 1.15, 1.6), Math.min(flick * 1.15, 1.6)];
   }

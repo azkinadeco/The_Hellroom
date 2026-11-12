@@ -15,7 +15,7 @@ export class Anomalies {
     this.turnT = 3;
     this.turned = 0;
     const th = game.def.theme;
-    if (th === 'mall') this.findLoops();
+    if (th === 'mall' && !game.def.layout) this.findLoops();
   }
 
   // Spots in long straight halls where the next few cells look exactly like the

@@ -46,9 +46,9 @@ export class Interactor {
     for (const l of g.built.lockers) { const f = HIDE[l.kind || 'locker'].front; out.push({ kind: 'locker', ref: l, x: l.x + Math.sin(l.rot) * f, y: 1.0, z: l.z + Math.cos(l.rot) * f, r: 0.55 }); }
     for (const it of g.built.items) if (!it.taken) out.push({ kind: 'item', ref: it, x: it.obj.position.x, y: it.obj.position.y, z: it.obj.position.z, r: 0.35 });
     const fb = g.gen.fusebox;
-    out.push({ kind: 'fusebox', x: fb.x + Math.sin(fb.rot) * 0.1, y: 1.4, z: fb.z + Math.cos(fb.rot) * 0.1, r: 0.5 });
+    if (fb) out.push({ kind: 'fusebox', x: fb.x + Math.sin(fb.rot) * 0.1, y: 1.4, z: fb.z + Math.cos(fb.rot) * 0.1, r: 0.5 });
     const ex = g.gen.exit;
-    out.push({ kind: 'exit', x: ex.x, y: 1.2, z: ex.z, r: 1.0 });
+    if (ex) out.push({ kind: 'exit', x: ex.x, y: 1.2, z: ex.z, r: 1.0 });
     return out;
   }
 

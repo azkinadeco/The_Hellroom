@@ -209,8 +209,8 @@ function buildLevels() {
   LEVELS.forEach((l, i) => {
     const b = document.createElement('button');
     b.className = 'level-item';
-    // while DEV_ROOMS is on every map is open; on release levels unlock in order
-    b.disabled = !DEV_ROOMS && i + 1 > save.unlocked;
+    // levels unlock in order; every map can still be tried from Pilih Room (uji)
+    b.disabled = i + 1 > save.unlocked;
     const best = save.best[l.id + ':' + save.diff];
     const kind = l.entities[0] && l.entities[0].type, seen = kind && save.met.includes(kind);
     b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;

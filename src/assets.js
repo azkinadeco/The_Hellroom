@@ -8,11 +8,14 @@ export const MODEL_KEYS = [
   'door_classroom', 'door_locked', 'exit_door', 'ceiling_light', 'wall_clock',
   'bookshelf', 'trash_bin', 'water_fountain', 'cardboard_box', 'chair_fallen',
   'fuse_box', 'toilet_stall', 'sink_counter', 'bleachers', 'basketball_hoop', 'lab_bench', 'specimen_shelf', 'anatomy_skeleton', 'pool_ladder', 'lane_rope', 'locker_bench', 'figure_stand', 'figure_reach', 'figure_kneel', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
+  'desk_pair', 'wall_frames', 'flag_stand', 'class_cabinet', 'broom_set', 'ceiling_fan', 'notice_board', 'school_window',
+  'hall_bench', 'potted_plant', 'trophy_case', 'pillar', 'flagpole', 'tree_big', 'lamp_post', 'uks_bed', 'folding_screen',
+  'medicine_cabinet', 'canteen_table', 'canteen_counter',
   'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
   'entity_pale', 'entity_masked', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];
 export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal',
-  'pool_floor', 'pool_wall', 'pool_ceiling', 'pool_water', 'mall_floor', 'mall_wall', 'mall_ceiling', 'bk_wallpaper', 'bk_carpet', 'bk_ceiling'];
+  'pool_floor', 'pool_wall', 'pool_ceiling', 'pool_water', 'mall_floor', 'mall_wall', 'mall_ceiling', 'bk_wallpaper', 'bk_carpet', 'bk_ceiling', 'paving'];
 
 // Rough sizes used for fallback boxes [w, h, d] and their color
 const FALLBACK = {

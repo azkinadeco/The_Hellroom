@@ -35,7 +35,7 @@ export class Player {
   }
 
   spawn(x, z, yaw) {
-    this.pos.set(x, 0, z);
+    this.pos.set(x, 0, z); this.y = 0;
     this.yaw = yaw; this.pitch = 0;
     this.vel.set(0, 0);
     this.crouched = false; this.hidden = null; this.alive = true; this.lookLock = null;
@@ -129,6 +129,7 @@ export class Player {
     this.vel.x = (cx - this.pos.x) / Math.max(dt, 1e-4);
     this.vel.y = (cz - this.pos.z) / Math.max(dt, 1e-4);
     this.pos.x = cx; this.pos.z = cz;
+    if (game.verticalStep) game.verticalStep(this);
     this.moving = clamp(sp / PLAYER.walk, 0, 1.6);
 
     // ----- footsteps / noise -----
@@ -165,7 +166,7 @@ export class Player {
     if (this.hidden) {
       c.position.set(this.hidden.camX, this.eye, this.hidden.camZ);
     } else {
-      c.position.set(this.pos.x + Math.cos(this.yaw) * bx, this.eye + by, this.pos.z - Math.sin(this.yaw) * bx);
+      c.position.set(this.pos.x + Math.cos(this.yaw) * bx, (this.y || 0) + this.eye + by, this.pos.z - Math.sin(this.yaw) * bx);
     }
     c.rotation.set(this.pitch, this.yaw, Math.cos(this.bob) * bobAmt * 0.25);
   }

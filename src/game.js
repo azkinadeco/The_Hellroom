@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { LEVELS, DIFFICULTY, NOISE, CELL, HIDE } from './config.js';
 import { generateLevel } from './level/generator.js';
+import { generateBuilding, FH } from './level/building.js';
 import { buildLevel, cloneWithBake } from './level/builder.js';
 import { bakeUniforms } from './render/bake.js';
 import { VHS } from './render/vhs.js';
@@ -82,23 +83,36 @@ export class Game {
     this.diffKey = difficulty;
     this.diff = DIFFICULTY[difficulty];
     const scaled = { ...def, batteries: Math.max(1, Math.round(def.batteries * this.diff.batteries)) };
-    this.gen = generateLevel(scaled);
-    this.map = this.gen.map;
-    this.built = buildLevel(this.gen, this.assets, def);
-    this.levelRoot = this.built.root;
-    this.scene.add(this.levelRoot);
-    this.field = this.built.field;
-    this.world = new World(this.gen, this.built);
-    this.doorSys = new DoorSystem(this, this.built.doors);
+    // a level is a stack of floors; single-floor levels are a stack of one
+    let gens, start, startFloor = 0;
+    if (def.layout) {
+      const B = this.bgen = generateBuilding(scaled);
+      gens = B.floors; start = B.start; startFloor = B.startFloor;
+    } else {
+      this.bgen = null;
+      const g = generateLevel(scaled);
+      gens = [g]; start = { ...g.start };
+    }
+    this.floors = gens.map((gen, k) => {
+      const built = buildLevel(gen, this.assets, def, { FH, k });
+      this.scene.add(built.root);
+      const world = new World(gen, built);
+      return { k, gen, built, world, map: gen.map, field: built.field, doorSys: new DoorSystem(this, built.doors) };
+    });
+    this.exitFloor = this.floors.find((f) => f.gen.exit) || this.floors[0];
+    this.fuseFloor = this.floors.find((f) => f.gen.fusebox) || this.floors[0];
+    this.stairs = this.bgen ? this.bgen.stairs : [];
+    this.setFloor(startFloor);
     this.interactor = new Interactor(this);
     this.anomalies = new Anomalies(this);
     this.scene.fog = new THREE.FogExp2(0x070806, def.fog);
     this.scene.background = new THREE.Color(0x070806);
+    this.start = start;
 
     const p = this.player;
-    p.spawn(this.gen.start.x, this.gen.start.z, this.gen.start.yaw);
+    p.spawn(start.x, start.z, start.yaw);
     p.battery = 100; p.flashlight = false; p.nightVision = false;
-    p.water = this.gen.water;
+    p.water = this.gen.water; p.y = 0;
     this.audio.setTheme(def.theme || null); this.themeT = 0;
     this.camera.fov = 72; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0 };
@@ -121,10 +135,11 @@ export class Game {
     this.input.resetToggles();
 
     // entities spawn far from the player, preferring hallways
-    const [sx, sz] = this.map.cellOf(this.gen.start.x, this.gen.start.z);
+    const [sx, sz] = this.map.cellOf(start.x, start.z);
     const dist = this.map.bfs(sx, sz);
     const cand = [];
     for (let i = 0; i < dist.length; i++) if (dist[i] >= 10 && this.map.region[i] === 0) cand.push([i % this.map.W, (i / this.map.W) | 0, dist[i]]);
+    if (!cand.length) for (let i = 0; i < dist.length; i++) if (dist[i] >= 6) cand.push([i % this.map.W, (i / this.map.W) | 0, dist[i]]);
     cand.sort((a, b) => b[2] - a[2]);
     const used = [];
     for (const e of def.entities) {
@@ -143,11 +158,78 @@ export class Game {
   unload() {
     for (const e of this.entities) e.remove();
     this.entities = [];
-    if (this.levelRoot) {
-      this.scene.remove(this.levelRoot);
-      this.levelRoot.traverse((o) => { if (o.isInstancedMesh || (o.isMesh && o.geometry.getAttribute('bake'))) o.geometry.dispose(); });
-      this.levelRoot = null;
+    for (const f of this.floors || []) {
+      this.scene.remove(f.built.root);
+      f.built.root.traverse((o) => { if (o.isInstancedMesh || (o.isMesh && o.geometry.getAttribute('bake'))) o.geometry.dispose(); });
     }
+    this.floors = []; this.levelRoot = null;
+  }
+
+  // ------------------------------------------------------------------ floors
+  // The floor the player is on always sits at y = 0 so every system keeps
+  // working in floor-local coordinates; the other floors are moved round it.
+  setFloor(k) {
+    const f = this.floors[k];
+    this.floorK = k;
+    this.gen = f.gen; this.map = f.map; this.built = f.built; this.world = f.world; this.field = f.field; this.doorSys = f.doorSys;
+    this.levelRoot = f.built.root;
+    for (const o of this.floors) {
+      o.built.root.position.y = (o.k - k) * FH;
+      o.built.root.visible = Math.abs(o.k - k) <= 1 || !!(this.def && this.def.seeAll);
+      o.built.root.updateMatrixWorld(true);
+    }
+  }
+  // height of the walkable surface at (x, z) on the current floor
+  groundY(x, z) {
+    for (const s of this.stairs) {
+      if (this.floorK !== s.k && this.floorK !== s.k + 1) continue;
+      if (x < s.minX || x > s.maxX || z < s.minZ || z > s.maxZ) continue;
+      const L = s.len * CELL;
+      const t = s.d.dx > 0 ? (x - s.minX) / L : s.d.dx < 0 ? (s.maxX - x) / L : s.d.dz > 0 ? (z - s.minZ) / L : (s.maxZ - z) / L;
+      return clamp(t, 0, 1) * FH - (this.floorK - s.k) * FH;
+    }
+    return 0;
+  }
+  // called by the player after moving: climb, and cross to the next floor halfway up
+  verticalStep(p) {
+    if (!this.stairs.length) { p.y = 0; return; }
+    p.y = this.groundY(p.pos.x, p.pos.z);
+    for (const s of this.stairs) {
+      if (p.pos.x < s.minX || p.pos.x > s.maxX || p.pos.z < s.minZ || p.pos.z > s.maxZ) continue;
+      if (this.floorK === s.k && p.y > FH / 2) { this.changeFloor(s.k + 1, { cell: s.cells[s.len - 1], stair: s }); p.y -= FH; }
+      else if (this.floorK === s.k + 1 && p.y < -FH / 2) { this.changeFloor(s.k, { cell: s.cells[0], stair: s }); p.y += FH; }
+      break;
+    }
+  }
+  changeFloor(k, via = {}) {
+    if (k === this.floorK || !this.floors[k]) return;
+    const prev = this.floorK;
+    this.setFloor(k);
+    this.hud.caption(`Lantai ${k + 1}`, 1.6);
+    // the resident does not stay behind: a hunter follows up the same stairs,
+    // anything else turns up somewhere else on the new floor
+    const kinds = this.entities.map((e) => ({ kind: e.kind, chasing: this.chasers.has(e) }));
+    for (const e of this.entities) { e.remove(); this.onChaseEnd(e); }
+    this.entities = [];
+    for (const { kind, chasing } of kinds) {
+      if (chasing && via.cell) {
+        const at = this.time + 2.2 + Math.random() * 1.5, token = (this.floorToken = (this.floorToken || 0) + 1);
+        this.schedule(2.2 + Math.random() * 1.5, () => {
+          if (this.floorK !== k || token !== this.floorToken || !this.player.alive) { this.spawnFar(kind); return; }
+          const e = spawnEntity(this, kind, via.cell);
+          this.entities.push(e);
+          e.onNoise(this.player.pos.x, this.player.pos.z, 1, 'alert');
+          this.audio.stinger();
+        });
+        void at;
+      } else this.spawnFar(kind);
+    }
+    void prev;
+  }
+  spawnFar(kind) {
+    const [px, pz] = this.map.cellOf(this.player.pos.x, this.player.pos.z);
+    const c = randomReachableCell(this.map, Math.random, px, pz, 9, 40) || randomReachableCell(this.map, Math.random, px, pz, 4, 60);
+    if (c) this.entities.push(spawnEntity(this, kind, c));
   }
 
   // ------------------------------------------------------------------ events
@@ -341,7 +423,7 @@ export class Game {
       // alarm: every entity converges on the panel
       setTimeout(() => this.emitNoise(fb.x, fb.z, 40, 'alert'), 1500);
       const sign = [];
-      this.built.exitObj.traverse((o) => { if (o.isMesh && o.material.userData.emissive) sign.push(o); });
+      this.exitFloor.built.exitObj.traverse((o) => { if (o.isMesh && o.material.userData.emissive) sign.push(o); });
       for (const s of sign) s.material.emissiveIntensity = 2.2;
     } else this.hud.toast(`Sekring terpasang (${this.fusesInstalled}/${this.def.fuses})`);
   }
@@ -422,8 +504,11 @@ export class Game {
     if (this.blackoutT > 0) { this.blackoutT -= dt; interference = this.blackoutT < 0.6 || Math.random() < 0.02 ? 0.6 : 0.1; }
     bakeUniforms.uFlicker.value = this.flickerVal;
     bakeUniforms.uPower.value = damp(bakeUniforms.uPower.value, interference, 20, dt);
-    if (this.built.fixtureMats.flicker) this.built.fixtureMats.flicker.emissiveIntensity = this.flickerVal;
-    if (this.built.fixtureMats.on) this.built.fixtureMats.on.emissiveIntensity = bakeUniforms.uPower.value;
+    for (const f of this.floors) {
+      const fm = f.built.fixtureMats;
+      if (fm.flicker) fm.flicker.emissiveIntensity = this.flickerVal;
+      if (fm.on) fm.on.emissiveIntensity = bakeUniforms.uPower.value;
+    }
     bakeUniforms.uNV.value = p.nightVision ? 0.55 : 0;
     this.themeT -= dt;
     if (this.themeT <= 0) {
@@ -620,10 +705,15 @@ export class Game {
     if (this.cullT > 0) return;
     this.cullT = 0.2;
     const c = this.camera.position, far = this.player.nightVision ? 40 : 34;
-    for (const m of this.built.chunked) {
+    for (const m of this.floors.flatMap((f) => (f.built.root.visible ? f.built.chunked : []))) {
       const b = m.userData.chunk;
       const dx = Math.max(b.minX - c.x, 0, c.x - b.maxX), dz = Math.max(b.minZ - c.z, 0, c.z - b.maxZ);
       m.visible = dx * dx + dz * dz < far * far;
+    }
+    // doors are separate animated objects: skip the ones the fog has eaten
+    for (const f of this.floors) {
+      const show = f.built.root.visible;
+      for (const d of f.built.doors) if (d.obj) d.obj.visible = show && (d.x - c.x) ** 2 + (d.z - c.z) ** 2 < far * far;
     }
   }
   adaptResolution(dt) {
