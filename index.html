@@ -158,6 +158,45 @@
       backdrop-filter: blur(4px);
     }
 
+    /* Sub-Zero Cryogenic Frost Vignette Overlay (Sector 6) */
+    #frost-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 14;
+      display: none;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+      background: radial-gradient(circle at center, transparent 45%, rgba(180, 240, 255, 0.08) 72%, rgba(120, 225, 255, 0.38) 100%);
+      box-shadow: inset 0 0 110px rgba(0, 229, 255, 0.35);
+    }
+
+    /* M.E.G. Field Backpack Items Styling */
+    .backpack-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(14, 24, 34, 0.88);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      color: #fff;
+      transition: background 0.18s, border-color 0.18s, transform 0.1s;
+    }
+    .backpack-btn:hover {
+      background: rgba(0, 229, 255, 0.18);
+      border-color: #00ffcc;
+      transform: translateY(-1px);
+    }
+    .backpack-btn:active {
+      transform: translateY(1px);
+    }
+
     /* CCTV Security Surveillance Overlay */
     #cctv-overlay {
       position: absolute;
@@ -1148,6 +1187,7 @@
 
   <!-- VHS Noise & Lens Layers -->
   <div id="vhs-overlay"></div>
+  <div id="frost-overlay"></div>
   <div id="sanity-vignette"></div>
 
   <!-- Locker Slit Peeping Overlay -->
@@ -1309,6 +1349,7 @@
       <button type="button" class="m-btn m-btn-sm" id="m-btn-mode" title="Mode Kamera: Normal / NVG / FLIR">MODE</button>
       <button type="button" class="m-btn m-btn-sm" id="m-btn-zoom" title="Zoom Lensa Camcorder">ZOOM</button>
       <button type="button" class="m-btn m-btn-sm" id="m-btn-breath" title="Tahan Nafas">NAFAS</button>
+      <button type="button" class="m-btn m-btn-sm" id="m-btn-backpack" title="Ransel Inventaris Taktis (TAB)" onclick="if(window.toggleBackpack)window.toggleBackpack()" style="border-color:rgba(0,255,200,0.6) !important; color:#00ffcc !important;">TAS</button>
       <button type="button" class="m-btn m-btn-sm" id="m-btn-menu-touch" title="Menu Jeda & Pengaturan" onclick="if(window.toggleGamePause)window.toggleGamePause(event)">MENU</button>
     </div>
 
@@ -1344,6 +1385,63 @@
       <div style="margin-top:12px; display:flex; justify-content:space-between; font-size:10px; color:#88b0cc; line-height:1.6; flex-wrap:wrap; gap:4px;">
         <div><span style="color:#00ff88;">▲</span> Anda &bull; <span style="color:#ffcc00;">★</span> Objektif &bull; <span style="color:#d946ef;">◉</span> UV Aman &bull; <span style="color:#00e5ff;">⚡</span> Panel Listrik</div>
         <div>[M / DENAH] Tutup</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M.E.G. Field Survival Backpack Quick-Bar Overlay (TAB / TAS) -->
+  <div id="backpack-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(3,7,12,0.88); z-index:112; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; box-sizing:border-box; backdrop-filter:blur(8px);">
+    <div style="max-width:480px; width:100%; background:rgba(8,18,24,0.95); border:1px solid rgba(0,255,200,0.45); border-radius:10px; padding:18px; box-shadow:0 0 35px rgba(0,255,200,0.2); font-family:monospace;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,255,200,0.3); padding-bottom:8px; margin-bottom:14px;">
+        <span style="color:#00ffcc; font-size:12px; font-weight:bold; letter-spacing:1.5px;">🎒 RANSEL LOGISTIK M.E.G. // FIELD KIT</span>
+        <button id="btn-close-backpack" onclick="if(window.toggleBackpack)window.toggleBackpack()" style="background:transparent; border:1px solid rgba(255,100,100,0.5); color:#ff6666; font-size:11px; padding:3px 10px; border-radius:4px; cursor:pointer;">✕ TUTUP</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+        <button type="button" class="backpack-btn" onclick="if(window.useAlmondWater)window.useAlmondWater()">
+          <span style="font-size:18px;">🥫</span>
+          <div style="text-align:left;">
+            <div style="color:#fff; font-size:11px; font-weight:bold;">AIR ALMON (<span id="bp-almond-count">1</span>)</div>
+            <div style="color:#88d0aa; font-size:9px;">+35 Sanity & Stamina Penuh</div>
+          </div>
+        </button>
+        <button type="button" class="backpack-btn" onclick="if(window.useAdrenaline)window.useAdrenaline()">
+          <span style="font-size:18px;">💉</span>
+          <div style="text-align:left;">
+            <div style="color:#fff; font-size:11px; font-weight:bold;">SUNTIKAN ADRENALIN (<span id="bp-adren-count">0</span>)</div>
+            <div style="color:#88e0ff; font-size:9px;">Speed Sprint Rush (9s)</div>
+          </div>
+        </button>
+        <button type="button" class="backpack-btn" onclick="if(window.useBatteryPack)window.useBatteryPack()">
+          <span style="font-size:18px;">🔋</span>
+          <div style="text-align:left;">
+            <div style="color:#fff; font-size:11px; font-weight:bold;">BATERAI 9V (<span id="bp-battery-count">1</span>)</div>
+            <div style="color:#ffdd88; font-size:9px;">+35% Daya Camcorder</div>
+          </div>
+        </button>
+        <button type="button" class="backpack-btn" onclick="if(window.deployLaserTripwire){window.toggleBackpack();window.deployLaserTripwire();}">
+          <span style="font-size:18px;">🚨</span>
+          <div style="text-align:left;">
+            <div style="color:#fff; font-size:11px; font-weight:bold;">LASER EMP (<span id="bp-laser-count">2</span>)</div>
+            <div style="color:#ff8899; font-size:9px;">Pasang Perangkap Stun</div>
+          </div>
+        </button>
+        <button type="button" class="backpack-btn" onclick="if(window.dropGlowstick){window.toggleBackpack();window.dropGlowstick();}">
+          <span style="font-size:18px;">💡</span>
+          <div style="text-align:left;">
+            <div style="color:#fff; font-size:11px; font-weight:bold;">GLOWSTICK (<span id="bp-glow-count">3</span>)</div>
+            <div style="color:#00ffcc; font-size:9px;">Tandai Jalur Ruangan</div>
+          </div>
+        </button>
+        <button type="button" class="backpack-btn" onclick="if(window.drawChalkMark){window.toggleBackpack();window.drawChalkMark();}">
+          <span style="font-size:18px;">✏️</span>
+          <div style="text-align:left;">
+            <div style="color:#fff; font-size:11px; font-weight:bold;">KAPUR (<span id="bp-chalk-count">6</span>)</div>
+            <div style="color:#aaddff; font-size:9px;">Gores Simbol Dinding</div>
+          </div>
+        </button>
+      </div>
+      <div style="font-size:10px; color:#6ea0aa; text-align:center;">
+        Tekan [TAB] di PC atau ketuk [TAS] di HP untuk buka/tutup cepat
       </div>
     </div>
   </div>
@@ -1437,6 +1535,7 @@
           <button type="button" class="gfx-btn" data-sector="3" onclick="if(window.selectStartSector)window.selectStartSector(3)" style="padding: 5px 10px; font-size: 10px;">SEKTOR III</button>
           <button type="button" class="gfx-btn" data-sector="4" onclick="if(window.selectStartSector)window.selectStartSector(4)" style="padding: 5px 10px; font-size: 10px;">SEKTOR IV</button>
           <button type="button" class="gfx-btn" data-sector="5" onclick="if(window.selectStartSector)window.selectStartSector(5)" style="padding: 5px 10px; font-size: 10px;">SEKTOR V</button>
+          <button type="button" class="gfx-btn" data-sector="6" onclick="if(window.selectStartSector)window.selectStartSector(6)" style="padding: 5px 10px; font-size: 10px; color:#00ffcc;">SEKTOR VI</button>
         </div>
       </div>
 
@@ -1474,6 +1573,7 @@
         <div class="guide-row"><span>V / FLASH</span>: UV Strobe Flashburst (Stun Anomali 5.5s)</div>
         <div class="guide-row"><span>H / SCAN</span>: Pindai AR Waypoint Objektif 3D</div>
         <div class="guide-row"><span>B / LASER</span>: Pasang Jebakan Sensor Laser EMP</div>
+        <div class="guide-row"><span>TAB / TAS</span>: Buka Ransel Logistik M.E.G. (Item Quick-Bar)</div>
         <div class="guide-row"><span>Klik Badge KAPUR</span>: Ganti Simbol (Panah / Bahaya / Aman)</div>
       </div>
     </div>
@@ -1498,11 +1598,11 @@
     </div>
     <h1 class="win-title">ASCENDED: SURVIVED</h1>
     <p style="color:#99eebb; max-width: 480px; margin-bottom: 16px; font-size: 13px; line-height: 1.6;">
-      Gerbang Cermin Sejati berhasil ditembus! Anda menuntaskan seluruh <strong>5 Sektor Neraka Bersih (The Clean Rooms)</strong> dan meloloskan diri ke dunia nyata bersama seluruh rekaman Camcorder 1996!
+      Gerbang Kedap Udara Sub-Core berhasil dibuka! Anda menuntaskan seluruh <strong>6 Sektor Neraka Bersih (The Clean Rooms)</strong> dan meloloskan diri ke permukaan bersama seluruh rekaman Camcorder 1996!
     </p>
     <div id="win-stats-card" style="background: rgba(10,25,20,0.72); border: 1px solid rgba(0,255,136,0.35); border-radius: 8px; padding: 14px 22px; margin-bottom: 22px; font-family: monospace; font-size: 12px; color: #ccffdd; max-width: 360px; width: 100%; text-align: left; line-height: 1.8; box-shadow: 0 0 20px rgba(0,255,136,0.15);">
       <div>⏱️ DURASI TAPE: <span id="win-tape-time" style="color:#00ff88; font-weight:bold;">00:00:00</span></div>
-      <div>💠 SEKTOR: <span style="color:#00ff88; font-weight:bold;">5 / 5 LENGKAP (100%)</span></div>
+      <div>💠 SEKTOR: <span id="win-sector-count" style="color:#00ff88; font-weight:bold;">6 / 6 LENGKAP (100%)</span></div>
       <div>⚔️ MODE ANCAMAN: <span id="win-diff-badge" style="color:#00e5ff; font-weight:bold;">STANDAR (1996)</span></div>
       <div>📸 BUKTI ANOMALI: <span id="win-photo-count" style="color:#f0abfc; font-weight:bold;">0 FOTO</span></div>
       <div>🧠 SISA SANITY: <span id="win-sanity-pct" style="color:#00ff88; font-weight:bold;">100%</span></div>
@@ -1518,7 +1618,7 @@
   window.gameDifficulty = 'normal';
   try {
     const savedSec = parseInt(localStorage.getItem('hellroom_checkpoint_sector') || '1', 10);
-    if (savedSec >= 1 && savedSec <= 5) window.selectedStartSector = savedSec;
+    if (savedSec >= 1 && savedSec <= 6) window.selectedStartSector = savedSec;
   } catch (e) {}
 
   window.selectDifficulty = function(diff) {
@@ -2790,6 +2890,84 @@
         osc.stop(now + 0.2);
       }
 
+      playCryoHiss() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.75);
+        const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.45));
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(820, now);
+        filter.Q.setValueAtTime(3.2, now);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.24, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.master);
+        noise.start(now);
+      }
+
+      playSpecimenCrawlerHiss() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 4; i++) {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          const t = now + i * 0.08;
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(2350 - i * 320, t);
+          osc.frequency.exponentialRampToValueAtTime(360, t + 0.07);
+          g.gain.setValueAtTime(0.32, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.075);
+          osc.connect(g);
+          g.connect(this.master);
+          osc.start(t);
+          osc.stop(t + 0.08);
+        }
+      }
+
+      playHydraulicDoor() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(65, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.6);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 1.2);
+        g.gain.setValueAtTime(0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc.connect(g);
+        g.connect(this.master);
+        osc.start(now);
+        osc.stop(now + 1.25);
+      }
+
+      playBackpackToggle() {
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.12);
+        g.gain.setValueAtTime(0.25, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        osc.connect(g);
+        g.connect(this.master);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
     }
 
     const audio = new SoundEngine();
@@ -3213,6 +3391,81 @@
         ctx.bezierCurveTo(180, Math.random() * 512, 320, Math.random() * 512, 512, Math.random() * 512);
         ctx.stroke();
       }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createCryoFloorTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0a1418';
+      ctx.fillRect(0, 0, 512, 512);
+
+      const step = 32;
+      ctx.fillStyle = '#04080a';
+      for (let x = 8; x < 512; x += step) {
+        for (let y = 8; y < 512; y += step) {
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.fillStyle = 'rgba(255, 185, 0, 0.35)';
+      ctx.fillRect(0, 0, 512, 16);
+      ctx.fillRect(0, 496, 512, 16);
+      ctx.fillStyle = 'rgba(0, 229, 255, 0.2)';
+      for (let i = 0; i < 512; i += 48) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + 24, 16);
+        ctx.lineTo(i + 12, 16);
+        ctx.lineTo(i - 12, 0);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = 'rgba(180, 240, 255, 0.18)';
+      for (let f = 0; f < 35; f++) {
+        ctx.fillRect(Math.random() * 500, Math.random() * 500, Math.random() * 8 + 3, Math.random() * 8 + 3);
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createCryoWallTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0d181e';
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.3)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(8, 8, 496, 496);
+
+      ctx.fillStyle = 'rgba(190, 245, 255, 0.22)';
+      ctx.fillRect(8, 8, 496, 32);
+      ctx.fillRect(8, 472, 496, 32);
+
+      ctx.strokeStyle = '#00ffcc';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(256, 256, 42, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#00ffcc';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('CRYO SECTOR // 06', 256, 330);
 
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = THREE.RepeatWrapping;
@@ -3769,6 +4022,116 @@
       return group;
     }
 
+    function createCreepySpecimenCrawlerMesh() {
+      const group = new THREE.Group();
+      const matChitin = new THREE.MeshStandardMaterial({ color: 0x070b0e, roughness: 0.18, metalness: 0.88 });
+      const matToxicBio = new THREE.MeshStandardMaterial({ color: 0x00ffaa, emissive: 0x00e5ff, emissiveIntensity: 2.2, roughness: 0.15 });
+      const matEyeGlow = new THREE.MeshStandardMaterial({ color: 0xff0044, emissive: 0xff0044, emissiveIntensity: 3.8 });
+      const matVein = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ff88, emissiveIntensity: 1.8 });
+
+      // Low elongated hunched carapace (hunched bug torso)
+      const carapace = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.52, 1.6, 10), matChitin);
+      carapace.rotation.x = Math.PI / 2;
+      carapace.position.set(0, 0.42, 0);
+      group.add(carapace);
+
+      // Pulsating glowing bio-core in center dorsal slit
+      const bioCore = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 10), matToxicBio);
+      bioCore.scale.set(0.7, 0.5, 1.4);
+      bioCore.position.set(0, 0.52, 0);
+      group.add(bioCore);
+      group.bioCore = bioCore;
+
+      // Segmented dorsal armor plates
+      [-0.4, -0.1, 0.2, 0.5].forEach((zPos, sIdx) => {
+        const plate = new THREE.Mesh(new THREE.BoxGeometry(0.7 - sIdx * 0.08, 0.12, 0.26), matChitin);
+        plate.position.set(0, 0.56, zPos);
+        plate.rotation.x = -0.15;
+        group.add(plate);
+      });
+
+      // Predatory head & compound eyes
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), matChitin);
+      head.position.set(0, 0.44, 0.95);
+      head.scale.set(1.1, 0.8, 1.2);
+      group.add(head);
+
+      // Cluster of 6 glowing sensory eyes
+      [-0.14, -0.06, 0.06, 0.14].forEach((ex) => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.038, 6, 6), matEyeGlow);
+        eye.position.set(ex, 0.52 - Math.abs(ex) * 0.2, 1.14);
+        group.add(eye);
+      });
+
+      // Sharp serrated mandibles
+      [-0.12, 0.12].forEach(mx => {
+        const mandible = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.32, 5), matVein);
+        mandible.rotation.x = -Math.PI / 3;
+        mandible.rotation.z = (mx > 0 ? -0.4 : 0.4);
+        mandible.position.set(mx, 0.32, 1.18);
+        group.add(mandible);
+      });
+
+      // 6 articulated jointed scythe legs (3 on each side)
+      const legPairs = [];
+      [-0.5, 0, 0.5].forEach((lz, idx) => {
+        [-1, 1].forEach(side => {
+          const legGroup = new THREE.Group();
+          legGroup.position.set(side * 0.38, 0.4, lz);
+
+          const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.65, 6), matChitin);
+          upper.rotation.z = side * (Math.PI / 3.2);
+          upper.position.set(side * 0.28, 0.18, 0);
+          legGroup.add(upper);
+
+          const lower = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.75, 5), matChitin);
+          lower.rotation.z = side * (-Math.PI / 4);
+          lower.position.set(side * 0.62, -0.22, 0);
+          legGroup.add(lower);
+
+          group.add(legGroup);
+          legPairs.push({ group: legGroup, side: side, baseZ: lz, phaseOffset: idx * 1.2 + (side > 0 ? Math.PI : 0) });
+        });
+      });
+      group.legPairs = legPairs;
+
+      return group;
+    }
+
+    function createCryoVatMesh() {
+      const group = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.72, 0.35, 16), new THREE.MeshStandardMaterial({ color: 0x141e24, metalness: 0.9, roughness: 0.2 }));
+      base.position.y = 0.18;
+      group.add(base);
+
+      const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 2.2, 16), new THREE.MeshStandardMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.4,
+        roughness: 0.05,
+        metalness: 0.3
+      }));
+      glass.position.y = 1.38;
+      group.add(glass);
+
+      const topCap = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.65, 0.3, 16), new THREE.MeshStandardMaterial({ color: 0x141e24, metalness: 0.9, roughness: 0.2 }));
+      topCap.position.y = 2.58;
+      group.add(topCap);
+
+      const specimen = new THREE.Mesh(new THREE.ConeGeometry(0.24, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0x071116, emissive: 0x005544, emissiveIntensity: 0.8 }));
+      specimen.rotation.x = Math.PI;
+      specimen.position.y = 1.4;
+      group.add(specimen);
+
+      if (!isMobileDevice) {
+        const vLight = new THREE.PointLight(0x00ffcc, 1.2, 6, 2);
+        vLight.position.y = 0.5;
+        group.add(vLight);
+      }
+
+      return group;
+    }
+
     /* ==========================================================================
        5. GAME ENGINE & THREE.JS SETUP
        ========================================================================== */
@@ -3848,6 +4211,11 @@
       primersTotal: 3,
       mirrorShardsCollected: 0,
       mirrorShardsTotal: 3,
+      cryoVialsCollected: 0,
+      cryoVialsTotal: 3,
+      almondCans: 1,
+      adrenalineDoses: 0,
+      batteryPacks: 1,
       currentNoiseDb: -42,
       alive: true,
       escaped: false,
@@ -3943,6 +4311,22 @@
       chaseSpeed: 6.0,
       state: 'STALK',
       patrolTimer: 0,
+      stunTimer: 0
+    };
+
+    // Level 6 Entity: Specimen-07 "The Chitinous Bio-Crawler" (Labirin Krionik)
+    const specimenCrawler = {
+      mesh: null,
+      x: 0,
+      y: 0,
+      z: 0,
+      targetX: 0,
+      targetZ: 0,
+      speed: 3.8,
+      chaseSpeed: 6.6,
+      state: 'PATROL',
+      patrolTimer: 0,
+      crawlPhase: 0,
       stunTimer: 0
     };
 
@@ -4158,6 +4542,7 @@
       if (staticSeraph.mesh) scene.remove(staticSeraph.mesh);
       if (scpArchitect.mesh) scene.remove(scpArchitect.mesh);
       if (mirrorDoppelganger.mesh) scene.remove(mirrorDoppelganger.mesh);
+      if (specimenCrawler.mesh) scene.remove(specimenCrawler.mesh);
       lockers.length = 0;
       cctvStations.length = 0;
       cctvCameras.length = 0;
@@ -4172,6 +4557,8 @@
       player.scanTimer = 0;
       const wpMarker = document.getElementById('waypoint-marker');
       if (wpMarker) wpMarker.style.display = 'none';
+      const frostEl = document.getElementById('frost-overlay');
+      if (frostEl) { frostEl.style.display = 'none'; frostEl.style.opacity = '0'; }
       if (isMapOpen) toggleBlueprintMap();
     }
 
@@ -4204,6 +4591,9 @@
       } else if (lvl === 5) {
         WALL_HEIGHT = 4.5;
         buildLevel5();
+      } else if (lvl === 6) {
+        WALL_HEIGHT = 4.6;
+        buildLevel6();
       }
     }
 
@@ -4710,8 +5100,11 @@
           player.tripwireAmmo = (player.tripwireAmmo || 0) + 1;
           player.glowstickAmmo = (player.glowstickAmmo || 0) + 2;
           player.mugsHeld = (player.mugsHeld || 0) + 1;
+          player.almondCans = (player.almondCans || 0) + 1;
+          player.batteryPacks = (player.batteryPacks || 0) + 1;
           player.battery = Math.min(100, player.battery + 35);
           player.sanity = Math.min(player.sanityMax, player.sanity + 25);
+          if (typeof updateBackpackHUD === 'function') updateBackpackHUD();
 
           const twCount = document.getElementById('tripwire-count');
           const twBadge = document.getElementById('m-tripwire-badge');
@@ -4923,6 +5316,10 @@
         5: [
           { title: "LOG PURGATORI CERMIN #01", body: "<strong>ANOMALI ENTITAS DOPPELGANGER:</strong><br><br>Bayangan cermin meniru langkah Anda saat berada di belakang pandangan. Gunakan teknik jongkok senyap (C / JONGKOK) dan sorot senter ke arahnya untuk memperlambat serangannya." },
           { title: "INTRUKSI DEKONTAMINASI UV", body: "<strong>ZONA AMAN ULTRAVIOLET:</strong><br><br>Pancaran sinar UV ungu menstabilkan gelombang otak dan memulihkan Sanity (kewarasan). Minum air dari dispenser steril untuk mengembalikan kestabilan mental." }
+        ],
+        6: [
+          { title: "LOG LABORATORIUM SUB-CORE #07", body: "<strong>ANOMALI SPESIMEN-07 (THE CHITINOUS CRAWLER):</strong><br><br>Organisme bio-predator yang berkembang biak pada suhu -18°C. Memiliki indera pendengaran dan pendeteksi suhu yang sangat sensitif. Menembakinya dengan <em>UV Strobe Flash</em> atau <em>Sensor Laser EMP</em> akan melumpuhkan gerakannya selama 5 detik." },
+          { title: "PROTOKOL PINTU KEDAP UDARA #06", body: "<strong>EVAKUASI SUB-CORE KRIONIK:</strong><br><br>Tiga tabung sampel biometrik vital harus diambil dari konsol pendingin di setiap sayap fasilitas untuk membuka kunci pneumatik pintu hidrolik keluar." }
         ]
       };
 
@@ -5055,9 +5452,11 @@
           label: '[E / AKSI] Ambil Baterai Cadangan (+35% Daya)',
           interact: function() {
             player.battery = Math.min(100, player.battery + 35);
+            player.batteryPacks = (player.batteryPacks || 0) + 1;
+            if (typeof updateBackpackHUD === 'function') updateBackpackHUD();
             audio.playItemPickup();
             triggerHaptic([35, 25, 50]);
-            showHUDNotification('🔋 +35% DAYA BATERAI TERSERAP');
+            showHUDNotification('🔋 +35% DAYA BATERAI TERSERAP (DISIMPAN KE RANSEL)');
             levelMeshesGroup.remove(batGroup);
             return true;
           }
@@ -5104,14 +5503,13 @@
         x: sx,
         z: sz,
         radius: 1.8,
-        label: '[E / AKSI] Ambil & Gunakan Suntikan Adrenalin Medis',
+        label: '[E / AKSI] Ambil Suntikan Adrenalin Medis (Ransel)',
         interact: function() {
-          player.sanity = Math.min(player.sanityMax, player.sanity + 50);
-          player.stamina = player.staminaMax;
-          player.adrenalineRushTimer = 9.0;
+          player.adrenalineDoses = (player.adrenalineDoses || 0) + 1;
+          if (typeof updateBackpackHUD === 'function') updateBackpackHUD();
           audio.playItemPickup();
           triggerHaptic([60, 40, 90]);
-          showHUDNotification('💉 ADRENALIN DIAKTIFKAN! STAMINA PENUH & KECEPATAN NAIK');
+          showHUDNotification('💉 SUNTIKAN ADRENALIN DIAMBIL (TEKAN TAB / TAS)');
           levelMeshesGroup.remove(syrGroup);
           return true;
         }
@@ -5145,13 +5543,13 @@
           x: cx,
           z: cz,
           radius: 1.8,
-          label: '[E / AKSI] Minum Kaleng Air Almon (+35 Sanity & Stamina Maksimal)',
+          label: '[E / AKSI] Ambil Kaleng Air Almon (Ransel)',
           interact: function() {
-            player.sanity = Math.min(player.sanityMax, player.sanity + 35);
-            player.stamina = player.staminaMax;
+            player.almondCans = (player.almondCans || 0) + 1;
+            if (typeof updateBackpackHUD === 'function') updateBackpackHUD();
             audio.playCanOpen();
             triggerHaptic([45, 30, 60]);
-            showHUDNotification('🥫 AIR ALMON SEGAR: +35 SANITY & STAMINA PENUH');
+            showHUDNotification('🥫 AIR ALMON DIAMBIL (TEKAN TAB / TAS)');
             levelMeshesGroup.remove(canGroup);
             return true;
           }
@@ -5164,7 +5562,8 @@
       2: "<strong>[TRANSMISI OPERATOR PURGATORI OBSIDIAN]:</strong><br><br>\"Suhu air terus membeku... Penyelam kuningan purba itu berpatroli di palung air. Matanya buta akibat tekanan laut dalam, tapi ia bisa merasakan getaran cipratan air dari jarak 20 meter! Jangan pernah berlari (SPRINT) di dalam air! Berjalanlah pelan atau merangkak (C). Putar ketiga katup kuningan di dinding untuk menguras palka keluar!\"",
       3: "<strong>[CATATAN ARSIP RADIO ANOMALI FREKUENSI 42.4]:</strong><br><br>\"Static Seraph adalah anomali resonansi frekuensi murni. Tubuhnya dikelilingi cincin emas berputar dengan puluhan mata kosmik. Perhatikan indikator EMF di camcorder Anda! Jika meteran EMF melonjak ke LEVEL 5, segera sembunyikan diri di loker atau di balik lemari arsip monolitik marmer sampai distorsi suara mereda!\"",
       4: "<strong>[MEMO PROTOKOL KATEDRAL STERIL SEKTOR 0]:</strong><br><br>\"Anda telah mencapai fasilitas pemurnian tertinggi... Sang Arsitek (SCP-000) mengawasi seluruh aula dengan jarum halo emasnya. Jangan berdiri di bawah sorot cahaya halo-nya. Aktifkan ketiga Decontamination Primers di masing-masing ruangan untuk membuka gerbang lift menuju Sektor Purgatori Cermin!\"",
-      5: "<strong>[TRANSMISI TERAKHIR - GERBANG KENAIKAN]:</strong><br><br>\"Sektor Omega... Dimensi Cermin Sejati. Bayangan Doppelganger Anda sendiri akan mengejar saat Anda membelakanginya! Sorotkan berkas cahaya senter Anda langsung ke arahnya untuk memperlambat langkahnya. Kumpulkan ketiga Fragmen Cermin Jiwa untuk menstabilkan portal dan keluar ke dunia nyata selamanya!\""
+      5: "<strong>[TRANSMISI TERAKHIR - GERBANG KENAIKAN]:</strong><br><br>\"Sektor Omega... Dimensi Cermin Sejati. Bayangan Doppelganger Anda sendiri akan mengejar saat Anda membelakanginya! Sorotkan berkas cahaya senter Anda langsung ke arahnya untuk memperlambat langkahnya. Kumpulkan ketiga Fragmen Cermin Jiwa untuk menstabilkan portal dan keluar ke dunia nyata selamanya!\"",
+      6: "<strong>[TRANSMISI DARURAT - UNIT DEKONTAMINASI M.E.G.]:</strong><br><br>\"Panggilan darurat! Anda telah memasuki Sektor VI: The Cryogenic Sub-Core... Suhu di sini berada di bawah titik beku dan camcorder Anda akan mulai membeku! Spesimen-07 sedang berburu di lorong ventilasi. Kumpulkan 3 tabung sampel vital dari konsol krionik untuk membuka Pintu Kedap Udara Sub-Core menuju helikopter evakuasi! Buka ransel Anda (TAB / TAS) untuk menggunakan stok baterai, adrenalin, atau air almon!\""
     };
 
     function openTransmission(lvl) {
@@ -5233,6 +5632,89 @@
         }
       });
     }
+
+    let isBackpackOpen = false;
+    window.toggleBackpack = function() {
+      isBackpackOpen = !isBackpackOpen;
+      const bp = document.getElementById('backpack-overlay');
+      if (bp) bp.style.display = isBackpackOpen ? 'flex' : 'none';
+      if (isBackpackOpen) {
+        audio.playBackpackToggle();
+        updateBackpackHUD();
+        if (document.exitPointerLock) {
+          try { document.exitPointerLock(); } catch(e) {}
+        }
+      } else {
+        if (!(window.isMobileOrTouchDevice && window.isMobileOrTouchDevice()) && canvas) {
+          try { canvas.requestPointerLock?.(); } catch(e) {}
+        }
+      }
+    };
+
+    function updateBackpackHUD() {
+      const aEl = document.getElementById('bp-almond-count');
+      if (aEl) aEl.innerText = player.almondCans || 0;
+      const adEl = document.getElementById('bp-adren-count');
+      if (adEl) adEl.innerText = player.adrenalineDoses || 0;
+      const bEl = document.getElementById('bp-battery-count');
+      if (bEl) bEl.innerText = player.batteryPacks || 0;
+      const lEl = document.getElementById('bp-laser-count');
+      if (lEl) lEl.innerText = player.tripwireAmmo || 0;
+      const gEl = document.getElementById('bp-glow-count');
+      if (gEl) gEl.innerText = player.glowstickAmmo || 0;
+      const cEl = document.getElementById('bp-chalk-count');
+      if (cEl) cEl.innerText = player.chalkAmmo || 0;
+    }
+    window.updateBackpackHUD = updateBackpackHUD;
+
+    window.useAlmondWater = function() {
+      if ((player.almondCans || 0) <= 0) {
+        audio.playDoor(false);
+        showHUDNotification('❌ TIDAK ADA KALENG AIR ALMON DI RANSEL');
+        return;
+      }
+      player.almondCans--;
+      player.sanity = Math.min(player.sanityMax, player.sanity + 35);
+      player.stamina = player.staminaMax;
+      audio.playCanOpen();
+      triggerHaptic([45, 30, 60]);
+      showHUDNotification('🥫 AIR ALMON DIKONSUMSI: +35 SANITY & STAMINA PENUH');
+      updateBackpackHUD();
+    };
+
+    window.useAdrenaline = function() {
+      if ((player.adrenalineDoses || 0) <= 0) {
+        audio.playDoor(false);
+        showHUDNotification('❌ TIDAK ADA SUNTIKAN ADRENALIN DI RANSEL');
+        return;
+      }
+      player.adrenalineDoses--;
+      player.sanity = Math.min(player.sanityMax, player.sanity + 50);
+      player.stamina = player.staminaMax;
+      player.adrenalineRushTimer = 9.0;
+      audio.playItemPickup();
+      triggerHaptic([60, 40, 90]);
+      showHUDNotification('💉 ADRENALIN RUSH AKTIF: KECEPATAN SPRINT MAKSIMAL!');
+      updateBackpackHUD();
+    };
+
+    window.useBatteryPack = function() {
+      if ((player.batteryPacks || 0) <= 0) {
+        audio.playDoor(false);
+        showHUDNotification('❌ TIDAK ADA BATERAI 9V CADANGAN DI RANSEL');
+        return;
+      }
+      if (player.battery >= 98) {
+        showHUDNotification('⚡ BATERAI MASIH HAMPIR PENUH');
+        return;
+      }
+      player.batteryPacks--;
+      player.battery = Math.min(100, player.battery + 35);
+      audio.playItemPickup();
+      triggerHaptic([35, 25, 50]);
+      showHUDNotification('🔋 +35% DAYA BATERAI 9V BERHASIL DIISI');
+      updateBackpackHUD();
+    };
 
     function toggleBlueprintMap() {
       isMapOpen = !isMapOpen;
@@ -5317,12 +5799,12 @@
       interactiveObjects.forEach(obj => {
         const ox = (obj.x / worldSpan) * w;
         const oz = (obj.z / worldSpan) * h;
-        if (obj.type === 'key' || obj.type === 'valve' || obj.type === 'master_tape' || (obj.type === 'purity_primer' && !obj.activated) || (obj.type === 'mirror_shard' && !obj.collected)) {
+        if (obj.type === 'key' || obj.type === 'valve' || obj.type === 'master_tape' || (obj.type === 'purity_primer' && !obj.activated) || (obj.type === 'mirror_shard' && !obj.collected) || (obj.type === 'cryo_vial' && !obj.collected)) {
           ctx.fillStyle = '#ffcc00';
           ctx.font = 'bold 11px monospace';
           ctx.textAlign = 'center';
           ctx.fillText('★', ox, oz + 4);
-        } else if (obj.type === 'elevator' || obj.type === 'hatch' || obj.type === 'final_gate' || obj.type === 'final_elevator' || obj.type === 'mirror_exit') {
+        } else if (obj.type === 'elevator' || obj.type === 'hatch' || obj.type === 'final_gate' || obj.type === 'final_elevator' || obj.type === 'mirror_exit' || obj.type === 'cryo_blast_exit') {
           ctx.fillStyle = '#00ff88';
           ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
@@ -6138,10 +6620,10 @@
         x: ex,
         z: ez,
         radius: 2.8,
-        label: '[E / AKSI] Masuki Gerbang Cermin Sejati (Lepaskan Diri Dari Backrooms)',
+        label: '[E / AKSI] Masuki Gerbang Cermin Menuju Sektor VI // Cryogenic Sub-Core',
         interact: () => {
           if (player.mirrorShardsCollected >= player.mirrorShardsTotal) {
-            triggerWin();
+            triggerTransition(6, 'Lift turun deras menembus kebekuan sub-zero SEKTOR VI: THE CRYOGENIC SUB-CORE. Waspadai anomali Spesimen-07.');
           } else {
             audio.playDoor(false);
             const prompt = document.getElementById('interact-prompt');
@@ -6191,7 +6673,7 @@
             document.getElementById('objective-hud').innerText = `🪞 ${player.mirrorShardsCollected}/${player.mirrorShardsTotal} FRAGMEN CERMIN`;
             if (player.mirrorShardsCollected >= player.mirrorShardsTotal) {
               audio.playBreachAlarm();
-              document.getElementById('objective-hud').innerText = `🪞 CERMIN UTUH! MASUKI GERBANG CERMIN SEJATI!`;
+              document.getElementById('objective-hud').innerText = `🪞 CERMIN UTUH! MASUKI GERBANG CERMIN MENUJU SEKTOR VI!`;
             }
             return true;
           }
@@ -6212,6 +6694,231 @@
       dMesh.position.set(mirrorDoppelganger.x, 0, mirrorDoppelganger.z);
       scene.add(dMesh);
       mirrorDoppelganger.mesh = dMesh;
+    }
+
+    /* ==========================================================================
+       LEVEL 6: SECTOR VI - THE CRYOGENIC SUB-CORE (LABIRIN KRIONIK & BIOMUTASI)
+       ========================================================================== */
+    function buildLevel6() {
+      document.getElementById('sector-hud').innerText = '1996.10.24 // SECTOR VI: THE CRYOGENIC SUB-CORE';
+      document.getElementById('objective-hud').innerText = '☣️ 0/3 SAMPEL VITAL';
+      audio.setAquaticAmbience(false);
+      audio.playCryoHiss();
+      player.isInWater = false;
+      player.cryoVialsCollected = 0;
+      player.cryoVialsTotal = 3;
+
+      const frostEl = document.getElementById('frost-overlay');
+      if (frostEl) {
+        frostEl.style.display = 'block';
+        frostEl.style.opacity = '0.9';
+      }
+
+      const floorTex = createCryoFloorTexture();
+      floorTex.repeat.set(GRID_SIZE / 2, GRID_SIZE / 2);
+      const wallTex = createCryoWallTexture();
+
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE),
+        new THREE.MeshStandardMaterial({
+          map: floorTex,
+          bumpMap: createTileBumpTexture(),
+          bumpScale: 0.05,
+          roughness: 0.22,
+          metalness: 0.75
+        })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set((GRID_SIZE * TILE_SIZE) / 2, 0, (GRID_SIZE * TILE_SIZE) / 2);
+      floor.receiveShadow = true;
+      levelMeshesGroup.add(floor);
+
+      const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE),
+        new THREE.MeshStandardMaterial({ color: 0x081015, roughness: 0.85, metalness: 0.4 })
+      );
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.position.set((GRID_SIZE * TILE_SIZE) / 2, WALL_HEIGHT, (GRID_SIZE * TILE_SIZE) / 2);
+      levelMeshesGroup.add(ceiling);
+
+      const wallGeo = new THREE.BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
+      const wallMat = new THREE.MeshStandardMaterial({
+        map: wallTex,
+        bumpMap: createWallBumpTexture(),
+        bumpScale: 0.045,
+        roughness: 0.35,
+        metalness: 0.65
+      });
+
+      for (let x = 0; x < GRID_SIZE; x++) {
+        for (let z = 0; z < GRID_SIZE; z++) {
+          if (map[x][z] === CELL_WALL) {
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            const wx = x * TILE_SIZE + TILE_SIZE / 2;
+            const wz = z * TILE_SIZE + TILE_SIZE / 2;
+            wall.position.set(wx, WALL_HEIGHT / 2, wz);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            levelMeshesGroup.add(wall);
+            wallColliders.push({ minX: wx - TILE_SIZE / 2, maxX: wx + TILE_SIZE / 2, minZ: wz - TILE_SIZE / 2, maxZ: wz + TILE_SIZE / 2 });
+          }
+        }
+      }
+
+      // Add Cryogenic Vats & Sub-zero blue atmosphere in rooms
+      rooms.forEach((rm, idx) => {
+        const rx = rm.cx * TILE_SIZE + TILE_SIZE / 2;
+        const rz = rm.cy * TILE_SIZE + TILE_SIZE / 2;
+
+        if (idx > 0) {
+          const vat = createCryoVatMesh();
+          vat.position.set(rx, 0, rz);
+          levelMeshesGroup.add(vat);
+          createPhysicalDoor(rm.x * TILE_SIZE, rm.cy * TILE_SIZE + TILE_SIZE / 2);
+        }
+
+        if (!isMobileDevice || idx < 4) {
+          const cryoColor = (idx % 2 === 0) ? 0x00e5ff : 0x00ff99;
+          const light = new THREE.PointLight(cryoColor, 1.8, 20, 1.5);
+          light.position.set(rx, WALL_HEIGHT - 0.4, rz);
+          levelMeshesGroup.add(light);
+          lights.push({ light: light, baseColor: cryoColor, flickerTimer: Math.random() * 5 + 3 });
+        }
+      });
+
+      spawnLevel6Objectives();
+      spawnLockersAndCCTV(6);
+    }
+
+    function spawnLevel6Objectives() {
+      const startRoom = rooms[0];
+      player.x = startRoom.cx * TILE_SIZE + TILE_SIZE / 2;
+      player.z = startRoom.cy * TILE_SIZE + TILE_SIZE / 2;
+      camera.position.set(player.x, player.y, player.z);
+
+      // Heavy Hydraulic Blast Doors (Final Sub-Core Extraction)
+      const exitRoom = rooms[rooms.length - 1];
+      const ex = exitRoom.cx * TILE_SIZE + TILE_SIZE / 2;
+      const ez = exitRoom.cy * TILE_SIZE + TILE_SIZE / 2;
+
+      const blastDoorGroup = new THREE.Group();
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(3.6, 3.8, 0.8),
+        new THREE.MeshStandardMaterial({ color: 0x161e24, metalness: 0.95, roughness: 0.25 })
+      );
+      frame.position.y = 1.9;
+      blastDoorGroup.add(frame);
+
+      const panelL = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 3.2, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0x223038, metalness: 0.9, roughness: 0.3 })
+      );
+      panelL.position.set(-0.7, 1.8, 0);
+      blastDoorGroup.add(panelL);
+
+      const panelR = panelL.clone();
+      panelR.position.set(0.7, 1.8, 0);
+      blastDoorGroup.add(panelR);
+
+      const hazardLight = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 2.5 })
+      );
+      hazardLight.position.set(0, 3.5, 0.45);
+      blastDoorGroup.add(hazardLight);
+
+      blastDoorGroup.position.set(ex, 0, ez);
+      levelMeshesGroup.add(blastDoorGroup);
+
+      interactiveObjects.push({
+        type: 'cryo_blast_exit',
+        x: ex,
+        z: ez,
+        radius: 3.2,
+        label: '[E / AKSI] Buka Pintu Kedap Udara Sub-Core (Evakuasi Terakhir)',
+        interact: () => {
+          if (player.cryoVialsCollected >= player.cryoVialsTotal) {
+            audio.playHydraulicDoor();
+            triggerWin();
+          } else {
+            audio.playDoor(false);
+            const prompt = document.getElementById('interact-prompt');
+            if (prompt) {
+              prompt.innerText = `[TERKUNCI] Butuh 3 Tabung Sampel Vital (${player.cryoVialsCollected}/${player.cryoVialsTotal})`;
+              prompt.style.display = 'block';
+            }
+          }
+        }
+      });
+
+      // 3 Biometric Cryogenic Injection Vials
+      const vialRooms = [rooms[1], rooms[Math.floor(rooms.length / 2)], rooms[Math.max(2, rooms.length - 2)]];
+      vialRooms.forEach((rm, i) => {
+        const vx = rm.cx * TILE_SIZE + 1.2;
+        const vz = rm.cy * TILE_SIZE - 1.2;
+
+        const vialGroup = new THREE.Group();
+        const cylinder = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.065, 0.065, 0.32, 10),
+          new THREE.MeshStandardMaterial({
+            color: 0x00ffcc,
+            emissive: 0x00ffaa,
+            emissiveIntensity: 2.2,
+            transparent: true,
+            opacity: 0.85,
+            roughness: 0.1
+          })
+        );
+        cylinder.position.y = 0.16;
+        vialGroup.add(cylinder);
+
+        const cap = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.08, 0.08, 0.06, 10),
+          new THREE.MeshStandardMaterial({ color: 0x243038, metalness: 0.9, roughness: 0.2 })
+        );
+        cap.position.y = 0.34;
+        vialGroup.add(cap);
+
+        vialGroup.position.set(vx, 0.8, vz);
+        levelMeshesGroup.add(vialGroup);
+
+        interactiveObjects.push({
+          type: 'cryo_vial',
+          mesh: vialGroup,
+          x: vx,
+          z: vz,
+          radius: 2.0,
+          collected: false,
+          label: `[E / AKSI] Ambil Tabung Sampel Biometrik Vital #${i + 1}`,
+          interact: function() {
+            if (this.collected) return false;
+            this.collected = true;
+            player.cryoVialsCollected++;
+            levelMeshesGroup.remove(vialGroup);
+            audio.playItemPickup();
+            triggerHaptic([60, 40, 80]);
+            document.getElementById('objective-hud').innerText = `☣️ ${player.cryoVialsCollected}/${player.cryoVialsTotal} SAMPEL VITAL`;
+            if (player.cryoVialsCollected >= player.cryoVialsTotal) {
+              audio.playBreachAlarm();
+              document.getElementById('objective-hud').innerText = `☣️ SAMPEL LENGKAP! BUKA PINTU KEDAP UDARA SUB-CORE!`;
+            }
+            return true;
+          }
+        });
+      });
+
+      // Spawn Specimen-07 "The Chitinous Bio-Crawler"
+      const bossRoom = rooms[Math.floor(rooms.length / 2)];
+      specimenCrawler.x = bossRoom.cx * TILE_SIZE + TILE_SIZE / 2;
+      specimenCrawler.z = bossRoom.cy * TILE_SIZE + TILE_SIZE / 2;
+      specimenCrawler.targetX = specimenCrawler.x;
+      specimenCrawler.targetZ = specimenCrawler.z;
+
+      const crawlerMesh = createCreepySpecimenCrawlerMesh();
+      crawlerMesh.position.set(specimenCrawler.x, 0, specimenCrawler.z);
+      scene.add(crawlerMesh);
+      specimenCrawler.mesh = crawlerMesh;
+      audio.playSpecimenCrawlerHiss();
     }
 
     /* Water Dispensers (Sanity Restoration) */
@@ -6503,11 +7210,12 @@
       if (currentLevel === 3 && staticSeraph.mesh) targets.push({ x: staticSeraph.x, z: staticSeraph.z });
       if (currentLevel === 4 && scpArchitect.mesh) targets.push({ x: scpArchitect.x, z: scpArchitect.z });
       if (currentLevel === 5 && mirrorDoppelganger.mesh) targets.push({ x: mirrorDoppelganger.x, z: mirrorDoppelganger.z });
+      if (currentLevel === 6 && specimenCrawler.mesh) targets.push({ x: specimenCrawler.x, z: specimenCrawler.z });
 
       // Plot nearby Objectives (Gold) and Exit (Cyan) on Sonar Radar
       interactiveObjects.forEach(obj => {
-        const isObj = (obj.type === 'key' || obj.type === 'valve' || obj.type === 'master_tape' || obj.type === 'primer' || obj.type === 'mirror_shard') && !obj.isTurned && !obj.activated;
-        const isExit = (obj.type === 'elevator' || obj.type === 'hatch' || obj.type === 'ascension_gate' || obj.type === 'sector0_elevator' || obj.type === 'mirror_portal');
+        const isObj = (obj.type === 'key' || obj.type === 'valve' || obj.type === 'master_tape' || obj.type === 'purity_primer' || obj.type === 'mirror_shard' || obj.type === 'cryo_vial') && !obj.collected && !obj.activated;
+        const isExit = (obj.type === 'elevator' || obj.type === 'hatch' || obj.type === 'final_gate' || obj.type === 'final_elevator' || obj.type === 'mirror_exit' || obj.type === 'cryo_blast_exit');
         if (!isObj && !isExit) return;
         const dx = obj.x - player.x;
         const dz = obj.z - player.z;
@@ -6524,10 +7232,12 @@
         }
       });
 
+      let minEnemyDist = 999;
       targets.forEach(tgt => {
         const dx = tgt.x - player.x;
         const dz = tgt.z - player.z;
         const dist = Math.hypot(dx, dz);
+        minEnemyDist = Math.min(minEnemyDist, dist);
         if (dist <= 18) {
           const angle = Math.atan2(dz, dx) + player.yaw + Math.PI / 2;
           const rDist = (dist / 18) * radius;
@@ -6543,6 +7253,20 @@
           rCtx.shadowBlur = 0;
         }
       });
+
+      const tagEl = document.querySelector('#radar-hud .radar-tag');
+      if (tagEl) {
+        if (minEnemyDist < 6.5) {
+          tagEl.innerText = `⚠️ HAZARD: ${minEnemyDist.toFixed(1)}M`;
+          tagEl.style.color = '#ff3344';
+        } else if (minEnemyDist < 14) {
+          tagEl.innerText = `TRACK: ${minEnemyDist.toFixed(1)}M`;
+          tagEl.style.color = '#ffaa00';
+        } else {
+          tagEl.innerText = 'SONAR 18M';
+          tagEl.style.color = '#00ff88';
+        }
+      }
     }
 
     /* Non-Euclidean Hallway Elongation Anomaly (Dolly Zoom / Vertigo) */
@@ -7027,7 +7751,13 @@
         if (e.code === 'KeyB') deployLaserTripwire();
         if (e.code === 'KeyM') toggleBlueprintMap();
         if (e.code === 'KeyQ') drawChalkMark();
+        if (e.code === 'Tab') {
+          e.preventDefault();
+          toggleBackpack();
+          return;
+        }
         if (e.code === 'Escape' || e.code === 'KeyP') {
+          if (isBackpackOpen) { toggleBackpack(); return; }
           if (isMapOpen) { toggleBlueprintMap(); return; }
           const commModal = document.getElementById('comm-modal');
           if (commModal && commModal.style.display === 'flex') { closeTransmission(); return; }
@@ -8164,6 +8894,78 @@
         updateProximityGlitch(dist);
       }
 
+      else if (currentLevel === 6 && specimenCrawler.mesh) {
+        if (specimenCrawler.stunTimer > 0) {
+          specimenCrawler.stunTimer -= delta;
+          specimenCrawler.mesh.rotation.y += (Math.random() - 0.5) * 0.8;
+          return;
+        }
+
+        // Animate creepy multi-legged scurrying
+        specimenCrawler.crawlPhase += delta * 12.0;
+        if (specimenCrawler.mesh.legPairs) {
+          specimenCrawler.mesh.legPairs.forEach(lp => {
+            const swing = Math.sin(specimenCrawler.crawlPhase + lp.phaseOffset) * 0.28;
+            lp.group.rotation.y = swing;
+          });
+        }
+        if (specimenCrawler.mesh.bioCore) {
+          specimenCrawler.mesh.bioCore.material.emissiveIntensity = 1.8 + Math.sin(clock.getElapsedTime() * 6) * 0.8;
+        }
+
+        const dist = Math.hypot(player.x - specimenCrawler.x, player.z - specimenCrawler.z);
+        const isLoud = player.currentNoiseDb > -24;
+
+        if (specimenCrawler.state === 'PATROL') {
+          specimenCrawler.speed = 3.4;
+          if (!player.inLocker && (isLoud || player.flashlightOn || dist < 14)) {
+            specimenCrawler.state = 'CHASE';
+            audio.playSpecimenCrawlerHiss();
+          } else {
+            specimenCrawler.patrolTimer -= delta;
+            if (specimenCrawler.patrolTimer <= 0) {
+              specimenCrawler.patrolTimer = Math.random() * 5 + 3;
+              const targetRoom = rooms[Math.floor(Math.random() * rooms.length)];
+              specimenCrawler.targetX = targetRoom.cx * TILE_SIZE + TILE_SIZE / 2;
+              specimenCrawler.targetZ = targetRoom.cy * TILE_SIZE + TILE_SIZE / 2;
+            }
+          }
+        } else if (specimenCrawler.state === 'CHASE') {
+          specimenCrawler.speed = specimenCrawler.chaseSpeed;
+          specimenCrawler.targetX = player.inLocker ? specimenCrawler.x : player.x;
+          specimenCrawler.targetZ = player.inLocker ? specimenCrawler.z : player.z;
+
+          if (player.inLocker && player.holdingBreath && dist < 6.5) {
+            specimenCrawler.state = 'PATROL';
+          }
+
+          if (!player.inLocker && dist < 1.45) {
+            triggerDeath(specimenCrawler);
+            return;
+          }
+        }
+
+        checkDoorBlockingEntity(specimenCrawler, delta);
+        checkTripwireCollision(specimenCrawler);
+
+        const dx = specimenCrawler.targetX - specimenCrawler.x;
+        const dz = specimenCrawler.targetZ - specimenCrawler.z;
+        const len = Math.hypot(dx, dz);
+        if (len > 0.3) {
+          const moveX = (dx / len) * specimenCrawler.speed * delta;
+          const moveZ = (dz / len) * specimenCrawler.speed * delta;
+          if (!checkWallCollision(specimenCrawler.x + moveX, specimenCrawler.z, 0.45)) specimenCrawler.x += moveX;
+          if (!checkWallCollision(specimenCrawler.x, specimenCrawler.z + moveZ, 0.45)) specimenCrawler.z += moveZ;
+
+          specimenCrawler.mesh.position.x = specimenCrawler.x;
+          specimenCrawler.mesh.position.z = specimenCrawler.z;
+          specimenCrawler.mesh.rotation.y = Math.atan2(dx, dz);
+        }
+
+        audio.updateThreat(dist, specimenCrawler.state === 'CHASE');
+        updateProximityGlitch(dist);
+      }
+
       // Check if monster detects breathing inside locker
       if (player.inLocker) {
         let nearestDist = 999;
@@ -8172,6 +8974,7 @@
         else if (currentLevel === 3 && staticSeraph.mesh) nearestDist = Math.hypot(player.x - staticSeraph.x, player.z - staticSeraph.z);
         else if (currentLevel === 4 && scpArchitect.mesh) nearestDist = Math.hypot(player.x - scpArchitect.x, player.z - scpArchitect.z);
         else if (currentLevel === 5 && mirrorDoppelganger.mesh) nearestDist = Math.hypot(player.x - mirrorDoppelganger.x, player.z - mirrorDoppelganger.z);
+        else if (currentLevel === 6 && specimenCrawler.mesh) nearestDist = Math.hypot(player.x - specimenCrawler.x, player.z - specimenCrawler.z);
 
         if (nearestDist < 4.0) {
           if (!player.holdingBreath && Math.random() < 0.28 * delta) {
@@ -8420,7 +9223,7 @@
         // Subtle levitation bob & specular rotation for collectible objectives
         const animTime = clock.getElapsedTime();
         interactiveObjects.forEach(obj => {
-          if ((obj.type === 'key' || obj.type === 'master_tape' || obj.type === 'mirror_shard' || obj.type === 'battery_pack' || obj.type === 'adrenaline_syringe' || obj.type === 'chalk_box') && obj.mesh) {
+          if ((obj.type === 'key' || obj.type === 'master_tape' || obj.type === 'mirror_shard' || obj.type === 'cryo_vial' || obj.type === 'battery_pack' || obj.type === 'adrenaline_syringe' || obj.type === 'chalk_box') && obj.mesh) {
             obj.mesh.rotation.y += delta * 1.5;
             const baseY = (obj.type === 'battery_pack' ? 0.08 : (obj.type === 'adrenaline_syringe' ? 0.06 : (obj.type === 'chalk_box' ? 0.06 : 1.0)));
             obj.mesh.position.y = baseY + Math.sin(animTime * 2.8 + obj.x) * 0.04;
@@ -8435,6 +9238,7 @@
         if (currentLevel === 3 && staticSeraph.mesh) nearestDist = Math.min(nearestDist, Math.hypot(player.x - staticSeraph.x, player.z - staticSeraph.z));
         if (currentLevel === 4 && scpArchitect.mesh) nearestDist = Math.min(nearestDist, Math.hypot(player.x - scpArchitect.x, player.z - scpArchitect.z));
         if (currentLevel === 5 && mirrorDoppelganger.mesh) nearestDist = Math.min(nearestDist, Math.hypot(player.x - mirrorDoppelganger.x, player.z - mirrorDoppelganger.z));
+        if (currentLevel === 6 && specimenCrawler.mesh) nearestDist = Math.min(nearestDist, Math.hypot(player.x - specimenCrawler.x, player.z - specimenCrawler.z));
 
         // Proximity horror jitter and VHS tracking interference
         if (nearestDist < 9.5) {
@@ -8881,6 +9685,10 @@
             gildedDiver.targetZ = player.z;
           } else if (currentLevel === 5) {
             mirrorDoppelganger.state = 'CHASE';
+          } else if (currentLevel === 6) {
+            specimenCrawler.state = 'CHASE';
+            specimenCrawler.targetX = player.x;
+            specimenCrawler.targetZ = player.z;
           }
         }
       }
@@ -8893,6 +9701,7 @@
       if (currentLevel === 3 && staticSeraph.mesh) emfDist = Math.min(emfDist, Math.hypot(player.x - staticSeraph.x, player.z - staticSeraph.z));
       if (currentLevel === 4 && scpArchitect.mesh) emfDist = Math.min(emfDist, Math.hypot(player.x - scpArchitect.x, player.z - scpArchitect.z));
       if (currentLevel === 5 && mirrorDoppelganger.mesh) emfDist = Math.min(emfDist, Math.hypot(player.x - mirrorDoppelganger.x, player.z - mirrorDoppelganger.z));
+      if (currentLevel === 6 && specimenCrawler.mesh) emfDist = Math.min(emfDist, Math.hypot(player.x - specimenCrawler.x, player.z - specimenCrawler.z));
 
       let emfLevel = 1;
       let emfText = 'EMF: [■□□□□] LV.1';
@@ -9121,6 +9930,8 @@
       if (winTimeEl) winTimeEl.innerText = tTime;
       const winPhotoEl = document.getElementById('win-photo-count');
       if (winPhotoEl) winPhotoEl.innerText = `${player.anomaliesCaptured || 0} FOTO`;
+      const winSecEl = document.getElementById('win-sector-count');
+      if (winSecEl) winSecEl.innerText = `${currentLevel || 6} / 6 LENGKAP (100%)`;
       const winDiffEl = document.getElementById('win-diff-badge');
       if (winDiffEl) {
         winDiffEl.innerText = window.gameDifficulty === 'nightmare' ? '★ NIGHTMARE SURVIVOR' : (window.gameDifficulty === 'explore' ? 'EKSPLORASI' : 'STANDAR (1996)');
@@ -9146,6 +9957,7 @@
       player.tapesCollected = 0;
       player.primersActivated = 0;
       player.mirrorShardsCollected = 0;
+      player.cryoVialsCollected = 0;
       player.adrenalineRushTimer = 0;
       player.flashCooldown = 0;
       loadLevel(currentLevel || 1);
@@ -9175,6 +9987,7 @@
       player.tapesCollected = 0;
       player.primersActivated = 0;
       player.mirrorShardsCollected = 0;
+      player.cryoVialsCollected = 0;
       player.adrenalineRushTimer = 0;
       loadLevel(1);
     });
