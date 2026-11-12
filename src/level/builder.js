@@ -82,6 +82,7 @@ export function buildLevel(gen, assets, def) {
   const tiled = new Set([0, ...gen.rooms.filter((r) => r.type === 'restroom').map((r) => r.id)]);
 
   // ---------- floors & ceilings ----------
+  const ceilTile = def.theme === 'mall' ? 1.5 : 1.2;   // mall: pattern repeats every block (15 m)
   const floorHall = new GeoBuilder(), floorRoom = new GeoBuilder(), ceil = new GeoBuilder();
   for (let z = 0; z < map.H; z++) for (let x = 0; x < map.W; x++) {
     const r = map.reg(x, z);
@@ -91,7 +92,7 @@ export function buildLevel(gen, assets, def) {
     fb.quadGrid([x * CELL, 0, (z + 1) * CELL], [1, 0, 0], [0, 0, -1], CELL, CELL, 2, 2, [0, 1, 0],
       (p) => [p[0] / CELL, -p[2] / CELL], (p) => field.sample(p[0], 0, p[2], 0, 1, 0, c));
     ceil.quadGrid([x * CELL, WALL_H, z * CELL], [1, 0, 0], [0, 0, 1], CELL, CELL, 2, 2, [0, -1, 0],
-      (p) => [p[0] / 1.2, p[2] / 1.2], (p) => { const s = field.sample(p[0], WALL_H, p[2], null, null, null, c); return [s[0] * 0.55, s[1] * 0.55]; });
+      (p) => [p[0] / ceilTile, p[2] / ceilTile], (p) => { const s = field.sample(p[0], WALL_H, p[2], null, null, null, c); return [s[0] * 0.55, s[1] * 0.55]; });
   }
 
   // ---------- walls ----------
@@ -214,7 +215,36 @@ export function buildLevel(gen, assets, def) {
 
   // ---------- instanced static props ----------
   const inst = new Instancer(assets, field, root);
-  for (const p of gen.props) inst.add(p.type, p.x, p.y || 0, p.z, p.rot);
+  // figure statues get their own dynamic instances so they can turn when unobserved
+  const FIG = ['figure_stand', 'figure_reach', 'figure_kneel'];
+  const figures = [];
+  for (const p of gen.props) if (!FIG.includes(p.type)) inst.add(p.type, p.x, p.y || 0, p.z, p.rot);
+  for (const kind of FIG) {
+    const list = gen.props.filter((p) => p.type === kind);
+    if (!list.length) continue;
+    const parts = inst.flatten(kind);
+    const ims = parts.map((pt) => {
+      const geo = pt.mesh.geometry.clone();
+      const bake = new Float32Array(list.length * 2);
+      list.forEach((f, i) => { const b = field.sample(f.x, 1.2, f.z, null, null, null, null); bake[i * 2] = b[0]; bake[i * 2 + 1] = b[1]; });
+      geo.setAttribute('bake', new THREE.InstancedBufferAttribute(bake, 2));
+      const im = new THREE.InstancedMesh(geo, bakeMaterial(pt.mesh.material, 'attr'), list.length);
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      im.frustumCulled = false;
+      root.add(im);
+      return { im, local: pt.matrix };
+    });
+    const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+    list.forEach((f, idx) => {
+      const fig = { x: f.x, z: f.z, rot: f.rot, set(rot) {
+        fig.rot = rot;
+        const base = new THREE.Matrix4().compose(new THREE.Vector3(f.x, 0, f.z), q.setFromAxisAngle(up, rot), one);
+        for (const m of ims) { m.im.setMatrixAt(idx, base.clone().multiply(m.local)); m.im.instanceMatrix.needsUpdate = true; }
+      } };
+      fig.set(f.rot);
+      figures.push(fig);
+    });
+  }
   // ceiling fixtures, grouped by state so emissive can differ
   const fixtureMats = { on: null, off: null, flicker: null };
   for (const l of gen.lights) inst.add('ceiling_light', l.x, WALL_H, l.z, l.rot, 'light_' + l.state, (m) => {
@@ -280,7 +310,7 @@ export function buildLevel(gen, assets, def) {
   });
 
   root.updateMatrixWorld(true);
-  return { chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, waterMat, poolMats };
+  return { chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, waterMat, poolMats, figures };
 }
 
 function itemLift(type) {

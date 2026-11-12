@@ -16,7 +16,7 @@ export const ENTITY_INFO = {
     hint: 'Si Pucat buta, tapi telinganya sangat tajam. Jongkok untuk lewat, dan lempar penghapus untuk mengalihkannya.',
   },
   masked: {
-    lore: 'Guru piket Kelas Malam. Tidak ada yang tahu wajah di balik topeng putihnya. Ia berpatroli dengan penggaris besi di tangan, dan ketukannya ke telapak tangan terdengar sampai ke ujung lorong.',
+    lore: 'Guru piket sekolah ini. Tidak ada yang tahu wajah di balik topeng putihnya. Ia berpatroli dengan penggaris besi di tangan, dan ketukannya ke telapak tangan terdengar sampai ke ujung lorong.',
     name: 'Guru Bertopeng',
     death: 'Guru Bertopeng memergokimu. Kalau terdengar bunyi penggaris diketuk, ia sedang berjaga. Jauhi pandangannya dan bersembunyilah sebelum terlihat.',
     hint: 'Bunyi penggaris diketuk berarti Guru Bertopeng sedang berjaga di dekatmu. Ia bisa melihat dan mendengar.',
@@ -34,7 +34,7 @@ export const ENTITY_INFO = {
     hint: 'Bayang Kelas hanya hidup di kegelapan. Tetaplah di bawah lampu, dan sorotkan senter ke arahnya.',
   },
   eyes: {
-    lore: 'Akar-akarnya merambat di dinding ruang patung dan papan tulis Kelas Malam. Setiap mata yang menangis hitam itu dulu milik seseorang. Ia tidak bisa berjalan, tapi selalu tahu harus pindah ke dinding yang mana.',
+    lore: 'Akar-akarnya merambat di dinding ruang patung dan papan tulis sekolah. Setiap mata yang menangis hitam itu dulu milik seseorang. Ia tidak bisa berjalan, tapi selalu tahu harus pindah ke dinding yang mana.',
     name: 'Mata Papan',
     death: 'Mata Papan menatapmu terlalu lama dari dinding. Begitu kamu merasa diperhatikan, putuskan pandangannya: keluar dari jangkauan matanya atau sembunyi.',
     hint: 'Ada mata yang tumbuh di dinding. Jangan berdiri dalam pandangannya. Suara keras membuatnya pindah ke dinding terdekat.',

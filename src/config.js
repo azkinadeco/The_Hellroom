@@ -81,7 +81,7 @@ export const LEVELS = [
     seed: 2207, blocksX: 4, blocksZ: 4,
     lightsOff: 0.5, flicker: 0.18, fog: 0.05,
     fuses: 4, keys: 1, batteries: 7, notes: 3, erasers: 5,
-    theme: 'mall', clean: true, mergeChance: 0.25, splitChance: 0.45,
+    theme: 'mall', clean: true, mergeChance: 0, splitChance: 0, lockerReach: 7, regularDoors: true, periodicLights: true,
     mainRooms: ['shop'], bigRooms: ['shop'], smallRooms: ['shop', 'shop'],
     entities: [{ type: 'shade' }], hallTheme: 'hall',
   },

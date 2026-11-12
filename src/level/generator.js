@@ -103,6 +103,13 @@ export function generateLevel(def, seed = def.seed) {
       }
     }
     if (!cand.length) continue;
+    if (def.regularDoors) {
+      // identical units: one door per hall-facing side, always the 2nd cell along it
+      const bySide = new Map();
+      for (const c of cand) { const k = c.side; const v = c.d.dx !== 0 ? c.z : c.x; if (!bySide.has(k)) bySide.set(k, []); bySide.get(k).push([v, c]); }
+      for (const list of bySide.values()) { list.sort((a, b) => a[0] - b[0]); addDoor(...(() => { const c = (list[1] || list[0])[1]; return [c.x, c.z, c.d]; })(), r); }
+      continue;
+    }
     rng.shuffle(cand);
     const want = r.type === 'library' || r.type === 'studyhall' || r.type === 'gym' ? 2 : 1;
     const usedSides = new Set();
@@ -194,13 +201,20 @@ export function generateLevel(def, seed = def.seed) {
   for (const r of out.rooms) furnishRoom(r, map, rng, out);
 
   // ---------- 7. hallway dressing (lockers, fountains, clocks) ----------
-  dressHalls(map, rng, out, reserved, !!def.clean);
+  dressHalls(map, rng, out, reserved, !!def.clean, def.lockerReach || 3);
 
   // ---------- 8. lights ----------
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
     if (map.reg(x, z) !== 0) continue;
     const horiz = map.reg(x + 1, z) === 0 || map.reg(x - 1, z) === 0;
-    const state = rng.chance(def.lightsOff) ? 'off' : rng.chance(def.flicker) ? 'flicker' : 'on';
+    let state = rng.chance(def.lightsOff) ? 'off' : rng.chance(def.flicker) ? 'flicker' : 'on';
+    if (def.periodicLights) {
+      // the same light pattern repeats every block along each hall line
+      const alongX = z % BLOCK === 0;
+      const line = alongX ? z : x, pos = (alongX ? x : z) % BLOCK;
+      const h = Math.abs(Math.sin((line + 1) * 12.9898 + pos * 78.233 + def.seed * 0.1) * 43758.5453) % 1;
+      state = h < def.lightsOff ? 'off' : h > 1 - def.flicker ? 'flicker' : 'on';
+    }
     const [cx, cz] = map.center(x, z);
     out.lights.push({ x: cx, z: cz, rot: horiz ? Math.PI / 2 : 0, state, cell: [x, z] });
   }
@@ -448,7 +462,8 @@ function furnishRoom(r, map, rng, out) {
     if (rng.chance(0.35)) lockerOnBackWall(1.0);
     for (const [u, v] of [[0.75, D / 2], [W_ - 0.75, D / 2], [W_ / 2, 0.75], [W_ / 2, D - 0.75]]) spot(u, v, 0.02);
   } else if (r.type === 'shop') {
-    // empty mall unit: nothing at all, just echoing tile
+    // empty mall unit: nothing but a staff locker now and then
+    if (rng.chance(0.55)) lockerOnBackWall(W_ / 2);
     spot(W_ / 2, D / 2, 0.02); spot(1.0, D - 1.0, 0.02); spot(W_ - 1.0, 1.0, 0.02);
   } else if (r.type === 'statues') {
     // bare room full of featureless figures, all turned the same wrong way
@@ -583,7 +598,7 @@ function aabb(x, z, w, d, rot) {
   return { minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz, h: 2 };
 }
 
-function dressHalls(map, rng, out, reserved, clean = false) {
+function dressHalls(map, rng, out, reserved, clean = false, reach = 3) {
   const { W, H } = map;
   const hideCount = new Map(); // corridor-run id -> lockers
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
@@ -633,7 +648,7 @@ function dressHalls(map, rng, out, reserved, clean = false) {
   const lockerCells = out.lockers.map((l) => map.cellOf(l.x, l.z));
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
     if (map.reg(x, z) !== 0) continue;
-    if (lockerCells.some(([lx, lz]) => Math.abs(lx - x) + Math.abs(lz - z) <= 3)) continue;
+    if (lockerCells.some(([lx, lz]) => Math.abs(lx - x) + Math.abs(lz - z) <= reach)) continue;
     const d = DIRS.find((dd) => map.edge(x, z, dd) === EDGE.WALL && !reserved.has(map.edgeKey(x, z, dd)));
     if (!d) continue;
     const [cx, cz] = map.center(x, z);

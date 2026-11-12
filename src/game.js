@@ -9,6 +9,7 @@ import { Player } from './player.js';
 import { DoorSystem, Interactor } from './interact.js';
 import { spawnEntity, ENTITY_INFO } from './ai/creatures.js';
 import { randomReachableCell } from './ai/path.js';
+import { Anomalies } from './anomalies.js';
 import { NOTES, TAPES, PA_LINES } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
@@ -90,6 +91,7 @@ export class Game {
     this.world = new World(this.gen, this.built);
     this.doorSys = new DoorSystem(this, this.built.doors);
     this.interactor = new Interactor(this);
+    this.anomalies = new Anomalies(this);
     this.scene.fog = new THREE.FogExp2(0x070806, def.fog);
     this.scene.background = new THREE.Color(0x070806);
 
@@ -381,6 +383,7 @@ export class Game {
     if (input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
 
     for (const e of this.entities) e.update(dt);
+    this.anomalies.update(dt);
     // first sighting unlocks the resident's archive entry
     this.metT = (this.metT || 0) - dt;
     if (this.metT <= 0 && p.alive) {

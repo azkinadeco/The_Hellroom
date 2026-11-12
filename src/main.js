@@ -196,7 +196,7 @@ function quitToMenu() {
 function buildTitle() {
   const btn = document.querySelector('#title [data-go="play"]');
   btn.textContent = save.unlocked > 1 ? `▶ Lanjutkan — ${LEVELS[save.unlocked - 1].code}` : '▶ Mainkan';
-  document.querySelector('#title .tag').textContent = 'Rekaman Kelas Malam · 1996' + (save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
+  document.querySelector('#title .tag').textContent = 'Rekaman Handycam · 1996' + (save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
 }
 // resident portrait for a card; unseen residents stay a dark silhouette
 function portrait(kind, seen) {
@@ -209,7 +209,8 @@ function buildLevels() {
   LEVELS.forEach((l, i) => {
     const b = document.createElement('button');
     b.className = 'level-item';
-    b.disabled = i + 1 > save.unlocked;
+    // while DEV_ROOMS is on every map is open; on release levels unlock in order
+    b.disabled = !DEV_ROOMS && i + 1 > save.unlocked;
     const best = save.best[l.id + ':' + save.diff];
     const kind = l.entities[0] && l.entities[0].type, seen = kind && save.met.includes(kind);
     b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;

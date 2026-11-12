@@ -1,8 +1,8 @@
-# THE HELLROOM — Kelas Malam (1996)
+# THE HELLROOM
 
 Game survival-horror first-person di browser (Three.js) bertema **sekolah liminal tanpa ujung**, bergaya rekaman handycam 1996. Semua model 3D, tekstur, dan gambar menu dibuat lewat **pipeline Blender** (skrip Python, headless).
 
-> Rekaman ini ditemukan di dalam handycam tua di gudang SMA Wijayakusuma. Pemiliknya terakhir terlihat mengikuti "Kelas Malam".
+> Rekaman ini ditemukan di dalam handycam tua di gudang SMA Wijayakusuma. Pemiliknya terakhir terlihat masuk ke sebuah ruangan yang tidak pernah tercatat di denah sekolah.
 
 ## Menjalankan
 
@@ -43,6 +43,10 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker untuk bersembunyi, dan suasana yang janggal (musik mal yang samar, tetesan air kolam, dengung lampu backroom). Di kolam, berjalan di dalam air memperlambat langkahmu dan membuat setiap langkah terdengar jauh.
 
 **Tampilan layar**: di Pengaturan ada pilihan **Jernih HD** yang menghilangkan semua efek kaset rusak (garis, getaran, noise, kedip, dan guncangan saat mati) untuk pemain yang pusing melihatnya.
+
+**Anomali**: di Mal Tanpa Ujung, beberapa lorong benar-benar berulang. Kamu diam-diam dikirim mundur satu blok, dua atau tiga kali, sebelum lorongnya membiarkanmu lewat (tokonya dibuat identik supaya tidak terlihat). Di Ruang Patung, patung yang tidak sedang kamu lihat pelan-pelan menoleh ke arahmu.
+
+**Pilih Level**: selama `DEV_ROOMS = true`, semua level terbuka dan bisa dimainkan tanpa menamatkan level sebelumnya.
 
 **Langkah kaki**: karpet backroom meredam langkahmu (lebih senyap), keramik mal dan kolam memantulkannya (lebih berisik), dan air kolam selalu berisik.
 

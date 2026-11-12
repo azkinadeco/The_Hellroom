@@ -1,13 +1,13 @@
 // Lore notes found in each level, plus intro / outro text.
 export const INTRO = [
   'Rekaman ini ditemukan di dalam handycam merek lama, di gudang SMA Wijayakusuma yang terbakar pada 1997.',
-  'Pemiliknya terakhir terlihat mengikuti "Kelas Malam" — program bimbingan yang tidak pernah tercatat di arsip sekolah.',
+  'Pemiliknya terakhir terlihat masuk ke "The Hellroom", ruangan yang tidak pernah tercatat di denah sekolah.',
   'Tekan tombol PLAY.',
 ];
 
 export const NOTES = {
   1: [
-    { title: 'Daftar Hadir — Kelas Malam', body: 'Hadir: 31 siswa.\nPulang: 0.\n\nCatatan wali kelas: "Lorongnya bertambah panjang setiap kali bel berbunyi. Ada yang merangkak di sana. Kulitnya pucat dan wajahnya cuma satu sobekan penuh gigi."' },
+    { title: 'Daftar Hadir — Kelas Tambahan', body: 'Hadir: 31 siswa.\nPulang: 0.\n\nCatatan wali kelas: "Lorongnya bertambah panjang setiap kali bel berbunyi. Ada yang merangkak di sana. Kulitnya pucat dan wajahnya cuma satu sobekan penuh gigi."' },
     { title: 'Coretan di Meja', body: 'Pintu darurat di ujung gedung butuh listrik. Ada tiga SEKRING yang hilang dari kotak panel.\n\nSalah satunya di ruang yang dikunci. Kuncinya disembunyikan Pak Penjaga di salah satu kelas.' },
     { title: 'Surat Teguran', body: 'Kepada siswa yang berkeliaran di lorong:\n\nSi Pucat tidak punya mata. Ia mendengar.\nJONGKOK. Berjalan pelan. Jangan berlari.\nKalau ia sudah dekat, lempar sesuatu ke arah lain.\n\n— Tata Tertib, Pasal 0' },
   ],
@@ -32,17 +32,17 @@ export const NOTES = {
     { title: 'Daftar Absen Renang', body: 'Hadir: 14\nPulang: —\n\nCatatan pelatih: "Mereka tidak tenggelam. Mereka hanya… bergabung."' },
   ],
   6: [
-    { title: 'Label di Kaki Patung', body: 'KARYA SISWA — KELAS MALAM\n"Teman Sekelas"\nBahan: (tidak diketahui)\n\nJumlah patung di ruangan ini berbeda dari kemarin.' },
+    { title: 'Label di Kaki Patung', body: 'KARYA SISWA — THE HELLROOM\n"Teman Sekelas"\nBahan: (tidak diketahui)\n\nJumlah patung di ruangan ini berbeda dari kemarin.' },
     { title: 'Catatan di Wallpaper', body: 'Ada mata yang tumbuh dari dinding. Mereka menatap dari balik patung-patung.\n\nKalau kamu merasa ditatap, langsung pergi dari pandangannya. Suara keras membuatnya pindah ke dinding yang paling dekat dengan suara itu.' },
     { title: 'Halaman Terakhir Buku Harian', body: 'Pintu darurat itu ada di sini. Aku bisa mendengar bel dari baliknya.\n\nKalau kamu membaca ini, jangan berhenti merekam. Selama kamera merekam, kamu masih nyata.' },
   ],
 };
 
-export const ENDING = 'Pintu darurat terbuka. Di baliknya tidak ada lorong, mal, kolam, atau ruangan berwallpaper kuning. Hanya cahaya putih.\n\nPatung-patung di belakangmu tidak menoleh. Untuk pertama kalinya, tidak ada yang mengikutimu.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu.\n\nYang diketahui hanya ini: handycam ini kembali sendirian ke meja guru di Kelas Malam, dengan kaset yang sudah diputar ulang ke awal.';
+export const ENDING = 'Pintu darurat terbuka. Di baliknya tidak ada lorong, mal, kolam, atau ruangan berwallpaper kuning. Hanya cahaya putih.\n\nPatung-patung di belakangmu tidak menoleh. Untuk pertama kalinya, tidak ada yang mengikutimu.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu.\n\nYang diketahui hanya ini: handycam ini kembali sendirian ke meja guru di ruang kelas yang kosong, dengan kaset yang sudah diputar ulang ke awal.';
 
 // Secret tapes: one per story level. Shown as transcripts.
 export const TAPES = {
-  1: { title: 'KASET #1 — "Hari Pertama"', body: '[Rekaman goyang. Suara anak laki-laki berbisik.]\n\n"Ini hari pertama Kelas Malam. Bu Guru bilang kami cuma belajar sampai jam sembilan. Sekarang jam… jamnya tidak bergerak.\n\nTadi Dimas lari di lorong. Ada yang merangkak keluar dari kelas, putih, cepat sekali. Dimas belum kembali."\n\n[Desisan panjang. Rekaman terputus.]' },
+  1: { title: 'KASET #1 — "Hari Pertama"', body: '[Rekaman goyang. Suara anak laki-laki berbisik.]\n\n"Ini hari pertama kelas tambahan. Bu Guru bilang kami cuma belajar sampai jam sembilan. Sekarang jam… jamnya tidak bergerak.\n\nTadi Dimas lari di lorong. Ada yang merangkak keluar dari kelas, putih, cepat sekali. Dimas belum kembali."\n\n[Desisan panjang. Rekaman terputus.]' },
   2: { title: 'KASET #2 — "Guru Piket"', body: '[Gambar meja guru. Sebuah topeng putih tergeletak di atasnya.]\n\n"Topengnya ada di sini. Jadi siapa yang berjalan di lorong itu?"\n\n[Tok. Tok. Tok. Bunyi penggaris besi dari balik pintu.]' },
   3: { title: 'KASET #3 — "Pelajaran Menatap"', body: '[Gambar papan tulis. Tulisan kapur: JANGAN BERKEDIP.]\n\n"Kami disuruh menatap spesimen itu bergiliran. Yang giliran jaga tidak boleh menoleh.\n\nRina menoleh."\n\n[Gemeretak tulang. Lama. Lalu sunyi.]' },
   4: { title: 'KASET #4 — "Jam Tutup"', body: '[Lorong mal yang terang. Kamera berputar pelan: toko kosong, toko kosong, toko kosong.]\n\n"Aku sudah belok kiri empat kali. Harusnya aku kembali ke tempat awal… dan aku memang kembali ke tempat awal.\n\nLampu di ujung sana baru saja padam. Ada titik-titik putih. Berpasangan."\n\n[Bisikan. Sangat dekat dengan mikrofon.]' },
@@ -54,7 +54,7 @@ export const TAPES = {
 export const PA_LINES = {
   flavor: [
     'Perhatian. Semua siswa diharap tetap berada di kelas masing-masing.',
-    'Kelas Malam akan diperpanjang. Tidak ada yang diizinkan pulang.',
+    'Jam pelajaran akan diperpanjang. Tidak ada yang diizinkan pulang.',
     'Petugas sedang berkeliling. Berjalanlah dengan tertib.',
     'Diumumkan kepada orang tua: anak Anda baik-baik saja. Anak Anda akan selalu baik-baik saja.',
     'Upacara bendera akan dilaksanakan sebentar lagi. Sebentar lagi. Sebentar lagi.',
