@@ -37,6 +37,13 @@ export function furnishExtra(r, f, rng, def) {
     case 'forest': forest(r, f, rng, P); return true;
     case 'shop2': case 'dept': case 'market': case 'cinema': mallShop(r, f, rng, P); return true;
     case 'house': house(r, f, rng, P); return true;
+    case 'sel': sel(r, f, rng, P); return true;
+    case 'hukuman': hukuman(r, f, rng, P); return true;
+    case 'ujian': ujian(r, f, rng, P); return true;
+    case 'gallery': gallery(r, f, rng, P); return true;
+    case 'vitrine': vitrine(r, f, rng, P); return true;
+    case 'exhibit': exhibit(r, f, rng, P); return true;
+    case 'statuehall': statuehall(r, f, rng, P); return true;
     case 'street': street(r, f, rng, P); return true;
     case 'flooded': { // a room under knee-deep water and nothing else
       for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) if (rng.chance(0.35)) r.spots.push([(x + rng.range(0.25, 0.75)) * CELL, 0.03, (z + rng.range(0.25, 0.75)) * CELL]);
@@ -284,6 +291,136 @@ function forest(r, f, rng, P) {
     else if (roll < 0.98) { const rot = rng.range(0, 6); f.out.lockers.push({ kind: 'locker', x: px, z: pz, rot }); f.out.colliders.push(aabb(px, pz, 0.62, 0.58, rot)); }
     if (rng.chance(0.25)) r.spots.push([(x - 0.5) * CELL + rng.range(-0.6, 0.6), 0.02, (z - 0.5) * CELL + rng.range(-0.6, 0.6)]);
   }
+}
+
+// ------------------------------------------------------------ detention
+// is the wall behind frame position u a real wall (not a door, arch or rail)?
+function solidWall(r, f, fr, u) {
+  const [x, z] = fr.toWorld(u, 0.5);
+  const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL);
+  return f.map.edge(cx, cz, DIRS[{ E: 0, W: 1, S: 2, N: 3 }[fr.side]]) === EDGE.WALL;
+}
+const FIG = ['figure_stand', 'figure_stand', 'figure_reach', 'figure_kneel'];
+// one-cell detention cell: bunk on one wall, a desk facing another, the
+// same line written on a small board over and over
+function sel(r, f, rng, P) {
+  const ds = doorSides(r);
+  const free = ['N', 'S', 'W', 'E'].filter((q) => !ds.has(q));
+  rng.shuffle && rng.shuffle(free);
+  const [a, b, c] = free;
+  if (a) { const fr = roomFrame(r, a); const [x, z] = fr.toWorld(fr.width / 2, wallOff); P('cell_bunk', x, z, yawFor(fr.n[0], fr.n[1]), [2.0, 0.85, 0.6]); const [sx, sz] = fr.toWorld(fr.width / 2 - 0.4, 0.4); r.spots.push([sx, 0.58, sz]); }
+  if (b) {
+    const fr = roomFrame(r, b);
+    const [x, z] = fr.toWorld(fr.width / 2, 0.55); P('student_desk', x, z, yawFor(-fr.n[0], -fr.n[1]), [0.7, 1.1, 0.8]);
+    r.spots.push([x, 0.74, z]);
+    if (r.w === 1 || r.h === 1) { const [bx, bz] = fr.toWorld(fr.width / 2, wallOff); P('lines_board', bx, bz, yawFor(fr.n[0], fr.n[1]), null); }
+  }
+  if (c && rng.chance(0.5)) { const fr = roomFrame(r, c); const [x, z] = fr.toWorld(fr.width - 0.4, 0.35); P('trash_bin', x, z, rng.range(0, 6), [0.4, 0.4, 0.5]); }
+  r.spots.push([r.cx, 0.02, r.cz]);
+}
+// punishment classroom: single desks in rows, every one turned to face the
+// wall, and the boards on every free wall say the same thing
+function hukuman(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  const W = fr.width, D = fr.depth;
+  for (const side of ['N', 'S', 'W', 'E']) {
+    const q = roomFrame(r, side);
+    for (let u = 1.5; u < q.width; u += 3) if (solidWall(r, f, q, u) && rng.chance(0.75)) { const [x, z] = q.toWorld(u, wallOff); P('lines_board', x, z, yawFor(q.n[0], q.n[1]), null); }
+  }
+  for (const va of blocks(D)) for (const ua of blocks(W)) {
+    const u = ua + 1.5, v = va + 1.5;
+    if (u > W - 0.8 || v > D - 0.8 || rng.chance(0.1)) continue;
+    const [x, z] = fr.toWorld(u, v);
+    // turned to the nearest wall, not to the board
+    const toW = [[u, 0], [W - u, 1], [v, 2], [D - v, 3]].sort((a, c) => a[0] - c[0])[0][1];
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    const [du, dv] = dirs[toW];
+    const [x2, z2] = fr.toWorld(u + du, v + dv);
+    P('student_desk', x, z, Math.atan2(x2 - x, z2 - z) + rng.range(-0.05, 0.05), [0.75, 0.75, 0.8]);
+    if (rng.chance(0.4)) r.spots.push([x, 0.74, z]);
+  }
+  if (rng.chance(0.6)) locker(r, f, fr, W - 1.2);
+  r.spots.push([r.cx, 0.02, r.cz]);
+}
+// the floor of the panopticon: hundreds of exam desks on the grid corners,
+// all facing the tower in the middle
+function ujian(r, f, rng, P) {
+  const m = f.map, inR = (x, z) => m.reg(x, z) === r.id;
+  const tx = r.towerX, tz = r.towerZ;
+  for (let z = r.z0 + 1; z <= r.z1; z++) for (let x = r.x0 + 1; x <= r.x1; x++) {
+    if (!(inR(x, z) && inR(x - 1, z) && inR(x, z - 1) && inR(x - 1, z - 1)) || rng.chance(0.08)) continue;
+    const px = x * CELL, pz = z * CELL;
+    const rot = Math.atan2(tx - px, tz - pz);
+    if (rng.chance(0.06)) { P('chair_fallen', px, pz, rng.range(0, 6), [0.6, 0.6, 0.5]); continue; }
+    P('student_desk', px, pz, rot, [0.75, 0.75, 0.8]);
+    if (rng.chance(0.18)) r.spots.push([px, 0.74, pz]);
+  }
+  if (!r.spots.length) r.spots.push([r.cx + 1.5, 0.02, r.cz]);
+}
+
+// --------------------------------------------------------------- museum
+// paintings on every real wall, roped off; statues on plinths in the blocks
+function gallery(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  for (const side of ['N', 'S', 'W', 'E']) {
+    const q = roomFrame(r, side);
+    for (let u = 1.5; u < q.width; u += 3) {
+      if (!solidWall(r, f, q, u) || rng.chance(0.15)) continue;
+      const [x, z] = q.toWorld(u, wallOff); P(rng.chance(0.5) ? 'painting_a' : 'painting_b', x, z, yawFor(q.n[0], q.n[1]), null);
+      if (rng.chance(0.25)) { const [rx, rz] = q.toWorld(u, 0.6); P('rope_barrier', rx, rz, yawFor(q.n[0], q.n[1]), [2.4, 0.2, 1]); }
+    }
+  }
+  const m = f.map, inR = (x, z) => m.reg(x, z) === r.id;
+  for (let z = r.z0 + 1; z <= r.z1; z++) for (let x = r.x0 + 1; x <= r.x1; x++) {
+    if (!(inR(x, z) && inR(x - 1, z) && inR(x, z - 1) && inR(x - 1, z - 1))) continue;
+    const px = x * CELL, pz = z * CELL, roll = rng.next();
+    if (roll < 0.28) { P('plinth', px, pz, 0, [0.8, 0.8, 1.6]); P(rng.pick(FIG), px, pz, rng.range(0, 6), null, { y: 0.9 }); }
+    else if (roll < 0.46) { P('hall_bench', px, pz, rng.chance(0.5) ? 0 : Math.PI / 2, [1.6, 0.42, 0.5]); r.spots.push([px, 0.46, pz]); }
+    else if (roll < 0.54) { P('display_case', px, pz, rng.range(-0.2, 0.2), [0.85, 0.85, 1.7]); }
+  }
+  r.spots.push([r.cx, 0.02, r.cz], [(r.x0 + 0.5) * CELL, 0.02, (r.z0 + 0.5) * CELL]);
+}
+function vitrine(r, f, rng, P) {
+  const m = f.map, inR = (x, z) => m.reg(x, z) === r.id;
+  for (let z = r.z0; z <= r.z1 + 1; z++) for (let x = r.x0; x <= r.x1 + 1; x++) {
+    const n = [inR(x, z), inR(x - 1, z), inR(x, z - 1), inR(x - 1, z - 1)].filter(Boolean).length;
+    if (n < 4 || (x + z) % 2) continue;
+    P('display_case', x * CELL, z * CELL, rng.range(-0.1, 0.1), [0.85, 0.85, 1.7]);
+  }
+  // cases along the walls too, between the walking lines
+  for (const side of ['N', 'S', 'W', 'E']) {
+    const q = roomFrame(r, side);
+    for (let u = 3; u < q.width - 0.5; u += 6) if (solidWall(r, f, q, u - 0.2) && solidWall(r, f, q, u + 0.2)) { const [x, z] = q.toWorld(u, 0.55); P('display_case', x, z, yawFor(q.n[0], q.n[1]), [0.85, 0.85, 1.7]); }
+  }
+  r.spots.push([r.cx + 1.5, 0.02, r.cz], [(r.x0 + 0.5) * CELL, 0.02, (r.z1 + 0.5) * CELL]);
+}
+// a whole 1996 classroom kept as an exhibit, with figures where the pupils sat
+function exhibit(r, f, rng, P) {
+  kelas(r, f, rng, P);
+  const fr = r.front;
+  const W = fr.width, D = fr.depth;
+  const faceFront = yawFor(-fr.n[0], -fr.n[1]);
+  for (const va of blocks(D)) for (const vr of [0.98, 2.04]) for (const ua of blocks(W)) {
+    const v = va + vr, u = ua + 1.5;
+    if (v > D - 0.9 || !rng.chance(0.3)) continue;
+    const [x, z] = fr.toWorld(u + (rng.chance(0.5) ? -0.3 : 0.3), v + 0.5);
+    P(rng.chance(0.7) ? 'figure_stand' : 'figure_kneel', x, z, faceFront + rng.range(-0.1, 0.1), [0.4, 0.4, 1.8]);
+  }
+  for (const d of r.doors) { const x = d.x + d.inX * 0.9, z = d.z + d.inZ * 0.9; P('rope_barrier', x + d.inZ * 1.4, z + d.inX * 1.4, Math.atan2(d.inX, d.inZ), null); }
+}
+// a sea of statues under a three-storey roof: every grid corner and every
+// cell edge midpoint may hold one, the walking lines stay clear
+function statuehall(r, f, rng, P) {
+  const m = f.map, inR = (x, z) => m.reg(x, z) === r.id;
+  for (let z = r.z0 + 1; z <= r.z1; z++) for (let x = r.x0 + 1; x <= r.x1; x++) {
+    if (!(inR(x, z) && inR(x - 1, z) && inR(x, z - 1) && inR(x - 1, z - 1))) continue;
+    if (!rng.chance(0.42)) continue;
+    const px = x * CELL + rng.range(-0.2, 0.2), pz = z * CELL + rng.range(-0.2, 0.2);
+    if (rng.chance(0.15)) { P('plinth', px, pz, 0, [0.8, 0.8, 1.6]); P(rng.pick(FIG), px, pz, rng.range(0, 6), null, { y: 0.9 }); }
+    else P(rng.pick(FIG), px, pz, r.faceAll ?? rng.range(0, 6), [0.5, 0.5, 1.8]);
+    if (rng.chance(0.12)) r.spots.push([px + 0.7, 0.02, pz + 0.7]);
+  }
+  r.spots.push([r.cx, 0.02, r.cz]);
 }
 
 // ----------------------------------------------------------------- mall

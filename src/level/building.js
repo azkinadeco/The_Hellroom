@@ -212,7 +212,16 @@ function finish(b, rng, def) {
   if (st.x == null) { st.x = startRoom.cx; st.z = startRoom.cz; st.auto = true; }
   const dist = (r) => Math.hypot(r.cx - st.x, r.cz - st.z) + Math.abs(r.k - st.k) * 25;
   const usable = all.filter((r) => !r.noItems && r !== startRoom);
-  const lockable = usable.filter((r) => r.doors.length === 1 && !r.noLock).sort((a, c) => dist(c) - dist(a));
+  // a room that opens into another through an arch can't be locked off
+  const archOut = (r) => {
+    const m = F[r.k].map;
+    for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) for (const d of DIRS) {
+      const n = m.reg(x + d.dx, z + d.dz);
+      if (n !== r.id && n >= 0 && m.edge(x, z, d) === EDGE.OPEN) return true;
+    }
+    return false;
+  };
+  const lockable = usable.filter((r) => r.doors.length === 1 && !r.noLock && !archOut(r)).sort((a, c) => dist(c) - dist(a));
   const lockedRooms = lockable.slice(0, def.keys);
   for (const r of lockedRooms) { r.locked = true; r.doors[0].locked = true; }
   // ---------- furnish ----------

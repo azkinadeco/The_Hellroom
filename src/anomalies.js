@@ -71,7 +71,7 @@ export class Anomalies {
     const g = this.game, p = g.player;
     if (!p.alive || p.hidden) return;
     if (this.loops.length) this.updateLoops();
-    if (g.built.figures && g.built.figures.length) this.updateFigures(dt);
+    if ((g.floors && g.floors.some((o) => o.built.figures.length)) || (g.built.figures && g.built.figures.length)) this.updateFigures(dt);
   }
 
   updateLoops() {
@@ -101,20 +101,26 @@ export class Anomalies {
     this.turnT -= dt;
     if (this.turnT > 0) return;
     this.turnT = 0.6 + Math.random() * 1.4;
-    const figs = g.built.figures;
+    // figures on every visible floor; other floors sit FH * dk above/below
+    const FHh = g.FH || 3.6;
+    const figs = g.floors && g.floors.length > 1
+      ? g.floors.filter((o) => o.built.root.visible).flatMap((o) => o.built.figures.map((f) => ({ f, dk: o.k - g.floorK })))
+      : g.built.figures.map((f) => ({ f, dk: 0 }));
+    if (!figs.length) return;
     for (let tries = 0; tries < 6; tries++) {
-      const f = figs[Math.floor(Math.random() * figs.length)];
-      const d = Math.hypot(f.x - p.pos.x, f.z - p.pos.z);
-      if (d < 4 || d > 22) continue;
-      TMP.set(f.x, 1.2, f.z).project(cam);
+      const { f, dk } = figs[Math.floor(Math.random() * figs.length)];
+      const dy = dk * FHh;
+      const d = Math.hypot(f.x - p.pos.x, f.z - p.pos.z, dy);
+      if (d < 4 || d > (f.s > 1 ? 45 : 22)) continue;
+      TMP.set(f.x, dy + (f.y || 0) + 1.2 * (f.s || 1), f.z).project(cam);
       const onScreen = TMP.z < 1 && Math.abs(TMP.x) < 1.15 && Math.abs(TMP.y) < 1.15;
-      if (onScreen && g.world.los(cam.position.x, cam.position.z, f.x, f.z)) continue;
+      if (onScreen && (dk !== 0 || g.world.los(cam.position.x, cam.position.z, f.x, f.z))) continue;
       const want = Math.atan2(p.pos.x - f.x, p.pos.z - f.z);
       let dr = want - f.rot; while (dr > Math.PI) dr -= Math.PI * 2; while (dr < -Math.PI) dr += Math.PI * 2;
       if (Math.abs(dr) < 0.3) continue;
       f.set(want);
       this.turned++;
-      if (d < 12 && Math.random() < 0.5) g.audio.scrape({ x: f.x, y: 0.5, z: f.z }, 0.35, 0.06);
+      if (d < 12 && Math.random() < 0.5) g.audio.scrape({ x: f.x, y: dy + 0.5, z: f.z }, f.s > 1 ? 1 : 0.35, f.s > 1 ? 0.2 : 0.06);
       break;
     }
   }

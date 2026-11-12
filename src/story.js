@@ -14,7 +14,7 @@ export const NOTES = {
   2: [
     { title: 'Pengumuman Guru Piket', body: 'Kelas detensi malam ini diawasi oleh guru piket.\n\nIa memakai topeng putih. Tidak ada yang pernah melihat wajahnya.\nKalau terdengar penggaris besi diketuk ke telapak tangan, artinya ia sedang berjaga di dekatmu.' },
     { title: 'Catatan di Buku Hukuman', body: 'Tulis 100 kali: "Saya tidak akan berkeliaran setelah bel."\n\nSaya tidak akan berkeliaran setelah bel.\nSaya tidak akan berkeliaran setelah bel.\nSaya tidak akan bersuara di loker.\nSaya tidak akan bernapas di loker.' },
-    { title: 'Kertas Terlipat', body: 'Dia melihat dan mendengar, tapi dia tidak sabar. Kalau dia kehilangan jejakmu, dia akan memeriksa loker-loker terdekat.\n\nTahan napas. Hitung sampai langkahnya pergi.' },
+    { title: 'Kertas Terlipat', body: 'Dia melihat dan mendengar, tapi dia tidak sabar. Kalau dia kehilangan jejakmu, dia akan memeriksa loker-loker terdekat.\n\nTahan napas. Hitung sampai langkahnya pergi.\n\nDari menara pengawas ia bisa melihat semua lantai sekaligus. Tangga-tangga di aula timur saling bersilangan — ada yang naik ke utara, ada yang naik ke selatan. Hafalkan mana yang turun ke lobi.' },
   ],
   3: [
     { title: 'Rekam Medis — Pasien Tanpa Nama', body: 'Diagnosis: tidak bergerak selama diamati.\nTindakan: pasien dijaga bergiliran, 24 jam, tanpa berkedip.\n\nCatatan perawat malam: rahangnya terus melebar. Ranjangnya kosong pagi ini. Ranjang perawat jaga juga.' },
@@ -32,13 +32,13 @@ export const NOTES = {
     { title: 'Daftar Absen Renang', body: 'Hadir: 14\nPulang: —\n\nCatatan pelatih: "Mereka tidak tenggelam. Mereka hanya… bergabung."' },
   ],
   6: [
-    { title: 'Label di Kaki Patung', body: 'KARYA SISWA — THE HELLROOM\n"Teman Sekelas"\nBahan: (tidak diketahui)\n\nJumlah patung di ruangan ini berbeda dari kemarin.' },
-    { title: 'Catatan di Wallpaper', body: 'Ada mata yang tumbuh dari dinding. Mereka menatap dari balik patung-patung.\n\nKalau kamu merasa ditatap, langsung pergi dari pandangannya. Suara keras membuatnya pindah ke dinding yang paling dekat dengan suara itu.' },
+    { title: 'Label di Kaki Patung', body: 'KARYA SISWA — THE HELLROOM\n"Teman Sekelas"\nBahan: (tidak diketahui)\n\nJumlah patung di ruangan ini berbeda dari kemarin.\n\nPatung besar di rotunda tingginya sembilan meter. Petugas jaga malam bersumpah wajahnya selalu menghadap ke arah orang yang terakhir masuk museum.' },
+    { title: 'Catatan di Dinding Galeri', body: 'Ada mata yang tumbuh dari dinding. Mereka menatap dari balik patung-patung.\n\nKalau kamu merasa ditatap, langsung pergi dari pandangannya. Suara keras membuatnya pindah ke dinding yang paling dekat dengan suara itu.' },
     { title: 'Halaman Terakhir Buku Harian', body: 'Pintu darurat itu ada di sini. Aku bisa mendengar bel dari baliknya.\n\nKalau kamu membaca ini, jangan berhenti merekam. Selama kamera merekam, kamu masih nyata.' },
   ],
 };
 
-export const ENDING = 'Pintu darurat terbuka. Di baliknya tidak ada lorong, mal, kolam, atau ruangan berwallpaper kuning. Hanya cahaya putih.\n\nPatung-patung di belakangmu tidak menoleh. Untuk pertama kalinya, tidak ada yang mengikutimu.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu.\n\nYang diketahui hanya ini: handycam ini kembali sendirian ke meja guru di ruang kelas yang kosong, dengan kaset yang sudah diputar ulang ke awal.';
+export const ENDING = 'Pintu darurat terbuka. Di baliknya tidak ada lorong, rumah sakit, mal, kolam, atau museum. Hanya cahaya putih.\n\nPatung-patung di belakangmu tidak menoleh. Untuk pertama kalinya, tidak ada yang mengikutimu.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu.\n\nYang diketahui hanya ini: handycam ini kembali sendirian ke meja guru di ruang kelas yang kosong, dengan kaset yang sudah diputar ulang ke awal.';
 
 // Secret tapes: one per story level. Shown as transcripts.
 export const TAPES = {
@@ -47,7 +47,7 @@ export const TAPES = {
   3: { title: 'KASET #3 — "Jam Besuk"', body: '[Lorong rumah sakit, lampu berkedip. Kamera masuk ke sebuah bangsal: ranjang-ranjang kosong, tirai bergoyang.]\n\n"Kami disuruh menjaga pasien itu bergiliran. Yang giliran jaga tidak boleh menoleh.\n\nRina menoleh. Sekarang ada pohon tumbuh dari ranjangnya."\n\n[Gemeretak tulang. Lama. Lalu angin, seperti di tengah hutan.]' },
   4: { title: 'KASET #4 — "Jam Tutup"', body: '[Lorong mal yang terang. Kamera berputar pelan: toko kosong, toko kosong, toko kosong.]\n\n"Aku sudah belok kiri empat kali. Harusnya aku kembali ke tempat awal… dan aku memang kembali ke tempat awal.\n\nLampu di ujung sana baru saja padam. Ada titik-titik putih. Berpasangan."\n\n[Bisikan. Sangat dekat dengan mikrofon.]' },
   5: { title: 'KASET #5 — "Pelajaran Renang"', body: '[Kolam renang putih yang sangat terang. Airnya tenang. Tidak ada suara selain tetesan.]\n\n"Tidak ada jendela. Tidak ada pintu keluar. Cuma keramik putih sejauh mata memandang.\n\nDi ujung kolam ada sesuatu yang panjang. Ia punya banyak tangan, dan semua wajahnya menoleh ke arahku bersamaan."\n\n[Jeritan banyak mulut. Rekaman terputus.]' },
-  6: { title: 'KASET #6 — "Pulang"', body: '[Ruangan berwallpaper kuning. Puluhan patung putih tanpa wajah, semuanya menghadap kamera.]\n\nSuara si pemilik kamera, lebih tua sekarang: "Kalau ada yang menemukan ini… aku sudah coba semua pintu. Pintu darurat itu tidak ke luar. Pintu itu ke awal.\n\nTapi mungkin, kalau kamu cukup cepat, kamu bisa keluar sebelum bel berbunyi lagi."\n\n[Bel sekolah. Semua patung di ruangan menoleh bersamaan.]' },
+  6: { title: 'KASET #6 — "Pulang"', body: '[Galeri museum berdinding merah tua. Puluhan patung putih tanpa wajah, semuanya menghadap kamera.]\n\nSuara si pemilik kamera, lebih tua sekarang: "Kalau ada yang menemukan ini… aku sudah coba semua pintu. Pintu darurat itu tidak ke luar. Pintu itu ke awal.\n\nTapi mungkin, kalau kamu cukup cepat, kamu bisa keluar sebelum bel berbunyi lagi."\n\n[Bel sekolah. Semua patung di ruangan menoleh bersamaan.]' },
 };
 
 // Intercom announcements. kind: flavor (no effect), locate (reveals player), blackout

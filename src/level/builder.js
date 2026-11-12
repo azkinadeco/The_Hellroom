@@ -258,7 +258,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   // figure statues get their own dynamic instances so they can turn when unobserved
   const FIG = ['figure_stand', 'figure_reach', 'figure_kneel'];
   const figures = [];
-  for (const p of gen.props) if (!FIG.includes(p.type)) inst.add(p.type, p.x, p.y || 0, p.z, p.rot);
+  for (const p of gen.props) if (!FIG.includes(p.type)) inst.add(p.type, p.x, p.y || 0, p.z, p.rot, '', null, p.scale);
   for (const kind of FIG) {
     const list = gen.props.filter((p) => p.type === kind);
     if (!list.length) continue;
@@ -266,7 +266,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     const ims = parts.map((pt) => {
       const geo = pt.mesh.geometry.clone();
       const bake = new Float32Array(list.length * 2);
-      list.forEach((f, i) => { const b = field.sample(f.x, 1.2, f.z, null, null, null, null); bake[i * 2] = b[0]; bake[i * 2 + 1] = b[1]; });
+      list.forEach((f, i) => { const b = field.sample(f.x, Math.min(2.6, (f.y || 0) + 1.2), f.z, null, null, null, null); bake[i * 2] = b[0]; bake[i * 2 + 1] = b[1]; });
       geo.setAttribute('bake', new THREE.InstancedBufferAttribute(bake, 2));
       const im = new THREE.InstancedMesh(geo, bakeMaterial(pt.mesh.material, 'attr'), list.length);
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -274,11 +274,12 @@ export function buildLevel(gen, assets, def, ctx = {}) {
       root.add(im);
       return { im, local: pt.matrix };
     });
-    const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+    const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
     list.forEach((f, idx) => {
-      const fig = { x: f.x, z: f.z, rot: f.rot, set(rot) {
+      const sc = f.scale || 1, sv = new THREE.Vector3(sc, sc, sc);
+      const fig = { x: f.x, z: f.z, y: f.y || 0, s: sc, rot: f.rot, set(rot) {
         fig.rot = rot;
-        const base = new THREE.Matrix4().compose(new THREE.Vector3(f.x, 0, f.z), q.setFromAxisAngle(up, rot), one);
+        const base = new THREE.Matrix4().compose(new THREE.Vector3(f.x, f.y || 0, f.z), q.setFromAxisAngle(up, rot), sv);
         for (const m of ims) { m.im.setMatrixAt(idx, base.clone().multiply(m.local)); m.im.instanceMatrix.needsUpdate = true; }
       } };
       fig.set(f.rot);
@@ -449,10 +450,10 @@ class Instancer {
     this.flat.set(ck, merged);
     return merged;
   }
-  add(key, x, y, z, rot, tag = '', matFn = null) {
+  add(key, x, y, z, rot, tag = '', matFn = null, scale = 1) {
     const parts = this.flatten(key);
     this._q.setFromAxisAngle(this._v.set(0, 1, 0), rot);
-    const base = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), this._q, this._s);
+    const base = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), this._q, scale === 1 || !scale ? this._s : new THREE.Vector3(scale, scale, scale));
     const b = this.field.sample(x, Math.min(y + 1.0, 2.6), z, null, null, null, null);
     const chunk = Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK);
     parts.forEach((p, i) => {

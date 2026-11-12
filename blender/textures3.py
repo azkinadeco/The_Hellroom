@@ -126,7 +126,67 @@ def house_wall():
     return _finish("house_wall", col)
 
 
+def marble():
+    """Museum floor: large polished cream marble slabs (1.5 m) with grey veins
+    and a dark border tile every slab."""
+    rng = np.random.default_rng(131)
+    t = N / 2
+    lx = np.minimum(X % t, t - X % t); ly = np.minimum(Y % t, t - Y % t)
+    v = fbm(rng, 3, 6, 0.6)
+    vein = np.exp(-((np.sin((X + Y * 0.6) / 37.0 + v * 9.0)) ** 2) * 40)
+    col = hexc("#ddd7ca")[None, None, :] * (0.93 + 0.1 * fbm(rng, 4, 5, 0.5))[..., None]
+    col = col * (1 - 0.28 * vein)[..., None]
+    band = (np.minimum(lx, ly) < 10)
+    col[band] = hexc("#5d5750") * 1.0
+    seam = smooth(1.5, 0.2, np.minimum(lx, ly))
+    col = col * (1 - 0.4 * seam)[..., None]
+    return _finish("marble", col)
+
+
+def gallery_wall():
+    """Deep oxblood gallery paint over a dark wood skirting (512 px = 3 m)."""
+    rng = np.random.default_rng(132)
+    ppm = N / 3.0
+    h = (N - Y) / ppm
+    col = hexc("#5a2723")[None, None, :] * (0.9 + 0.12 * fbm(rng, 4, 6, 0.55))[..., None]
+    col = np.broadcast_to(col, (N, N, 3)).copy()
+    sk = h < 0.22
+    col[sk] = hexc("#2c211b")
+    col[(h >= 0.22) & (h < 0.24)] = hexc("#8a7348")
+    col[(h > 2.6) & (h < 2.64)] = hexc("#8a7348")
+    return _finish("gallery_wall", col)
+
+
+def cell_wall():
+    """Painted concrete block wall of a detention cell, tally marks scratched
+    in at sitting height."""
+    rng = np.random.default_rng(133)
+    ppm = N / 3.0
+    h = (N - Y) / ppm
+    bw, bh = N / 7.5, N / 15
+    row = np.floor(Y / bh).astype(int)
+    xs = X + (row % 2) * bw / 2
+    lx = np.minimum(xs % bw, bw - xs % bw); ly = np.minimum(Y % bh, bh - Y % bh)
+    col = np.where((h < 1.1)[..., None], hexc("#6f7a6a")[None, None, :], hexc("#b9b8a8")[None, None, :])
+    col = col * (0.88 + 0.16 * fbm(rng, 5, 5, 0.55))[..., None]
+    mortar = smooth(1.8, 0.4, np.minimum(lx, ly))
+    col = col * (1 - 0.3 * mortar)[..., None]
+    for _ in range(9):
+        x0, y0 = rng.integers(20, N - 80), int(N - rng.uniform(0.9, 1.6) * ppm)
+        for k in range(5):
+            xx = x0 + k * 7
+            if k == 4:
+                for j in range(30):
+                    col[y0 + j - 4, x0 - 3 + j, :] *= 0.55
+            else:
+                col[y0:y0 + 24, xx:xx + 2, :] *= 0.55
+    return _finish("cell_wall", col)
+
+
 ASSETS = {
+    "marble": marble,
+    "gallery_wall": gallery_wall,
+    "cell_wall": cell_wall,
     "asphalt": asphalt,
     "house_wall": house_wall,
     "paving": paving,

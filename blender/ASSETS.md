@@ -253,3 +253,15 @@ Used by the new `lab` room type (`def.labChance`).
 - `blender/textures2.py`: `pool_floor`, `pool_wall`, `pool_ceiling`, `pool_water` (scrolled caustics), `mall_floor`, `mall_wall`, `mall_ceiling`, `bk_wallpaper`, `bk_carpet`, `bk_ceiling`. Selected per level with `def.theme` (`pool` / `mall` / `backroom`).
 - `blender/props4.py`: `pool_ladder` (origin on the pool edge, descends toward +Z), `lane_rope` (3 m, placed at water height 0.42), `locker_bench`, `lifeguard_chair` (built, currently unused to keep the pool bare).
 - `blender/props5.py`: `figure_stand`, `figure_reach`, `figure_kneel` featureless plaster figures on a plinth, origin floor centre.
+
+## Batch 15 (props10.py, textures3.py) — detention panopticon + museum
+
+| asset | notes |
+|---|---|
+| `plinth` | marble statue plinth 0.8 × 0.8 × 0.9; figures stand on it at y = 0.9 (the rotunda one is scaled ×3.2) |
+| `painting_a`, `painting_b` | wall pieces, gilt-framed faceless portraits 1.5 × 1.1, centre at 1.7 m |
+| `rope_barrier` | two brass stanchions 2.4 m apart with a red rope |
+| `display_case` | glass vitrine 0.84 × 0.84 × 1.7 with a faceless plaster bust |
+| `cell_bunk` | steel wall bunk 2.0 × 0.8, back on the wall plane |
+| `lines_board` | wall blackboard 1.6 × 1.0 (bottom at 0.95 m) with "SAYA TIDAK AKAN / LARI DI LORONG" written over and over |
+| textures `marble`, `gallery_wall`, `cell_wall` | museum floor slabs, oxblood gallery paint, painted block wall with tally marks |
