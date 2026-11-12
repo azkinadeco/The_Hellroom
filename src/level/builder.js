@@ -714,3 +714,54 @@ function signsMesh(signs, field) {
   m.matrixAutoUpdate = false;
   return m;
 }
+
+// water slides: an open half-pipe swept along the path, on thin legs
+export function buildSlides(slides, root, floorAt) {
+  for (const S of slides) {
+    const curve = new THREE.CatmullRomCurve3(S.pts.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
+    S.curve = curve; S.length = curve.getLength();
+    const n = Math.max(24, Math.round(S.length * 3)), seg = 12, R = 0.62;
+    const pos = [], nrm = [], col = [], bk = [], idx = [];
+    const c = new THREE.Color(S.color), inner = c.clone().multiplyScalar(1.15);
+    const frames = curve.computeFrenetFrames(n, false);
+    const up = new THREE.Vector3(0, 1, 0), side = new THREE.Vector3(), down = new THREE.Vector3();
+    for (let i = 0; i <= n; i++) {
+      const P = curve.getPointAt(i / n), T = frames.tangents[i];
+      side.crossVectors(T, up).normalize(); down.crossVectors(side, T).normalize().negate();
+      for (let j = 0; j <= seg; j++) {
+        const a = Math.PI * (0.08 + 0.84 * j / seg);       // U from one lip to the other
+        const ox = Math.cos(a), oy = Math.sin(a);
+        const v = new THREE.Vector3().addScaledVector(side, ox * R).addScaledVector(down, oy * R);
+        pos.push(P.x + v.x, P.y + v.y + R * 0.55, P.z + v.z);
+        const nn = v.clone().normalize().negate();
+        nrm.push(nn.x, nn.y, nn.z);
+        const cc = j % 3 === 0 ? c : inner; col.push(cc.r, cc.g, cc.b);
+        bk.push(0.75, 0);
+      }
+    }
+    for (let i = 0; i < n; i++) for (let j = 0; j < seg; j++) {
+      const a = i * (seg + 1) + j, b = a + seg + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('bake', new THREE.Float32BufferAttribute(bk, 2));
+    g.setIndex(idx);
+    const m = new THREE.Mesh(g, bakeMaterial(VC_SRC_2S, 'attr'));
+    m.frustumCulled = false;
+    root.add(m);
+    // legs down to whatever floor is below
+    const legs = new BoxBatch();
+    const samples = curve.getSpacedPoints(Math.round(S.length * 2));
+    for (let s = 2.5; s < S.length - 1; s += 4.5) {
+      const P = curve.getPointAt(s / S.length);
+      // a leg may not pass through a lower part of the same slide (spirals)
+      if (samples.some((q) => q.y < P.y - 0.6 && Math.hypot(q.x - P.x, q.z - P.z) < 1.0)) continue;
+      const y0 = floorAt(P.x, P.y, P.z);
+      if (P.y - y0 > 0.4) legs.beam([P.x, y0, P.z], [P.x, P.y, P.z], 0.09, 0xc9cfd1, [0.6, 0]);
+    }
+    const lm = legs.mesh(); if (lm) root.add(lm);
+  }
+}

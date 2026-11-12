@@ -12,7 +12,7 @@ export const MODEL_KEYS = [
   'hall_bench', 'potted_plant', 'trophy_case', 'pillar', 'flagpole', 'tree_big', 'lamp_post', 'uks_bed', 'folding_screen',
   'medicine_cabinet', 'canteen_table', 'canteen_counter',
   'hospital_bed', 'iv_stand', 'wheelchair', 'gurney', 'gurney_body', 'reception_desk', 'waiting_chairs', 'ward_curtain',
-  'morgue_drawers', 'surgery_table', 'surgery_lamp', 'xray_viewer', 'med_cart', 'tree_pine', 'tree_dead', 'bush', 'lift_panel', 'wall_handrail',
+  'morgue_drawers', 'surgery_table', 'surgery_lamp', 'xray_viewer', 'med_cart', 'tree_pine', 'tree_dead', 'bush', 'lift_panel', 'wall_handrail', 'slide_top', 'diving_board',
   'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
   'entity_pale', 'entity_masked', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];

@@ -143,9 +143,16 @@ export class Building {
     this.lifts.push(L);
     return L;
   }
-  // ride from (floor a, point) to (floor b, point); pts are absolute [x, y, z]
-  slide(a, b, pts, o = {}) {
-    const s = { from: a, to: b, pts, color: o.color || 0xd8b13a, end: pts[pts.length - 1], splash: !!o.splash };
+  // water slide from the edge of walkable cell (x,z) on floor k, leaving
+  // towards `side` (over the railing), down through open space to floor `to`.
+  // pts: the rest of the path, absolute [x, y, z] (y = 0 is floor 0).
+  slide(k, x, z, side, to, pts, o = {}) {
+    const d = SIDES[side], f = this.F[k];
+    const cx = (x + 0.5) * CELL, cz = (z + 0.5) * CELL;
+    const start = [cx + d.dx * (CELL / 2 + 0.35), k * FH + 1.12, cz + d.dz * (CELL / 2 + 0.35)];
+    const plat = [cx + d.dx * 0.62, cz + d.dz * 0.62];
+    f.prop('slide_top', plat[0], plat[1], yawFor(d.dx, d.dz), [1.15, 1.65, 1]);
+    const s = { from: k, to, pts: [start, ...pts], color: o.color || 0xd8b13a, entry: { x: cx - d.dx * 0.35, z: cz - d.dz * 0.35 }, end: pts[pts.length - 1] };
     this.slides.push(s);
     return s;
   }
@@ -165,7 +172,7 @@ export function generateBuilding(def, seed = def.seed) {
   LAYOUTS[def.layout](b, rng, def);
   finish(b, rng, def);
   return {
-    building: b, floors: b.F.map((f) => f.out), stairs: b.stairs, lifts: b.lifts, slides: b.slides,
+    building: b, floors: b.F.map((f) => f.out), stairs: b.stairs, lifts: b.lifts, slides: b.slides, tall: b.tall || [],
     start: b.start, startFloor: b.start.k, FH,
   };
 }
@@ -213,6 +220,15 @@ function finish(b, rng, def) {
     const reserved = new Set([f.map.exitKey, f.out.fusebox && f.out.fusebox.key].filter(Boolean));
     for (const r of f.out.rooms) if (!furnishExtra(r, f, rng, def)) furnishRoom(r, f.map, rng, f.out);
     dressExtra(f, rng, def, reserved);
+    // changing rooms line every wall with lockers; keep one in three
+    for (const r of f.out.rooms) {
+      if (r.type !== 'changing') continue;
+      const inR = (L) => L.x > r.x0 * CELL && L.x < (r.x1 + 1) * CELL && L.z > r.z0 * CELL && L.z < (r.z1 + 1) * CELL;
+      let i = 0;
+      const drop = new Set(f.out.lockers.filter((L) => inR(L) && (i++ % 3) !== 0));
+      f.out.lockers = f.out.lockers.filter((L) => !drop.has(L));
+      f.out.colliders = f.out.colliders.filter((c) => ![...drop].some((L) => Math.abs((c.minX + c.maxX) / 2 - L.x) < 1e-3 && Math.abs((c.minZ + c.maxZ) / 2 - L.z) < 1e-3));
+    }
     dressHalls(f.map, rng, f.out, reserved, true, def.lockerReach || 3);
   }
   if (st.auto) { // stand at the back of the start room facing its front wall
@@ -234,7 +250,7 @@ function finish(b, rng, def) {
     }
     for (const r of o.rooms) {
       if (r.noLights) continue;
-      const state = r === startRoom ? 'on' : roll();
+      const state = r === startRoom ? 'on' : r.dark ? 'off' : roll();
       for (let z = r.z0; z <= r.z1; z += 2) for (let x = r.x0; x <= r.x1; x += 2) {
         if (!ceilAt(x + z * W)) continue;
         const ex = Math.min(x + 2, r.x1 + 1), ez = Math.min(z + 2, r.z1 + 1);

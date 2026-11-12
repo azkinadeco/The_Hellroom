@@ -35,6 +35,11 @@ export function furnishExtra(r, f, rng, def) {
     case 'morgue': morgue(r, f, rng, P); return true;
     case 'surgery': surgery(r, f, rng, P); return true;
     case 'forest': forest(r, f, rng, P); return true;
+    case 'flooded': { // a room under knee-deep water and nothing else
+      for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) if (rng.chance(0.35)) r.spots.push([(x + rng.range(0.25, 0.75)) * CELL, 0.03, (z + rng.range(0.25, 0.75)) * CELL]);
+      if (!r.spots.length) r.spots.push([r.cx, 0.03, r.cz]);
+      return true;
+    }
     default: return false;
   }
 }

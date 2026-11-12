@@ -25,6 +25,7 @@ import props4  # noqa: E402
 import props5  # noqa: E402
 import props6  # noqa: E402
 import props7  # noqa: E402
+import props8  # noqa: E402
 import textures3  # noqa: E402
 import items  # noqa: E402
 import entities  # noqa: E402
@@ -40,8 +41,9 @@ GROUPS = {
     "tex3": textures3.ASSETS,
     "school": props6.ASSETS,
     "hospital": props7.ASSETS,
+    "pool2": props8.ASSETS,
     "pool": textures2.ASSETS,
-    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS, **props6.ASSETS, **props7.ASSETS},
+    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS, **props6.ASSETS, **props7.ASSETS, **props8.ASSETS},
     "figures": props5.ASSETS,
     "poolprops": props4.ASSETS,
     "lab": props3.ASSETS,

@@ -87,12 +87,10 @@ export const LEVELS = [
   },
   {
     id: 5, code: 'LEVEL 4', name: 'Kolam Renang',
-    subtitle: 'Airnya hangat. Tidak ada yang pernah berenang di sini.',
-    seed: 3112, blocksX: 5, blocksZ: 4,
-    lightsOff: 0.03, flicker: 0.03, fog: 0.03,
+    subtitle: 'Lima lantai keramik putih. Satu-satunya jalan cepat ke bawah adalah meluncur.',
+    seed: 3112, layout: 'poolrooms', size: [26, 24], floors: 5, theme: 'pool', clean: true, rail: 'parapet', railColor: 0xe9eef0, railCap: 0x5aa6b8, seeAll: true,
+    lightsOff: 0.04, flicker: 0.04, fog: 0.028,
     fuses: 4, keys: 1, batteries: 4, notes: 3, erasers: 7,
-    theme: 'pool', clean: true, mergeChance: 0.8, splitChance: 0.3,
-    mainRooms: ['pool', 'pool', 'changing'], bigRooms: ['pool'], smallRooms: ['changing', 'restroom'],
     entities: [{ type: 'centipede' }], hallTheme: 'hall',
   },
   {

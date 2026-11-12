@@ -444,12 +444,12 @@ export function furnishRoom(r, map, rng, out) {
     // lane ropes along the long axis on the cell boundary lines
     const alongX = x1 - x0 >= z1 - z0;
     if (alongX) {
-      for (let zz = r.z0 + 1; zz <= r.z1; zz++) for (let xx = r.x0; xx <= r.x1; xx++) {
+      for (let zz = r.z0 + 1; zz <= r.z1; zz += (r.h > 6 ? 3 : 1)) for (let xx = r.x0; xx <= r.x1; xx++) {
         const cx = (xx + 0.5) * CELL; if (cx - 1.5 < x0 - 0.01 || cx + 1.5 > x1 + 0.01) continue;
         emitProp(out, 'lane_rope', cx, zz * CELL, 0, null, { y: POOL_Y });
       }
     } else {
-      for (let xx = r.x0 + 1; xx <= r.x1; xx++) for (let zz = r.z0; zz <= r.z1; zz++) {
+      for (let xx = r.x0 + 1; xx <= r.x1; xx += (r.w > 6 ? 3 : 1)) for (let zz = r.z0; zz <= r.z1; zz++) {
         const cz = (zz + 0.5) * CELL; if (cz - 1.5 < z0 - 0.01 || cz + 1.5 > z1 + 0.01) continue;
         emitProp(out, 'lane_rope', xx * CELL, cz, Math.PI / 2, null, { y: POOL_Y });
       }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LEVELS, DIFFICULTY, NOISE, CELL, HIDE } from './config.js';
 import { generateLevel } from './level/generator.js';
 import { generateBuilding, FH } from './level/building.js';
-import { buildLevel, cloneWithBake } from './level/builder.js';
+import { buildLevel, cloneWithBake, buildSlides } from './level/builder.js';
 import { bakeUniforms } from './render/bake.js';
 import { VHS } from './render/vhs.js';
 import { World } from './world.js';
@@ -97,11 +97,34 @@ export class Game {
       const built = buildLevel(gen, this.assets, def, { FH, k });
       this.scene.add(built.root);
       const world = new World(gen, built);
-      return { k, gen, built, world, map: gen.map, field: built.field, doorSys: new DoorSystem(this, built.doors) };
+      // distance (in cells) to the nearest open space: far from any atrium the
+      // other floors cannot be seen and are not drawn
+      const W = gen.map.W, H = gen.map.H, near = new Uint8Array(W * H).fill(255);
+      const oa = gen.openAbove || [], nf = gen.noFloor || [];
+      for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
+        const i = x + z * W;
+        if (gen.map.region[i] !== -2 && !oa[i] && !nf[i]) continue;
+        for (let dz = -5; dz <= 5; dz++) for (let dx = -5; dx <= 5; dx++) {
+          const nx = x + dx, nz = z + dz;
+          if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue;
+          const d = Math.max(Math.abs(dx), Math.abs(dz)), j = nx + nz * W;
+          if (d < near[j]) near[j] = d;
+        }
+      }
+      return { k, gen, built, world, map: gen.map, field: built.field, doorSys: new DoorSystem(this, built.doors), near };
     });
     this.exitFloor = this.floors.find((f) => f.gen.exit) || this.floors[0];
     this.fuseFloor = this.floors.find((f) => f.gen.fusebox) || this.floors[0];
     this.stairs = this.bgen ? this.bgen.stairs : [];
+    this.slides = this.bgen ? this.bgen.slides : [];
+    // slides live in absolute coordinates, i.e. in floor 0's group
+    if (this.slides.length) buildSlides(this.slides, this.floors[0].built.root, (x, y, z) => {
+      for (let k = Math.min(this.floors.length - 1, Math.floor((y - 0.3) / FH)); k >= 0; k--) {
+        const m = this.floors[k].map, [cx, cz] = m.cellOf(x, z), r = m.reg(cx, cz);
+        if (r >= 0 && !(this.floors[k].gen.noFloor || [])[cx + cz * m.W]) return k * FH;
+      }
+      return 0;
+    });
     this.setFloor(startFloor);
     this.interactor = new Interactor(this);
     this.anomalies = new Anomalies(this);
@@ -131,7 +154,7 @@ export class Game {
     this.vhs.uniforms.uFade.value = 0;
     this.chasers.clear();
     this.lockerReason = null;
-    this.liftRide = null; p.locked = false; this.liftDir = 1;
+    this.liftRide = null; this.slideRide = null; p.locked = false; this.liftDir = 1;
     this.met = this.met || new Set();
     this.input.resetToggles();
 
@@ -172,13 +195,21 @@ export class Game {
   setFloor(k) {
     const f = this.floors[k];
     this.floorK = k;
+    if (this.player) this.player.water = f.gen.water;
     this.gen = f.gen; this.map = f.map; this.built = f.built; this.world = f.world; this.field = f.field; this.doorSys = f.doorSys;
     this.levelRoot = f.built.root;
     for (const o of this.floors) {
       o.built.root.position.y = (o.k - k) * FH;
-      o.built.root.visible = Math.abs(o.k - k) <= 1 || !!(this.def && this.def.seeAll);
       o.built.root.updateMatrixWorld(true);
     }
+    this.floorVis();
+  }
+  floorVis() {
+    const k = this.floorK, f = this.floors[k], p = this.player;
+    const [cx, cz] = f.map.cellOf(p.pos.x, p.pos.z);
+    const d = f.map.inside(cx, cz) ? f.near[cx + cz * f.map.W] : 255;
+    const open = this.def && this.def.seeAll && d <= 5;
+    for (const o of this.floors) o.built.root.visible = o.k === k || (Math.abs(o.k - k) <= 1 && d <= 6) || open || !!this.slideRide;
   }
   // height of the walkable surface at (x, z) on the current floor
   groundY(x, z) {
@@ -277,6 +308,41 @@ export class Game {
       if (R.t2 > 1.35) { this.liftRide = null; this.busy = false; p.locked = false; }
     }
   }
+  // ---------------------------------------------------------------- slides
+  rideSlide(S) {
+    if (this.slideRide || this.busy) return;
+    const p = this.player;
+    this.busy = true; p.locked = true; p.crouched = false;
+    this.slideRide = { S, u: 0, v: 2.5 };
+    for (const e of this.entities) this.onChaseEnd(e);
+    this.audio.whoosh(Math.min(6, S.length / 8));
+    this.emitNoise(p.pos.x, p.pos.z, 10, 'step');
+  }
+  updateSlide(dt) {
+    const R = this.slideRide;
+    if (!R) return;
+    const S = R.S, c = S.curve, p = this.player, cam = this.camera;
+    const T = c.getTangentAt(Math.min(R.u, 1));
+    R.v = Math.min(13, R.v + dt * (2 + Math.max(0, -T.y) * 14));
+    R.u += (R.v * dt) / S.length;
+    const u = Math.min(R.u, 1), P = c.getPointAt(u);
+    const base = this.floorK * FH;
+    cam.position.set(P.x, P.y - base + 0.95, P.z);
+    const look = c.getPointAt(Math.min(1, u + 3 / S.length));
+    cam.lookAt(look.x, look.y - base + 0.75, look.z);
+    p.pos.x = P.x; p.pos.z = P.z;
+    if (R.u >= 1) {
+      this.slideRide = null;
+      if (S.to !== this.floorK) this.changeFloor(S.to, {});
+      p.pos.set(S.end[0], 0, S.end[2]); p.y = 0;
+      p.yaw = Math.atan2(-T.x, -T.z); p.pitch = -0.25;
+      p.locked = false; this.busy = false;
+      this.audio.splash(1.3);
+      this.emitNoise(p.pos.x, p.pos.z, 22, 'step');
+      this.glitch = this.clear ? 0 : 0.25;
+      this.hud.toast('BYUR! Suaranya menggema di seluruh kolam.', 2.5);
+    }
+  }
   spawnFar(kind) {
     const [px, pz] = this.map.cellOf(this.player.pos.x, this.player.pos.z);
     const c = randomReachableCell(this.map, Math.random, px, pz, 9, 40) || randomReachableCell(this.map, Math.random, px, pz, 4, 60);
@@ -340,7 +406,7 @@ export class Game {
 
   killPlayer(entity, locker = null) {
     const p = this.player;
-    if (!p.alive || this.liftRide) return;
+    if (!p.alive || this.liftRide || this.slideRide) return;
     // inside (or climbing into) a hiding spot only a resident that pulls the door open can get you
     if ((p.hidden || p.entering) && !locker) {
       entity.state = entity.kind === 'shade' ? 'lurk' : entity.kind === 'eyes' ? 'watch' : 'patrol';
@@ -518,7 +584,8 @@ export class Game {
     if (input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
 
     this.updateLift(dt);
-    if (!this.liftRide) for (const e of this.entities) e.update(dt);
+    this.updateSlide(dt);
+    if (!this.liftRide && !this.slideRide) for (const e of this.entities) e.update(dt);
     this.anomalies.update(dt);
     // first sighting unlocks the resident's archive entry
     this.metT = (this.metT || 0) - dt;
@@ -758,6 +825,7 @@ export class Game {
     this.cullT = (this.cullT || 0) - dt;
     if (this.cullT > 0) return;
     this.cullT = 0.2;
+    if (this.floors.length > 1) this.floorVis();
     const c = this.camera.position, far = this.player.nightVision ? 40 : 34;
     for (const m of this.floors.flatMap((f) => (f.built.root.visible ? f.built.chunked : []))) {
       const b = m.userData.chunk;
