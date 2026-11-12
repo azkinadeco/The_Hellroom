@@ -239,6 +239,11 @@ function finish(b, rng, def) {
       f.out.colliders = f.out.colliders.filter((c) => ![...drop].some((L) => Math.abs((c.minX + c.maxX) / 2 - L.x) < 1e-3 && Math.abs((c.minZ + c.maxZ) / 2 - L.z) < 1e-3));
     }
     dressHalls(f.map, rng, f.out, reserved, true, def.lockerReach || 3);
+    // nothing may stand on a flight of stairs or in a lift
+    const blocked = (x, z) => { const r = f.out.rooms.find((q) => q.id === f.map.reg(Math.floor(x / CELL), Math.floor(z / CELL))); return r && (r.type === 'stairs' || r.type === 'lift'); };
+    f.out.props = f.out.props.filter((p) => p.type === 'slide_top' || !blocked(p.x, p.z));
+    f.out.colliders = f.out.colliders.filter((c) => !blocked((c.minX + c.maxX) / 2, (c.minZ + c.maxZ) / 2));
+    f.out.lockers = f.out.lockers.filter((L) => !blocked(L.x, L.z));
   }
   if (st.auto) { // stand at the back of the start room facing its front wall
     const fr = startRoom.front;

@@ -208,7 +208,7 @@ export class Game {
     const k = this.floorK, f = this.floors[k], p = this.player;
     const [cx, cz] = f.map.cellOf(p.pos.x, p.pos.z);
     const d = f.map.inside(cx, cz) ? f.near[cx + cz * f.map.W] : 255;
-    const open = this.def && this.def.seeAll && d <= 5;
+    const open = this.def && this.def.seeAll && d <= (this.def.seeNear ?? 5);
     for (const o of this.floors) o.built.root.visible = o.k === k || (Math.abs(o.k - k) <= 1 && d <= 6) || open || !!this.slideRide;
   }
   // height of the walkable surface at (x, z) on the current floor

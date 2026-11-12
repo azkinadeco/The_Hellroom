@@ -106,31 +106,43 @@ export const LEVELS = [
 // Every resident that can appear (Room menu + endless mode).
 export const RESIDENTS = ['pale', 'masked', 'gaper', 'shade', 'eyes', 'centipede', 'monitor', 'substitute', 'principal'];
 
-// Endless mode: every floor is a fresh random school that grows harder.
+// Endless mode: every floor is a fresh random multi-storey building
+// (src/level/layouts.js `endless`) that grows bigger, taller and harder.
 const ENDLESS_NAMES = ['Lorong Basah', 'Sayap Tanpa Jendela', 'Lantai Bawah Tanah', 'Ruang Guru Kosong', 'Koridor Berulang',
-  'Lab Kimia Gelap', 'Aula Upacara', 'Perpustakaan Sunyi', 'Gudang Arsip', 'Kantin Tutup', 'Ruang UKS', 'Ruang Musik'];
-const ENDLESS_THEMES = [null, null,
-  { theme: 'mall', clean: true, mainRooms: ['shop'], bigRooms: ['shop'], smallRooms: ['shop'], labChance: 0 },
-  null,
-  { theme: 'pool', clean: true, mainRooms: ['pool', 'changing'], bigRooms: ['pool'], smallRooms: ['changing', 'restroom'], lightsOff: 0.05 },
-  { theme: 'backroom', clean: true, mainRooms: ['statues', 'shop'], bigRooms: ['statues'], smallRooms: ['statues'] }];
+  'Lab Kimia Gelap', 'Aula Upacara', 'Perpustakaan Sunyi', 'Gudang Arsip', 'Kantin Tutup', 'Ruang UKS', 'Ruang Musik',
+  'Bangsal Kosong', 'Galeri Tanpa Wajah', 'Kolam Dalam', 'Sel Nomor Nol', 'Lantai Kuning'];
+const ENDLESS_STYLE_ORDER = ['school', 'hospital', 'detention', 'pool', 'museum', 'backroom'];
+const ENDLESS_LOOK = {
+  school: { rail: 'parapet', dress: 'school' },
+  hospital: { rail: 'bars', dress: 'hospital', textures: ['hosp_floor', 'hosp_floor', 'ceiling_tile', 'hosp_wall', 'hosp_wall'] },
+  detention: { rail: 'bars', textures: ['floor_tile', 'floor_tile', 'ceiling_tile', 'cell_wall', 'cell_wall'] },
+  pool: { rail: 'parapet', theme: 'pool', clean: true, railColor: 0xe9eef0, railCap: 0x5aa6b8 },
+  museum: { rail: 'parapet', clean: true, railColor: 0xd9d4c8, railCap: 0x6b5a3e, textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'] },
+  backroom: { rail: 'parapet', theme: 'backroom', clean: true, railColor: 0xc9b98a, railCap: 0x8a7a4a },
+};
 export function endlessDef(floor, seed) {
   const f = floor;
+  let st = (seed * 9301 + f * 49297) % 233280;
+  const rnd = () => { st = (st * 9301 + 49297) % 233280; return st / 233280; };
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   // one resident per floor, a different one each time
   const entities = [{ type: RESIDENTS[(seed + f * 7) % RESIDENTS.length] }];
+  const style = ENDLESS_STYLE_ORDER[(seed + f - 1) % ENDLESS_STYLE_ORDER.length];
+  const band = [ri(3, 4), ri(3, 4)];
+  const aw = Math.min(10, 4 + ri(0, Math.min(6, f))), ah = Math.min(8, 4 + ri(0, Math.min(4, f)));
+  const floors = Math.min(4, 2 + (f >= 2 ? 1 : 0) + (f >= 5 ? 1 : 0));
   return {
     id: 'endless', endless: true, floor: f,
     code: `LANTAI ${-f}`,
     name: ENDLESS_NAMES[(seed + f) % ENDLESS_NAMES.length],
     subtitle: f === 1 ? 'Tangganya hanya mengarah ke bawah.' : `Kamu sudah turun ${f - 1} lantai.`,
-    seed,
-    blocksX: Math.min(5, 3 + Math.floor(f / 2)), blocksZ: Math.min(5, 3 + Math.floor(f / 3)),
+    seed: seed + f * 7919,
+    layout: 'endless', style, band, atrium: ri(0, 3), floors, seeAll: true, seeNear: 1,
+    size: [aw + band[0] * 2 + 4, ah + band[1] * 2 + 4],
     lightsOff: Math.min(0.6, 0.15 + f * 0.05), flicker: Math.min(0.4, 0.12 + f * 0.03),
     fog: Math.min(0.08, 0.055 + f * 0.003),
     fuses: Math.min(5, 2 + Math.ceil(f / 2)), keys: Math.min(2, Math.floor(f / 2)), batteries: 4, notes: 2, erasers: 5,
-    mergeChance: 0.6,
-    bigRooms: ['library', 'studyhall', 'gym'], smallRooms: ['storage', 'office', 'restroom'], labChance: 0.2,
-    ...(ENDLESS_THEMES[f % ENDLESS_THEMES.length] || {}),
+    ...ENDLESS_LOOK[style],
     entities, tape: false,
   };
 }

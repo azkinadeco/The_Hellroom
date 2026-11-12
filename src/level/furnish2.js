@@ -512,12 +512,13 @@ function street(r, f, rng, P) {
 
 // ---------------------------------------------------------------- halls
 export function dressExtra(f, rng, def, reserved) {
-  if (def.layout === 'mall') dressMall(f, rng, reserved);
-  if (def.layout === 'school') dressSchool(f, rng, reserved);
-  if (def.layout === 'hospital') dressHospital(f, rng, reserved);
+  const dress = def.dress || def.layout;
+  if (dress === 'mall') dressMall(f, rng, reserved);
+  if (dress === 'school') dressSchool(f, rng, reserved);
+  if (dress === 'hospital') dressHospital(f, rng, reserved);
   if (def.layout) for (const d of f.map.doors.values()) {
     const r = d.room;
-    if (!r.sign || def.layout === 'school' || r.mallSign) continue;
+    if (!r.sign || dress === 'school' || r.mallSign) continue;
     f.out.signs.push({ x: d.x - d.inX * (wallOff + 0.01), z: d.z - d.inZ * (wallOff + 0.01), y: 2.42, rot: yawFor(-d.inX, -d.inZ), text: r.sign });
   }
 }

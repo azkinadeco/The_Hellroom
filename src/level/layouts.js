@@ -432,3 +432,133 @@ function museum(b, rng) {
   b.exit = { k: 0, x: 1, z: 12, side: 'W' };
 }
 LAYOUTS.museum = museum;
+
+// ---------------------------------------------------------------------------
+// MODE TANPA UJUNG — a random multi-storey building every floor. Plan:
+//   border · west band · west corridor · atrium · east corridor · east band
+// with north/south bands between the corridors. The atrium is open through
+// every storey; open flights climb it, alternating sides, so each floor has
+// the landing from below on one side and the flight up on the other. Rooms
+// are cut from the bands at random widths and drawn from the building's
+// theme, and now and then from somewhere else entirely.
+// ---------------------------------------------------------------------------
+export const ENDLESS_STYLES = {
+  school: { rooms: ['kelas', 'kelas', 'kelas', 'guru', 'library', 'uks', 'restroom', 'storage', 'kepsek', 'lab'] },
+  hospital: { rooms: ['ward', 'ward', 'icu', 'pharmacy', 'morgue', 'surgery', 'radiology', 'storage', 'restroom', 'office'] },
+  pool: { rooms: ['changing', 'changing', 'restroom', 'storage', 'office', 'pool', 'flooded'] },
+  museum: { rooms: ['gallery', 'gallery', 'vitrine', 'statues', 'exhibit', 'office', 'storage'] },
+  detention: { rooms: ['sel', 'sel', 'hukuman', 'hukuman', 'guru', 'library', 'restroom', 'storage'] },
+  backroom: { rooms: ['statues', 'shop', 'shop', 'storage', 'office'] },
+};
+const ROOM_NAMES = {
+  kelas: () => 'KELAS ' + (1 + Math.floor(Math.random() * 3)) + '-' + 'ABCDEFGH'[Math.floor(Math.random() * 8)],
+  guru: 'RUANG GURU', library: 'PERPUSTAKAAN', uks: 'UKS', restroom: 'TOILET', storage: 'GUDANG', kepsek: 'KEPALA SEKOLAH', lab: 'LAB',
+  ward: 'BANGSAL', icu: 'ICU', pharmacy: 'APOTEK', morgue: 'KAMAR JENAZAH', surgery: 'RUANG OPERASI', radiology: 'RADIOLOGI', office: 'KANTOR',
+  changing: 'RUANG GANTI', pool: 'KOLAM', flooded: 'RUANG RENDAM', gallery: 'GALERI', vitrine: 'KOLEKSI', statues: 'RUANG PATUNG',
+  exhibit: 'PAMERAN', sel: 'SEL', hukuman: 'RUANG HUKUMAN', shop: null, forest: 'TAMAN', house: 'RUMAH',
+};
+// the strange thing at the bottom of the atrium
+const ATRIUMS = [
+  { type: 'lapangan', mat: { floor: 'paving' }, sky: true },
+  { type: 'forest', mat: { floor: 'forest_ground', wall: 'forest_wall' }, sky: true },
+  { type: 'statuehall', mat: null },
+  { type: 'ujian', mat: null },
+];
+function endless(b, rng, def) {
+  const F = b.F, W = b.W, H = b.H, N = F.length;
+  const style = ENDLESS_STYLES[def.style];
+  const bw = def.band[0], bn = def.band[1];
+  const xW = bw + 1, xE = W - bw - 2, zN = bn + 1, zS = H - bn - 2;   // corridors
+  const ax0 = xW + 1, ax1 = xE - 1, az0 = zN + 1, az1 = zS - 1;      // atrium
+  const name = (type) => { const n = ROOM_NAMES[type]; return typeof n === 'function' ? n() : n; };
+  const flood = (f, r) => f.out.water.push({ minX: r.x0 * CELL + 0.02, maxX: (r.x1 + 1) * CELL - 0.02, minZ: r.z0 * CELL + 0.02, maxZ: (r.z1 + 1) * CELL - 0.02 });
+  for (const f of F) { f.hall(xW, 1, xW, H - 2); f.hall(xE, 1, xE, H - 2); f.hall(xW, zN, xE, zN); f.hall(xW, zS, xE, zS); }
+  // ---- the atrium
+  const at = def.atrium;
+  const A = ATRIUMS[at];
+  const atr = F[0].room(ax0, az0, ax1, az1, A.type, { sign: null, noLock: true, noLights: A.sky, mat: A.mat, towerX: (ax0 + ax1 + 1) / 2 * CELL, towerZ: (az0 + az1 + 1) / 2 * CELL, faceAll: rng.range(0, 6) });
+  void atr;
+  for (const s of ['N', 'S', 'W', 'E']) F[0].edges(ax0, az0, ax1, az1, s, (x, z, side) => F[0].arch(x, z, side));
+  for (let k = 1; k < N; k++) F[k].void(ax0, az0, ax1, az1);
+  if (A.sky) F[N - 1].sky(ax0, az0, ax1, az1);
+  // ---- open flights, alternating sides
+  const mat = (def.textures || [])[0] || (def.theme === 'pool' ? 'pool_floor' : def.theme === 'backroom' ? 'bk_carpet' : 'floor_tile');
+  for (let k = 0; k < N - 1; k++) {
+    if (k % 2 === 0) { b.stair(k, ax0, az1, 'N', 3, { open: true, mat }); F[k + 1].hall(ax0, az0, ax0, az1 - 3); }
+    else { b.stair(k, ax1, az0, 'S', 3, { open: true, mat }); F[k + 1].hall(ax1, az0 + 3, ax1, az1); }
+  }
+  // bridges across the void on some floors
+  for (let k = 1; k < N; k++) if (rng.chance(0.5) && ax1 - ax0 >= 4) {
+    const z = rng.int(az0 + 1, az1 - 1);
+    for (let x = ax0; x <= ax1; x++) if (F[k].map.reg(x, z) === VOID_) F[k].hall(x, z, x, z);
+  }
+  // ---- lift in a corner of the east corridor's band (sometimes)
+  const lift = N > 2 && rng.chance(0.6) ? [xE + 1, zN] : null;
+  if (lift) b.lift(lift[0], lift[1], 'W', F.map((_, k) => k));
+  // ---- rooms cut from the bands
+  const lobbyZ = Math.floor(H / 2) - 1;
+  F[0].hall(1, lobbyZ, xW - 1, lobbyZ + 1);
+  const cut = (len) => { const out = []; let p = 0; while (p < len) { let s = Math.min(len - p, rng.int(2, 4)); if (len - p - s === 1) s++; out.push(s); p += s; } return out; };
+  const pickType = () => {
+    if (rng.chance(0.05)) return rng.pick(['forest', 'flooded', 'statues', 'house', 'pool']);
+    return rng.pick(style.rooms);
+  };
+  const free = (f, x0, z0, x1, z1) => { for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) if (f.map.reg(x, z) !== -1) return false; return true; };
+  const make = (f, x0, z0, x1, z1, type) => {
+    if (!free(f, x0, z0, x1, z1)) {
+      // split around whatever is already there: one-cell slivers become cells or halls
+      return null;
+    }
+    const o = { sign: name(type) };
+    if (type === 'forest') Object.assign(o, { mat: { floor: 'forest_ground', wall: 'forest_wall' }, noLights: true, noLock: true });
+    if (type === 'house') Object.assign(o, { mat: { floor: 'floor_classroom', wall: 'house_wall' } });
+    if (type === 'pool' || type === 'statues') o.noLock = true;
+    if (rng.chance(0.08)) o.dark = true;
+    const r = f.room(x0, z0, x1, z1, type, o);
+    if (!f.autoDoor(r, null, rng)) { f.fill(x0, z0, x1, z1, 0); f.out.rooms.splice(f.out.rooms.indexOf(r), 1); return null; }
+    if (type === 'flooded') flood(f, r);
+    return r;
+  };
+  const rooms = [];
+  for (const f of F) {
+    const band = (along, a0, a1, c0, c1) => {   // along: 'z' (west/east bands) or 'x'
+      let p = a0;
+      for (const s of cut(a1 - a0 + 1)) {
+        let type = pickType();
+        const one = s === 1 || (type === 'sel');
+        if (type === 'sel') {   // a row of one-cell cells instead
+          for (let i = 0; i < s; i++) {
+            const q = p + i;
+            const r = along === 'z' ? make(f, c0, q, c1, q, 'sel') : make(f, q, c0, q, c1, 'sel');
+            if (r) { r.sign = 'SEL ' + String(rooms.length + 1).padStart(2, '0'); rooms.push(r); }
+          }
+        } else {
+          if (one) type = 'storage';
+          const r = along === 'z' ? make(f, c0, p, c1, p + s - 1, type) : make(f, p, c0, p + s - 1, c1, type);
+          if (r) rooms.push(r);
+        }
+        p += s;
+      }
+    };
+    // west / east bands run the full height, north / south between corridors
+    band('z', 1, H - 2, 1, xW - 1);
+    band('z', 1, H - 2, xE + 1, W - 2);
+    band('x', xW + 1, xE - 1, 1, zN - 1);
+    band('x', xW + 1, xE - 1, zS + 1, H - 2);
+    // any cell left over (around the lobby or the lift) joins the corridors
+    for (let z = 1; z < H - 1; z++) for (let x = 1; x < W - 1; x++) if (f.map.reg(x, z) === -1) {
+      const touch = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => f.map.reg(x + dx, z + dz) === 0);
+      if (touch) f.hall(x, z, x, z);
+    }
+  }
+  // ---- lights hung high in the atrium
+  const top = (N - 1) * FH_ + 2.95;
+  for (const [x, z] of [[ax0 + 0.5, az0 + 0.5], [ax1 + 0.5, az1 + 0.5]]) b.tallLight(N - 1, x * CELL, z * CELL, top, { fall: 0.03, reach2: 500, fixture: A.sky ? 'none' : 'lamp', state: rng.chance(0.3) ? 'flicker' : 'on' });
+  // ---- start in a room on the top floor, exit in the ground floor lobby
+  const tops = F[N - 1].out.rooms.filter((r) => !['stairs', 'lift', 'forest', 'pool', 'flooded', 'statues'].includes(r.type) && r.doors.length);
+  b.start = { k: N - 1, room: rng.pick(tops) };
+  b.exit = { k: 0, x: 1, z: lobbyZ, side: 'W' };
+}
+const VOID_ = -2;
+const FH_ = 3.6;
+LAYOUTS.endless = endless;
