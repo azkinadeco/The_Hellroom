@@ -30,6 +30,7 @@ import entities3  # noqa: E402
 import textures  # noqa: E402
 import textures2  # noqa: E402
 import title  # noqa: E402
+import portraits  # noqa: E402
 
 GROUPS = {
     "textures": {**textures.ASSETS, **textures2.ASSETS},
@@ -42,6 +43,7 @@ GROUPS = {
     "entities": {**entities.ASSETS, **entities2.ASSETS, **entities3.ASSETS},
     "creatures": entities3.ASSETS,
     "ui": title.ASSETS,
+    "portraits": portraits.ASSETS,
 }
 
 

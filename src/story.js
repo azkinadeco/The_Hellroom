@@ -38,7 +38,7 @@ export const NOTES = {
   ],
 };
 
-export const ENDING = 'Pintu terbuka. Cahaya putih. Kaset berhenti berputar.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu — hanya bahwa handycam ini kembali, sendirian, ke meja guru di Kelas Malam.';
+export const ENDING = 'Pintu darurat terbuka. Di baliknya tidak ada lorong, mal, kolam, atau ruangan berwallpaper kuning. Hanya cahaya putih.\n\nPatung-patung di belakangmu tidak menoleh. Untuk pertama kalinya, tidak ada yang mengikutimu.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu.\n\nYang diketahui hanya ini: handycam ini kembali sendirian ke meja guru di Kelas Malam, dengan kaset yang sudah diputar ulang ke awal.';
 
 // Secret tapes: one per story level. Shown as transcripts.
 export const TAPES = {

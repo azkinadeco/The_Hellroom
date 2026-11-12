@@ -225,3 +225,22 @@ body.clear-screen #title h1 { text-shadow: none; }
   12% { background-color: rgba(0,0,0,0); transform: translateX(-6px); } 18% { transform: translateX(5px); } 24% { transform: none; }
   72% { opacity: 1; background-color: rgba(0,0,0,0); } 100% { opacity: 1; background-color: #000; } }
 @keyframes scareSoft { 0% { opacity: 0.9; background-color: rgba(0,0,0,0); } 20% { opacity: 0.6; } 75% { opacity: 0.8; background-color: rgba(0,0,0,0); } 100% { opacity: 1; background-color: #000; } }
+
+/* batch 9: portraits + ending */
+.portrait { flex: 0 0 auto; width: 52px; height: 65px; background: #0b0a0a center/cover no-repeat; border: 1px solid var(--line);
+  filter: contrast(1.1) saturate(0.85); display: inline-flex; align-items: center; justify-content: center; color: var(--dim); font-size: 30px; }
+.portrait.unknown { background: radial-gradient(ellipse at 50% 40%, #1d1716 0%, #060505 70%); }
+.portrait.none { visibility: hidden; }
+.level-item { align-items: center; }
+.beast-grid .archive-item { display: flex; gap: 10px; align-items: center; }
+.beast-grid .portrait { width: 40px; height: 50px; font-size: 22px; }
+#ending { background: #000; align-items: center; justify-content: center; }
+.ending-box { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 24px); overflow-y: auto; text-align: center; padding: 16px; }
+.ending-lines p { font-size: 24px; line-height: 1.45; opacity: 0; animation: endIn 1.6s ease forwards; margin: 0 0 18px; }
+.ending-credits { opacity: 0; animation: endIn 2s ease forwards; }
+.ending-credits h2 { font-size: 46px; margin-top: 18px; }
+.ending-cast { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 14px 0; }
+.ending-cast .cast { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 16px; color: var(--dim); }
+.ending-cast .portrait { width: 72px; height: 90px; }
+@keyframes endIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+body.clear-screen .ending-lines p, body.clear-screen .ending-credits { animation-duration: 0.8s; }

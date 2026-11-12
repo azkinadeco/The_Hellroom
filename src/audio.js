@@ -210,12 +210,13 @@ export class Audio {
   }
 
   // ---------- one-shots ----------
-  footstep(kind) {
+  footstep(kind, surf = 'tile') {
     if (!this.ready) return;
-    const t = this.t, vol = kind === 'sprint' ? 0.32 : kind === 'crouch' ? 0.07 : 0.17;
+    const sv = surf === 'carpet' ? 0.45 : surf === 'tile' ? 1.1 : 0.9;
+    const t = this.t, vol = (kind === 'sprint' ? 0.32 : kind === 'crouch' ? 0.07 : 0.17) * sv;
     const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
-    const f = this._filter('bandpass', 1100 + Math.random() * 500, 1.1);
-    const g = this._out(null, 0.25);
+    const f = this._filter(surf === 'carpet' ? 'lowpass' : 'bandpass', surf === 'carpet' ? 500 : surf === 'wood' ? 700 + Math.random() * 300 : 1100 + Math.random() * 500, 1.1);
+    const g = this._out(null, surf === 'tile' ? 0.45 : surf === 'carpet' ? 0.05 : 0.25);
     src.connect(f).connect(g);
     this._env(g, t, 0.004, vol, 0.09);
     src.start(t, Math.random()); src.stop(t + 0.15);

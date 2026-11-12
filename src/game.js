@@ -166,6 +166,17 @@ export class Game {
   }
   onChaseEnd(e) { this.chasers.delete(e); }
 
+  surfaceAt(x, z) {
+    const th = this.def.theme;
+    if (th === 'backroom') return 'carpet';
+    if (th === 'pool' || th === 'mall') return 'tile';
+    const [cx, cz] = this.map.cellOf(x, z);
+    const r = this.map.reg(cx, cz);
+    if (r <= 0) return 'tile';
+    const room = this.gen.rooms.find((q) => q.id === r);
+    return room && room.type === 'restroom' ? 'tile' : 'wood';
+  }
+
   isSeenByPlayer(e) {
     const p = this.player;
     if (!p.alive) return false;

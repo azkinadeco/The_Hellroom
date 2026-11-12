@@ -16,7 +16,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { hints: [], tapes: [], met: [], notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', screen: 'vhs', invertY: false, subs: true } };
+const defaults = { hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', screen: 'vhs', invertY: false, subs: true } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -115,6 +115,7 @@ const ui = {
       ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
     const last = game.levelIndex >= LEVELS.length - 1;
+    if (last && !game.def.test) { showEnding(t); return; }
     $('win-text').textContent = last ? ENDING : 'Pintu darurat terbuka ke… lorong lain. Sekolah ini lebih dalam dari yang kamu kira.';
     $('btn-next').textContent = last ? 'Main Lagi dari Awal' : 'Level Berikutnya';
     show('win');
@@ -195,6 +196,13 @@ function quitToMenu() {
 function buildTitle() {
   const btn = document.querySelector('#title [data-go="play"]');
   btn.textContent = save.unlocked > 1 ? `▶ Lanjutkan — ${LEVELS[save.unlocked - 1].code}` : '▶ Mainkan';
+  document.querySelector('#title .tag').textContent = 'Rekaman Kelas Malam · 1996' + (save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
+}
+// resident portrait for a card; unseen residents stay a dark silhouette
+function portrait(kind, seen) {
+  if (!kind) return '<span class="portrait none"></span>';
+  return seen ? `<span class="portrait" style="background-image:url('assets/ui/portraits/${kind}.jpg')"></span>`
+    : '<span class="portrait unknown">?</span>';
 }
 function buildLevels() {
   const list = $('level-list'); list.innerHTML = '';
@@ -203,7 +211,8 @@ function buildLevels() {
     b.className = 'level-item';
     b.disabled = i + 1 > save.unlocked;
     const best = save.best[l.id + ':' + save.diff];
-    b.innerHTML = `<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;
+    const kind = l.entities[0] && l.entities[0].type, seen = kind && save.met.includes(kind);
+    b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;
     b.onclick = () => startLevel(i);
     list.appendChild(b);
   });
@@ -227,7 +236,7 @@ function buildArchive() {
     total++; const ok = met.has(k); if (ok) have++;
     const b = document.createElement('button');
     b.className = 'archive-item' + (ok ? '' : ' locked');
-    b.textContent = ok ? '👁 ' + ENTITY_INFO[k].name : '??? — belum ditemui';
+    b.innerHTML = ok ? `${portrait(k, true)}<span>${ENTITY_INFO[k].name}</span>` : `${portrait(k, false)}<span>??? — belum ditemui</span>`;
     b.disabled = !ok;
     b.onclick = () => openBeast(k);
     grid.appendChild(b);
@@ -257,7 +266,7 @@ function buildRooms() {
     const b = document.createElement('button');
     b.className = 'level-item';
     const res = l.entities.map((e) => ENTITY_INFO[e.type].name).join(', ');
-    b.innerHTML = `<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">Penghuni: ${res}</div></span>`;
+    b.innerHTML = `${portrait(l.entities[0] && l.entities[0].type, true)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">Penghuni: ${res}</div></span>`;
     b.onclick = () => { viewer && viewer.stop(); startLevel(i, { ...roomOpts }); };
     list.appendChild(b);
   });
@@ -297,6 +306,21 @@ function openBeast(k) {
   const cl = $('beast-clips'); cl.innerHTML = '';
   clips.forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { beastViewer.playClip(n); for (const x of cl.children) x.classList.toggle('on', x === b); }; cl.appendChild(b); });
   beastViewer.start();
+}
+
+// final level cleared: the tape plays out, then credits
+function showEnding(t) {
+  save.endingSeen = true; persist();
+  const lines = ENDING.split('\n\n');
+  const box = $('ending-lines'); box.innerHTML = '';
+  lines.forEach((ln, i) => { const p = document.createElement('p'); p.textContent = ln; p.style.animationDelay = (0.6 + i * 2.6) + 's'; box.appendChild(p); });
+  const met = new Set(save.met);
+  const cast = LEVELS.map((l) => l.entities[0].type).filter((k, i, a) => a.indexOf(k) === i)
+    .map((k) => `<div class="cast">${portrait(k, met.has(k))}<span>${met.has(k) ? ENTITY_INFO[k].name : '???'}</span></div>`).join('');
+  $('ending-cast').innerHTML = cast;
+  $('ending-stats').textContent = `Waktu rekaman terakhir ${fmt(t)}  ·  Kaset rahasia ${save.tapes.length}/${LEVELS.length}  ·  Penghuni ditemui ${save.met.length}`;
+  $('ending-credits').style.animationDelay = (1 + lines.length * 2.6) + 's';
+  show('ending');
 }
 
 function buildSettings() {
@@ -340,6 +364,8 @@ $('btn-quit').onclick = quitToMenu;
 $('btn-retry').onclick = () => { if (game.def.endless) { startEndless(1); return; } pendingLevel = game.levelIndex; beginPlay(); };
 $('btn-dead-menu').onclick = quitToMenu;
 $('btn-win-menu').onclick = quitToMenu;
+$('btn-end-menu').onclick = quitToMenu;
+$('btn-end-again').onclick = () => startLevel(0);
 $('btn-next').onclick = () => { if (game.def.endless) { startEndless(game.def.floor + 1); return; } const n = game.levelIndex + 1; startLevel(n >= LEVELS.length ? 0 : n); };
 addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && current === 'note') $('note-close').click();

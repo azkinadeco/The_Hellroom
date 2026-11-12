@@ -144,8 +144,10 @@ export class Player {
           game.audio.splash(kind === 'crouch' ? 0.4 : kind === 'sprint' ? 1 : 0.7);
           game.emitNoise(this.pos.x, this.pos.z, NOISE.splash * (kind === 'crouch' ? 0.5 : kind === 'sprint' ? 1.3 : 1), 'step');
         } else {
-          game.audio.footstep(kind);
-          game.emitNoise(this.pos.x, this.pos.z, NOISE[kind], 'step');
+          // carpet swallows steps, bare tile echoes them
+          const surf = game.surfaceAt(this.pos.x, this.pos.z);
+          game.audio.footstep(kind, surf);
+          game.emitNoise(this.pos.x, this.pos.z, NOISE[kind] * (surf === 'carpet' ? 0.6 : surf === 'tile' ? 1.15 : 1), 'step');
         }
       }
     } else this.bob = damp(this.bob, Math.round(this.bob / Math.PI) * Math.PI, 6, dt);

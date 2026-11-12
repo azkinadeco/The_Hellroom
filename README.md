@@ -44,6 +44,10 @@ Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker
 
 **Tampilan layar**: di Pengaturan ada pilihan **Jernih HD** yang menghilangkan semua efek kaset rusak (garis, getaran, noise, kedip, dan guncangan saat mati) untuk pemain yang pusing melihatnya.
 
+**Langkah kaki**: karpet backroom meredam langkahmu (lebih senyap), keramik mal dan kolam memantulkannya (lebih berisik), dan air kolam selalu berisik.
+
+**Kartu level & ending**: setiap kartu level menampilkan potret penghuninya (dirender di Blender, `blender/portraits.py`) setelah kamu pernah melihatnya. Menamatkan LEVEL 5 memutar ending dan kredit, lalu judul menampilkan ★ ENDING TERBUKA.
+
 **Loker**: di dalam loker kamu aman dari serangan langsung. Penghuni hanya bisa menarikmu keluar kalau ia melihatmu masuk, atau kalau ia mendengar napasmu cukup lama saat memeriksa loker (tahan napas!).
 
 **Pilih Room (uji)**: menu khusus pengembangan untuk langsung masuk ke level mana pun. Penghuni bisa diganti (atau dikosongkan untuk jelajah bebas), ada **mode kebal**, dan ada **Galeri Penghuni** untuk memutar model 3D beserta animasinya. Untuk rilis, set `DEV_ROOMS = false` di `src/config.js`, dan menu ini akan hilang.
