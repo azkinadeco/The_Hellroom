@@ -48,7 +48,7 @@ export class Player {
   update(dt, input, world, game) {
     // ----- look -----
     if (!this.lookLock) {
-      const s = 0.0022 * input.sensitivity;
+      const s = 0.0022 * input.sensitivity * (this.lookScale || 1);
       this.yaw -= input.lookDX * s;
       this.pitch -= input.lookDY * s * (input.invertY ? -1 : 1);
       if (this.hidden) { // limited look inside a locker

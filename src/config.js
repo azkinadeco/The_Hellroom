@@ -81,7 +81,7 @@ export const LEVELS = [
     lightsOff: 0.35, flicker: 0.35,
     fog: 0.065,
     fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6,
-    entities: [{ type: 'monitor' }, { type: 'substitute' }, { type: 'pupil' }, { type: 'pupil' }],
+    entities: [{ type: 'monitor' }, { type: 'substitute' }, { type: 'principal' }, { type: 'pupil' }],
     hallTheme: 'hall',
   },
   {
@@ -97,7 +97,7 @@ export const LEVELS = [
     mergeChance: 0.85,
     bigRooms: ['gym', 'gym', 'studyhall'],
     smallRooms: ['restroom', 'restroom', 'storage', 'office'],
-    entities: [{ type: 'monitor' }, { type: 'monitor' }, { type: 'pupil' }, { type: 'pupil' }],
+    entities: [{ type: 'monitor' }, { type: 'monitor' }, { type: 'principal' }, { type: 'pupil' }, { type: 'pupil' }],
     hallTheme: 'hall',
   },
 ];
@@ -110,6 +110,7 @@ export function endlessDef(floor, seed) {
   const entities = [{ type: 'monitor' }];
   if (f >= 2) entities.push({ type: 'pupil' });
   if (f >= 3) entities.push({ type: 'substitute' });
+  if (f >= 4) entities.push({ type: 'principal' });
   if (f >= 5) entities.push({ type: 'monitor' });
   if (f >= 7) entities.push({ type: 'pupil' });
   return {

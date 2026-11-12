@@ -435,7 +435,89 @@ export class Pupil extends Entity {
   }
 }
 
+// ---------------------------------------------------------------------------
+const PRINCIPAL_LINES = [
+  'KAMU. SISWA DENGAN KAMERA. TETAP DI TEMPAT.',
+  'SEMUA PETUGAS: ADA SISWA BERKELIARAN DI SINI.',
+  'KEMBALI KE KELAS. SEKARANG.',
+  'KAMI MELIHATMU. KAMI SELALU MELIHATMU.',
+];
+export class Principal extends Entity {
+  constructor(game, cell) {
+    super(game, 'principal', cell);
+    this.walk = 1.25;
+    this.cd = 4;
+    this.radius = 0.4;
+    this.lastSeen = null;
+    this.play('Idle');
+  }
+  onNoise(x, z) {
+    if (this.state === 'announce' || this.state === 'locker') return;
+    this.state = 'seek'; this.goToWorld(x, z);
+  }
+  update(dt) {
+    const g = this.game, p = g.player;
+    this.cd -= dt; this.stateT += dt;
+    const see = this.sees(20, 150);
+    if (see > 0.15) this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time };
+    const d = this.distTo(p.pos);
+    if (this.state === 'announce') {
+      this.velocity = 0;
+      this.faceToward(p.pos.x, p.pos.z, dt, 4);
+      if (this.stateT > 2.0) { this.state = 'seek'; this.stateT = 0; if (this.lastSeen) this.goToWorld(this.lastSeen.x, this.lastSeen.z); }
+    } else if (this.state === 'locker') {
+      const L = this.lockerTarget;
+      const fd = HIDE[L.kind || 'locker'].inspect;
+      const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
+      const done = this.path && this.pathIdx < this.path.length ? this.followPath(dt, this.walk * 1.3) : this.moveToward(fx, fz, dt, this.walk * 1.3, 0.3, true);
+      if ((done || this.distTo({ x: fx, z: fz }) < 0.4) && p.hidden === L) { this.state = 'attack'; g.killPlayer(this, L); }
+      else if (p.hidden !== L) { this.state = 'seek'; }
+    } else if (this.state !== 'attack') {
+      if (see > 0.15 && this.cd <= 0) {
+        // stop and broadcast the player's position to every entity
+        this.state = 'announce'; this.stateT = 0; this.cd = 9;
+        this.play('Announce', 0.15, true);
+        g.audio.paChime(this.pos);
+        g.schedule(0.9, () => g.audio.paVoice(1.8, this.pos));
+        g.hud.toast('📢 "' + PRINCIPAL_LINES[Math.floor(Math.random() * PRINCIPAL_LINES.length)] + '"', 3.5);
+        for (const e of g.entities) if (e !== this) e.onNoise(p.pos.x, p.pos.z, 1, 'alert');
+        g.onChaseStart(this);
+      } else if (p.hidden && this.lastSeen && g.time - this.lastSeen.t < 1.2) {
+        this.lockerTarget = p.hidden; this.state = 'locker';
+        const fd = HIDE[p.hidden.kind || 'locker'].inspect;
+        this.goToWorld(p.hidden.x + Math.sin(p.hidden.rot) * fd, p.hidden.z + Math.cos(p.hidden.rot) * fd);
+      } else if (see > 0.15) {
+        this.moveToward(p.pos.x, p.pos.z, dt, this.walk * 1.1 * this.speedMul, 0.1, true);
+        this.path = null;
+      } else if (!this.path || this.pathIdx >= this.path.length) {
+        this.velocity = 0;
+        this.waitT -= dt;
+        if (this.waitT <= 0) {
+          this.waitT = 2 + Math.random() * 3;
+          if (this.state === 'seek') g.onChaseEnd(this);
+          this.state = 'patrol';
+          const [cx, cz] = this.cell();
+          const t = randomReachableCell(g.map, Math.random, cx, cz, 4, 14);
+          if (t) this.goTo(...t);
+        }
+      } else this.followPath(dt, this.walk * this.speedMul);
+      if (!p.hidden && p.alive && d < 1.15) { this.state = 'attack'; g.killPlayer(this); }
+    }
+    if (this.state !== 'announce' && this.state !== 'attack') {
+      const v = this.velocity || 0;
+      this.play(v > 0.15 ? 'Walk' : 'Idle');
+      if (this.current) this.current.timeScale = v > 0.15 ? clamp(v / this.walk, 0.7, 1.4) : 1;
+    }
+    if ((this.velocity || 0) > 0.3) {
+      this.stepAcc += this.velocity * dt;
+      if (this.stepAcc > 0.9) { this.stepAcc = 0; g.audio.heavyStep(this.pos, 0.3); }
+    }
+    this.updateCommon(dt);
+  }
+}
+
 export function spawnEntity(game, type, cell) {
+  if (type === 'principal') return new Principal(game, cell);
   if (type === 'monitor') return new Monitor(game, cell);
   if (type === 'substitute') return new Substitute(game, cell);
   return new Pupil(game, cell);

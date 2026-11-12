@@ -33,8 +33,8 @@ Tujuan setiap level: kumpulkan semua **sekring**, pasang di **kotak panel** deka
 |---|---|---|
 | LEVEL 0 | Lorong Tak Berujung | Petugas Ketertiban |
 | LEVEL 1 | Sayap Detensi (lebih gelap) | Guru Pengganti, Si Murid |
-| LEVEL 2 | Kantor Kepala Sekolah | Ketiganya |
-| LEVEL 3 | Gedung Olahraga (gym, toilet, final) | Dua Petugas Ketertiban, Si Murid |
+| LEVEL 2 | Kantor Kepala Sekolah | Petugas, Guru Pengganti, Kepala Sekolah, Si Murid |
+| LEVEL 3 | Gedung Olahraga (gym, toilet, final) | Dua Petugas Ketertiban, Kepala Sekolah, Si Murid |
 
 **Mode Tanpa Ujung**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar, gelap, dan ramai penghuni. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
 
@@ -45,6 +45,7 @@ Tujuan setiap level: kumpulkan semua **sekring**, pasang di **kotak panel** deka
 **Penghuni sekolah**
 - **Petugas Ketertiban (The Hall Monitor)**: tinggi kurus, tanpa mata. Berpatroli, mendengar langkahmu, melihat siluetmu. Saat mengejar, ia meniup peluit. Kalau ia melihatmu masuk loker, ia akan langsung menarikmu keluar. Kalau kamu bernapas saat ia memeriksa loker, kamu ketahuan.
 - **Guru Pengganti (The Substitute)**: manekin berkapur yang hanya bergerak saat tidak kamu lihat. Dalam gelap, tatapanmu tidak berarti, jadi nyalakan senter atau mode malam.
+- **Kepala Sekolah (The Headmaster)**: berjas cokelat, kepalanya corong pengeras suara antik. Lambat dan tidak pernah berlari, tapi setiap kali melihatmu ia berhenti dan mengumumkan posisimu ke seluruh sekolah. Kalau ia melihatmu masuk loker, ia akan membukanya.
 - **Si Murid (The Pupil)**: anak berjas hujan dengan kantong kertas di kepala. Tidak menyerang, tapi jeritannya memanggil penghuni lain.
 
 **Tempat sembunyi**: loker (mengintip lewat celah) dan bilik toilet (kaki penghuni yang lewat terlihat dari celah bawah pintu).
@@ -61,6 +62,7 @@ Tujuan setiap level: kumpulkan semua **sekring**, pasang di **kotak panel** deka
 | Interaksi | E / klik kiri | AKSI |
 | Senter | F | SENTER |
 | Mode malam | N | MALAM |
+| Zoom kamera | tahan Z | ZOOM (toggle) |
 | Lempar penghapus | G / klik kanan | LEMPAR |
 | Tahan napas (di loker) | tahan Spasi | TAHAN NAPAS |
 | Tujuan | Tab | — |

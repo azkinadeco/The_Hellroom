@@ -13,7 +13,7 @@ import { clamp, damp, angleDiff } from './util/rng.js';
 
 const CUES = {
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
-  door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
+  announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
 };
 
 export class Game {
@@ -89,6 +89,7 @@ export class Game {
     const p = this.player;
     p.spawn(this.gen.start.x, this.gen.start.z, this.gen.start.yaw);
     p.battery = 100; p.flashlight = false; p.nightVision = false;
+    this.camera.fov = 72; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0 };
     this.projectiles = [];
     this.hintT = 0;
@@ -315,6 +316,13 @@ export class Game {
     if (input.consume('pause')) { this.ui.pause(); input.endFrame(); return; }
     if (input.consume('objectives')) this.hud.showObjectives(this.objectiveText());
 
+    // camcorder zoom: narrower FOV, slower look, small battery cost
+    const zoom = input.zooming() && p.alive && p.battery > 0;
+    const fov = damp(this.camera.fov, zoom ? 26 : 72, 8, dt);
+    if (Math.abs(fov - this.camera.fov) > 0.01) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
+    p.lookScale = fov / 72;
+    p.zooming = zoom;
+    if (zoom) p.battery = Math.max(0, p.battery - 0.15 * dt);
     p.update(dt, input, this.world, this);
     if (input.consume('throw')) this.throwEraser();
     this.updateProjectiles(dt);
@@ -555,6 +563,7 @@ export class Game {
   deathCause(k) {
     if (k.kind === 'monitor') return 'Petugas Ketertiban menemukanmu. Ia tidak punya mata — ia mendengar. Berjalanlah, jangan berlari, dan tahan napas di loker.';
     if (this.blackoutT > 0 && k.kind === 'substitute') return 'Lampu padam, dan dalam gelap Guru Pengganti bebas bergerak. Nyalakan senter saat listrik mati.';
+    if (k.kind === 'principal') return 'Kepala Sekolah menangkapmu. Ia lambat, tapi setiap kali melihatmu, seluruh sekolah tahu di mana kamu. Putuskan pandangannya sebelum ia selesai berbicara.';
     if (k.kind === 'substitute') return 'Kamu berpaling dari Guru Pengganti. Jaga pandanganmu padanya, dan jangan biarkan ia berada dalam gelap.';
     return 'Sesuatu menemukanmu.';
   }

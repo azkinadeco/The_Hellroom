@@ -8,7 +8,7 @@ export const MODEL_KEYS = [
   'door_classroom', 'door_locked', 'exit_door', 'ceiling_light', 'wall_clock',
   'bookshelf', 'trash_bin', 'water_fountain', 'cardboard_box', 'chair_fallen',
   'fuse_box', 'toilet_stall', 'sink_counter', 'bleachers', 'basketball_hoop', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
-  'entity_monitor', 'entity_substitute', 'entity_pupil',
+  'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
 ];
 export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal'];
 
@@ -27,7 +27,7 @@ const FALLBACK = {
   item_eraser: [0.14, 0.03, 0.055, 0x8a5a32, -0.015],
   item_note: [0.21, 0.005, 0.28, 0xf0eedc, 0], item_tape: [0.19, 0.025, 0.1, 0x111111, -0.012],
   entity_monitor: [0.6, 2.5, 0.4, 0x8a8f99], entity_substitute: [0.5, 1.8, 0.35, 0xe8e4dc],
-  entity_pupil: [0.45, 1.15, 0.35, 0xd8b420],
+  entity_pupil: [0.45, 1.15, 0.35, 0xd8b420], entity_principal: [0.55, 1.8, 0.35, 0x3d2b1f],
 };
 
 export class Assets {

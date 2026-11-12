@@ -230,3 +230,6 @@ Chalkboard eraser lying felt-side down, 0.14 x 0.03 x 0.055 m (three.js X/Y/Z). 
 - `sink_counter.glb` — wall-mounted double sink + mirror, 1.6 w, origin on the wall plane at floor level, front +Z.
 - `bleachers.glb` — 4-tier bleachers 3.0w x 2.0d x 1.5h, low side at the front (+Z), origin floor centre.
 - `basketball_hoop.glb` — wall-mounted backboard (y 2.05–2.85), rim at 2.3 m, origin on the wall plane at floor level.
+
+## Batch 5 (blender/entities2.py)
+- `entity_principal.glb` — "Kepala Sekolah", 2.1 m incl. horn head. Same 17-joint rig and conventions as the other entities (faces +Z, `<Joint>_geo` meshes). Head = horn loudspeaker pointing forward, ON-AIR lamp material `EmitOnAir`. Clips: `Idle` 3.0 s loop, `Walk` 1.4 s loop, `Announce` 2.0 s (non-loop: puffs up, right arm points forward, horn sweeps left-right).

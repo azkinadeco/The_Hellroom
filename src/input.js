@@ -101,6 +101,7 @@ export class Input {
         e.preventDefault(); e.stopPropagation();
         if (a === 'sprint') { this.sprintToggle = !this.sprintToggle; b.classList.toggle('on', this.sprintToggle); return; }
         if (a === 'breath') { this.breathHeld = true; b.classList.add('on'); return; }
+        if (a === 'zoom') { this.zoomToggle = !this.zoomToggle; b.classList.toggle('on', this.zoomToggle); return; }
         this.pressed.add(a);
       }, { passive: false });
       b.addEventListener('touchend', (e) => {
@@ -124,11 +125,12 @@ export class Input {
     return { x, y };
   }
   sprint() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.sprintToggle; }
+  zooming() { return this.keys.has('KeyZ') || this.zoomToggle; }
   holdingBreath() { return this.keys.has('Space') || this.breathHeld; }
   consume(a) { const had = this.pressed.has(a); this.pressed.delete(a); return had; }
   endFrame() { this.pressed.clear(); this.lookDX = 0; this.lookDY = 0; }
   resetToggles() {
-    this.sprintToggle = this.crouchToggle = this.breathHeld = false;
+    this.sprintToggle = this.crouchToggle = this.breathHeld = this.zoomToggle = false;
     for (const b of document.querySelectorAll('.tbtn.on')) b.classList.remove('on');
   }
 }

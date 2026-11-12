@@ -298,22 +298,23 @@ export class Audio {
     o.start(t); lfo.start(t); o.stop(t + 1); lfo.stop(t + 1);
   }
   // school intercom: two-tone chime
-  paChime() {
+  paChime(pos = null) {
     if (!this.ready) return;
     const t = this.t;
     [[659.3, 0], [523.3, 0.55]].forEach(([f, dt]) => {
       for (const [mult, v] of [[1, 1], [2.01, 0.3], [3.02, 0.12]]) {
-        const o = this._osc('sine', f * mult), g = this._out(null, 0.9);
+        const o = this._osc('sine', f * mult), g = this._out(pos, 0.9);
         o.connect(g); this._env(g, t + dt, 0.01, 0.09 * v, 1.4); o.start(t + dt); o.stop(t + dt + 1.5);
       }
     });
   }
   // garbled speech through a cheap speaker: formant-filtered buzz with syllable rhythm
-  paVoice(dur = 3) {
+  paVoice(dur = 3, pos = null) {
     if (!this.ready) return;
+    if (pos) this._cue('announce', pos);
     const t = this.t, ctx = this.ctx;
     const src = this._osc('sawtooth', 120);
-    const out = this._out(null, 0.9);
+    const out = this._out(pos, 0.9);
     const hp = this._filter('highpass', 350), lp = this._filter('lowpass', 2600);
     const shaper = ctx.createWaveShaper(), curve = new Float32Array(256);
     for (let i = 0; i < 256; i++) { const x = i / 128 - 1; curve[i] = Math.tanh(x * 3); }
@@ -336,7 +337,7 @@ export class Audio {
     }
     src.start(t); src.stop(t + dur + 0.3);
     const hiss = this.ctx.createBufferSource(); hiss.buffer = this.noiseBuf;
-    const hf = this._filter('bandpass', 3000, 0.7), hg = this._out(null, 0.4);
+    const hf = this._filter('bandpass', 3000, 0.7), hg = this._out(pos, 0.4);
     hiss.connect(hf).connect(hg); hg.gain.value = 0.015; hiss.start(t); hiss.stop(t + dur + 0.3);
   }
   clack(pos) {

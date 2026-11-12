@@ -10,15 +10,18 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // One shared vertex-colour material for all merged opaque props.
 const VC_SRC = new THREE.MeshLambertMaterial({ vertexColors: true });
 VC_SRC.name = 'MergedVC';
+const VC_SRC_2S = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+VC_SRC_2S.name = 'MergedVC2S';
 
 // Merge every opaque, non-emissive, untextured mesh of a model into a single
 // vertex-coloured geometry (1 draw call instead of 1 per material).
 // parts: [{mesh, matrix}] (matrix = mesh transform in model space)
 function mergeParts(parts, key = 'matrix') {
-  const keep = [], geos = [];
+  const keep = [], groups = { front: [], double: [] };
   for (const p of parts) {
     const m = p.mesh.material;
     if (!m || m.transparent || m.map || (m.userData && m.userData.emissive)) { keep.push(p); continue; }
+    const geos = m.side === THREE.FrontSide ? groups.front : groups.double;
     const g = p.mesh.geometry.clone().applyMatrix4(p[key]);
     for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
     const n = g.attributes.position.count, col = new Float32Array(n * 3);
@@ -26,10 +29,15 @@ function mergeParts(parts, key = 'matrix') {
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     geos.push(g.index ? g.toNonIndexed() : g);
   }
-  if (geos.length < 2) return parts;
-  const merged = mergeGeometries(geos, false);
-  if (!merged) return parts;
-  return [{ mesh: { geometry: merged, material: VC_SRC }, [key]: new THREE.Matrix4() }, ...keep];
+  if (groups.front.length + groups.double.length < 2) return parts;
+  const out = [];
+  for (const [list, mat] of [[groups.front, VC_SRC], [groups.double, VC_SRC_2S]]) {
+    if (!list.length) continue;
+    const merged = list.length > 1 ? mergeGeometries(list, false) : list[0];
+    if (!merged) return parts;
+    out.push({ mesh: { geometry: merged, material: mat }, [key]: new THREE.Matrix4() });
+  }
+  return [...out, ...keep];
 }
 
 const CHUNK = 24;
