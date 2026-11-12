@@ -72,7 +72,7 @@ export function generateLevel(def, seed = def.seed) {
       const types = rng.shuffle([...(def.smallRooms || ['storage', 'office', 'restroom'])]);
       if (rng.chance(0.5)) { newRoom(x0, z0, x0 + 1, z1, types[0]); newRoom(x0 + 2, z0, x1, z1, types[1]); }
       else { newRoom(x0, z0, x1, z0 + 1, types[0]); newRoom(x0, z0 + 2, x1, z1, types[1]); }
-    } else newRoom(x0, z0, x1, z1, 'classroom');
+    } else newRoom(x0, z0, x1, z1, def.labChance && rng.chance(def.labChance) ? 'lab' : 'classroom');
   }
 
   // ---------- 3. doors ----------
@@ -350,7 +350,7 @@ function furnishRoom(r, map, rng, out) {
   const free = sides.filter((s) => !ds.has(s));
   const longSide = r.w >= r.h ? (rng.chance(0.5) ? 'N' : 'S') : (rng.chance(0.5) ? 'W' : 'E');
   let frontSide = free.length ? rng.pick(free) : longSide;
-  if (r.type === 'classroom' && free.length === 0) frontSide = 'N';
+  if ((r.type === 'classroom' || r.type === 'lab') && free.length === 0) frontSide = 'N';
   const f = roomFrame(r, frontSide);
   r.front = f;
   const faceIn = yawFor(f.n[0], f.n[1]);     // facing away from front wall
@@ -394,6 +394,34 @@ function furnishRoom(r, map, rng, out) {
       const [x, z] = back.toWorld(1.5, wallOff + 0.18);
       emitProp(out, 'bookshelf', x, z, yawFor(back.n[0], back.n[1]), [1.2, 0.36, 1.8]);
     }
+    const [bx2, bz2] = at(0.5, 0.5); emitProp(out, 'trash_bin', bx2, bz2, rng.range(0, 6), [0.4, 0.4, 0.5]);
+  } else if (r.type === 'lab') {
+    // biology lab: board + teacher bench up front, black-topped benches in rows,
+    // specimen shelves on the back wall and an anatomy skeleton in the corner
+    if (!sideHasDoorNear(r, f, W_ / 2 - 1.7, W_ / 2 + 1.7)) {
+      const [bx, bz] = at(W_ / 2, wallOff);
+      emitProp(out, 'chalkboard', bx, bz, faceIn, null);
+    }
+    const [tx, tz] = at(W_ / 2, 0.85);
+    emitProp(out, 'lab_bench', tx, tz, faceIn, [1.8, 0.75, 0.92]);
+    spot(W_ / 2 - 0.5, 0.85, 0.95);
+    for (let v = 3; v < D - 1; v += 3) for (let u = 3; u < W_ - 1; u += 3) {
+      if (rng.chance(0.12)) continue;
+      const [x, z] = at(u, v + 0.2);
+      emitProp(out, 'lab_bench', x, z, faceFront + (rng.chance(0.15) ? rng.range(-0.25, 0.25) : 0), [1.8, 0.75, 0.92]);
+      r.spots.push([x + f.n[0] * 0.15, 0.95, z + f.n[1] * 0.15]);
+    }
+    const rotBack = yawFor(back.n[0], back.n[1]);
+    for (const u of [1.0, W_ - 1.0]) {
+      if (sideHasDoorNear(r, back, u - 0.8, u + 0.8)) continue;
+      const [x, z] = back.toWorld(u, wallOff + 0.2);
+      emitProp(out, 'specimen_shelf', x, z, rotBack, [1.2, 0.38, 1.85]);
+    }
+    if (!sideHasDoorNear(r, f, W_ - 1.4, W_)) {
+      const [x, z] = at(W_ - 0.65, 0.7);
+      emitProp(out, 'anatomy_skeleton', x, z, faceIn - 0.5, [0.55, 0.55, 1.8]);
+    }
+    if (rng.chance(0.7)) lockerOnBackWall(W_ / 2);
     const [bx2, bz2] = at(0.5, 0.5); emitProp(out, 'trash_bin', bx2, bz2, rng.range(0, 6), [0.4, 0.4, 0.5]);
   } else if (r.type === 'library') {
     // shelves on the cell-boundary lines, aisles along cell centers

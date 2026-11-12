@@ -7,7 +7,7 @@ export class HUD {
     this.batt = $('hud-batt'); this.battPct = $('hud-batt-pct'); this.mode = $('hud-mode');
     this.obj = $('hud-obj');
     this.prompt = $('prompt'); this.cross = $('crosshair');
-    this.stam = $('m-stamina'); this.breath = $('m-breath');
+    this.stam = $('m-stamina'); this.breath = $('m-breath'); this.gaze = $('m-gaze');
     this.toastEl = $('toast'); this.toastT = 0;
     this.louvers = $('louvers');
     this.objectives = $('objectives'); this.objT = 0;
@@ -62,6 +62,12 @@ export class HUD {
     this.breath.classList.toggle('show', !!p.hidden);
     this.breath.classList.toggle('warn', br < 0.3);
     this.breath.querySelector('i').style.width = (br * 100) + '%';
+    const gz = g.gazeFx || 0;
+    this.gaze.classList.toggle('show', gz > 0.02);
+    this.gaze.classList.toggle('warn', gz > 0.6);
+    this.gaze.querySelector('i').style.width = (gz * 100) + '%';
+    const gzs = gz.toFixed(2);
+    if (this._last.gz !== gzs) { this._last.gz = gzs; this.el.style.setProperty('--gaze', gzs); }
     this.louvers.classList.toggle('show', !!p.hidden && p.hidden.kind !== 'stall');
     document.body.classList.toggle('hiding', !!p.hidden);
 

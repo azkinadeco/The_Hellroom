@@ -66,7 +66,7 @@ def xf(M, p):
 
 
 def spike(mb, base, tip, r, material, segs=5):
-    mb.limb(base, tip, r, r * 0.12, material, segs=segs)
+    mb.limb(base, tip, r, r * 0.12, material, segs=segs, caps=False)
 
 
 def wiggle(p0, p1, n, amp, seed, normal=(0, 1, 0)):
@@ -771,7 +771,7 @@ def entity_centipede():
     for i in range(5):
         m = rig.mb("Hips" if i == 0 else f"Seg{i}")
         y, z = seg_y[i], seg_z[i]
-        blob(m, (0, y, z), (0.21, 0.27, 0.16), skin, seed=40 + i, amp=0.08, segs=12, rings=8)
+        blob(m, (0, y, z), (0.21, 0.27, 0.16), skin, seed=40 + i, amp=0.08, segs=10, rings=7)
         for s in (-1, 1):
             m.sphere((0.08, 0.1, 0.06), (s * 0.1, y + 0.12, z + 0.06), shade, segs=10, rings=6)   # shoulder blade
         for k in range(4):
@@ -803,7 +803,7 @@ def entity_centipede():
         M = Matrix.Translation(c) @ Matrix.Rotation(math.radians(yaw), 4, "Z") @ \
             Matrix.Rotation(math.radians(-pitch), 4, "X") @ Matrix.Scale(sc, 4)
         m.limb((0, -0.02, 1.3), c, 0.055, 0.05 * sc, skin, segs=6)
-        m.sphere((0.072, 0.08, 0.125), (0, 0, 0), skin, segs=12, rings=8, M=M)               # long skull
+        m.sphere((0.072, 0.08, 0.125), (0, 0, 0), skin, segs=10, rings=7, M=M)               # long skull
         for sd in (-1, 1):
             m.sphere((0.02, 0.014, 0.016), (sd * 0.03, -0.07, 0.03), mouth, segs=6, rings=4, M=M)  # sockets
             m.tube([xf(M, (sd * 0.05, -0.04, 0.0)), xf(M, (sd * 0.05, -0.05, -0.08)), xf(M, (sd * 0.035, -0.04, -0.17))],
@@ -848,7 +848,7 @@ def entity_centipede():
                 m.limb(b, kn, 0.05, 0.04, skin, segs=6)
                 m.limb(kn, ft + Vector((0, 0, 0.02)), 0.037, 0.029, skin, segs=6)
                 m.sphere((0.04, 0.05, 0.015), ft + Vector((0, -0.01, -0.01)), skin, segs=8, rings=5)
-                claw_fingers(m, ft + Vector((0, -0.04, -0.015)), (sx * 0.4, -1, 0), (1, 0, 0), 4, 0.07, 0.007, skin,
+                claw_fingers(m, ft + Vector((0, -0.04, -0.015)), (sx * 0.4, -1, 0), (1, 0, 0), 3, 0.07, 0.007, skin,
                              nail, spread=0.013, droop=0.01, seed=20 + i)
     rig.build()
 

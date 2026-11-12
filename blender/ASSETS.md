@@ -242,3 +242,9 @@ All face three.js +Z, `<Joint>_geo` meshes under joint empties, clips baked per 
 - `entity_shade.glb` — Bayang Kelas, translucent smoke (`ShadeCore`/`ShadeSmoke` alpha blend) with emissive eye pairs `EmitShadeEye`. Joints `Hips, Chest, Head, ArmL/R, Wisp0-6`. Clips `Idle`, `Move`, `Attack`.
 - `entity_eyes.glb` — Mata Papan, wall growth whose back plane is at local z=0 (mounted flat on a wall/chalkboard), centre of mass ~1.5 m. Joints `Hips, Head, Tendril0-11`. Clips `Idle`, `Stare`, `Attack`.
 - `entity_centipede.glb` — Kelabang, ~2.2 m long. Joints `Hips, Chest, Head, Arm{L,R}{0-2}, Seg1-4, Leg{L,R}{0-4}`. Clips `Idle`, `Walk`, `Run`, `Attack`. ~18.5k tris (budget 20k).
+
+## Batch 7 (blender/props3.py) — biology lab
+- `lab_bench.glb` — 1.8 x 0.75 x 0.92 black-topped bench with gas taps, microscope, glassware (alpha `Glass`/`Formalin`), dissection tray. Origin floor centre, front +Z.
+- `specimen_shelf.glb` — 1.2 w x 0.38 d x 1.85 h steel shelf of specimen jars, back against the wall (+Y Blender / −Z three).
+- `anatomy_skeleton.glb` — ~1.95 m anatomy skeleton on a five-wheel stand.
+Used by the new `lab` room type (`def.labChance`).

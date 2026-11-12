@@ -196,5 +196,13 @@ small.dim, .dim { color: var(--dim); }
 .rooms-grid .row select { max-width: 60%; }
 .seg.wrap { flex-wrap: wrap; }
 .seg.wrap button { flex: 0 0 auto; font-size: 18px; padding: 3px 8px; }
-#viewer-canvas { width: 100%; aspect-ratio: 4 / 3; display: block; margin: 8px 0; background: #0b0c0b; border: 1px solid var(--line); touch-action: none; }
+.viewer-canvas { width: 100%; aspect-ratio: 4 / 3; display: block; margin: 8px 0; background: #0b0c0b; border: 1px solid var(--line); touch-action: none; }
 @media (max-width: 760px) { .rooms-grid { grid-template-columns: 1fr; } }
+
+/* batch 7: gaze meter + bestiary */
+.meter.gaze i { background: #c8322a; }
+.meter.gaze label { color: #e0645a; }
+#hud::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: var(--gaze, 0);
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(120, 0, 0, 0.55) 100%); transition: opacity .2s; }
+.beast-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.lore { font-size: 21px; line-height: 1.35; white-space: pre-line; }

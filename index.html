@@ -71,6 +71,25 @@
     </div>
   </section>
 
+  <!-- bestiary entry -->
+  <section id="beast" class="screen panel-screen">
+    <div class="panel wide">
+      <h2 id="beast-name"></h2>
+      <div class="rooms-grid">
+        <div>
+          <canvas id="beast-canvas" class="viewer-canvas"></canvas>
+          <div class="seg wrap" id="beast-clips"></div>
+        </div>
+        <div>
+          <p id="beast-lore" class="lore"></p>
+          <h3>Cara bertahan</h3>
+          <p id="beast-tip" class="dim"></p>
+        </div>
+      </div>
+      <button class="back" data-go="archive">← Kembali ke Arsip</button>
+    </div>
+  </section>
+
   <!-- test rooms (development) -->
   <section id="rooms" class="screen panel-screen">
     <div class="panel wide">
@@ -86,7 +105,7 @@
         <div class="viewer">
           <h3>Galeri Penghuni</h3>
           <div class="seg wrap" id="viewer-pick"></div>
-          <canvas id="viewer-canvas"></canvas>
+          <canvas id="viewer-canvas" class="viewer-canvas"></canvas>
           <div class="seg wrap" id="viewer-clips"></div>
           <p class="dim small" id="viewer-desc"></p>
         </div>
@@ -171,6 +190,7 @@
     <div class="meters">
       <div class="meter" id="m-stamina"><label>STAMINA</label><div><i></i></div></div>
       <div class="meter" id="m-breath"><label>NAPAS</label><div><i></i></div></div>
+      <div class="meter gaze" id="m-gaze"><label>👁 DITATAP</label><div><i></i></div></div>
     </div>
     <div class="toast" id="toast"></div>
     <div class="caption" id="caption"></div>

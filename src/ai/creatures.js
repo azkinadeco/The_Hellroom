@@ -10,39 +10,49 @@ import { findPath } from './path.js';
 // Names, death screens and first-encounter tips for every resident.
 export const ENTITY_INFO = {
   pale: {
+    lore: 'Dulu ia murid yang paling pendiam di kelas. Kini matanya sudah tidak ada, dan wajahnya terbelah dari dahi sampai dagu. Ia merangkak di lorong sambil mendengarkan dan menunggu langkah yang terlalu keras.',
     name: 'Si Pucat',
     death: 'Si Pucat menemukanmu. Ia tidak punya mata. Ia mendengar setiap langkahmu. Jongkok dan berjalanlah pelan, jangan berlari di dekatnya.',
     hint: 'Si Pucat buta, tapi telinganya sangat tajam. Jongkok untuk lewat, dan lempar penghapus untuk mengalihkannya.',
   },
   masked: {
+    lore: 'Guru piket Kelas Malam. Tidak ada yang tahu wajah di balik topeng putihnya. Ia berpatroli dengan penggaris besi di tangan, dan ketukannya ke telapak tangan terdengar sampai ke ujung lorong.',
     name: 'Guru Bertopeng',
     death: 'Guru Bertopeng memergokimu. Kalau terdengar bunyi penggaris diketuk, ia sedang berjaga. Jauhi pandangannya dan bersembunyilah sebelum terlihat.',
     hint: 'Bunyi penggaris diketuk berarti Guru Bertopeng sedang berjaga di dekatmu. Ia bisa melihat dan mendengar.',
   },
   gaper: {
+    lore: 'Spesimen nomor tiga dari lab biologi. Rahangnya terus melebar sejak toplesnya pecah. Ia membeku seperti patung selama ada yang menatapnya, tapi tidak pernah benar-benar diam.',
     name: 'Si Penganga',
     death: 'Kamu berpaling dari Si Penganga. Selama kamu menatapnya ia membeku, tapi dalam gelap tatapanmu tidak ada artinya.',
     hint: 'Si Penganga hanya bergerak saat tidak kamu lihat. Jaga pandanganmu padanya, dan jangan biarkan ia masuk ke kegelapan.',
   },
   shade: {
+    lore: 'Sesuatu yang tumbuh di sayap sekolah yang listriknya sudah lama mati. Tidak ada yang tahu berapa banyak mata yang dimilikinya. Cahaya menyakitinya, dan kegelapan adalah rumahnya.',
     name: 'Bayang Kelas',
     death: 'Bayang Kelas menelanmu dalam gelap. Ia tidak bisa masuk ke ruang yang terang, dan cahaya senter membuatnya mundur.',
     hint: 'Bayang Kelas hanya hidup di kegelapan. Tetaplah di bawah lampu, dan sorotkan senter ke arahnya.',
   },
   eyes: {
+    lore: 'Akar-akarnya merambat dari papan tulis ke dinding kelas 3-C. Setiap mata yang menangis hitam itu dulu milik seseorang. Ia tidak bisa berjalan, tapi selalu tahu harus pindah ke papan yang mana.',
     name: 'Mata Papan',
     death: 'Mata Papan menatapmu terlalu lama. Begitu kamu merasa diperhatikan, putuskan pandangannya: keluar dari jangkauan matanya atau sembunyi.',
     hint: 'Ada mata di papan tulis. Jangan berdiri dalam pandangannya. Suara keras membuatnya pindah ke papan terdekat.',
   },
   centipede: {
+    lore: 'Murid-murid yang tidak pernah pulang dari pelajaran olahraga. Mereka sekarang berjalan bersama sebagai satu tubuh, dan semua wajahnya masih menjerit.',
     name: 'Kelabang',
     death: 'Kelabang menangkapmu. Wajah-wajahnya melihat ke segala arah. Kamu tidak bisa menyelinap di belakangnya, jadi putuskan garis pandangnya dengan pintu dan dinding.',
     hint: 'Kelabang melihat ke segala arah, tapi jarak pandangnya pendek. Gunakan dinding dan loker untuk memutus pandangannya.',
   },
-  monitor: { name: 'Petugas Ketertiban', death: 'Petugas Ketertiban menemukanmu. Ia mendengar dan melihat. Berjalanlah, jangan berlari, dan tahan napas di loker.' },
-  substitute: { name: 'Guru Pengganti', death: 'Kamu berpaling dari Guru Pengganti. Jaga pandanganmu padanya, dan jangan biarkan ia berada dalam gelap.' },
-  principal: { name: 'Kepala Sekolah', death: 'Kepala Sekolah menangkapmu. Ia lambat, tapi setiap kali melihatmu, seluruh sekolah tahu di mana kamu.' },
-  pupil: { name: 'Si Murid', death: 'Sesuatu menemukanmu.' },
+  monitor: {
+    lore: 'Petugas ketertiban yang tinggi kurus dan tanpa mata. Peluitnya menandakan kamu sudah ketahuan.', name: 'Petugas Ketertiban', death: 'Petugas Ketertiban menemukanmu. Ia mendengar dan melihat. Berjalanlah, jangan berlari, dan tahan napas di loker.' },
+  substitute: {
+    lore: 'Guru pengganti dari kapur dan kayu. Ia hanya bergerak saat tidak ada yang melihatnya.', name: 'Guru Pengganti', death: 'Kamu berpaling dari Guru Pengganti. Jaga pandanganmu padanya, dan jangan biarkan ia berada dalam gelap.' },
+  principal: {
+    lore: 'Kepala sekolah dengan corong pengeras suara sebagai kepala. Setiap kali melihatmu, seluruh sekolah ikut mendengarnya.', name: 'Kepala Sekolah', death: 'Kepala Sekolah menangkapmu. Ia lambat, tapi setiap kali melihatmu, seluruh sekolah tahu di mana kamu.' },
+  pupil: {
+    lore: 'Anak berjas hujan kuning dengan kantong kertas di kepala. Ia tidak menyerang, tapi jeritannya memanggil penghuni lain.', name: 'Si Murid', death: 'Sesuatu menemukanmu.' },
 };
 
 // ------------------------------------------------------------ Si Pucat ----
@@ -62,7 +72,7 @@ class Pale extends Monitor {
   }
   onNoise(x, z, strength, type) {
     if (this.state === 'attack' || this.state === 'locker') return;
-    if (strength > 0.35 || type === 'alert' || type === 'throw') {
+    if (strength > 0.25 || type === 'alert' || type === 'throw') {
       this.lastSeen = { x, z, t: this.game.time };
       this.suspicion = 1.1; this.lostT = 0;
       this.path = null; this.goToWorld(x, z);
@@ -78,6 +88,7 @@ class Masked extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'masked', { walk: 1.45, run: 4.2, stepEvery: 1.0, stepVol: [0.3, 0.5] });
     this.tapCd = 1.5 + Math.random() * 2;
+    this.walkTapT = 6 + Math.random() * 6;
     this.busyAnim = 0;
   }
   chaseSound() {
@@ -98,6 +109,13 @@ class Masked extends Monitor {
     if (this.busyAnim) {
       this.busyAnim = Math.max(0, this.busyAnim - dt);
       if (this.state !== 'patrol') this.busyAnim = 0;
+    }
+    // taps the ruler while walking too, so the player can hear it coming
+    this.walkTapT -= dt;
+    if (this.walkTapT <= 0 && (this.velocity || 0) > 0.2 && this.state !== 'chase' && this.state !== 'attack') {
+      this.walkTapT = 9 + Math.random() * 7;
+      const g = this.game;
+      g.audio.rulerTap(this.pos, 0.55); g.schedule(0.35, () => g.audio.rulerTap(this.pos, 0.55));
     }
     super.update(dt);
   }

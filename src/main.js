@@ -16,7 +16,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { hints: [], tapes: [], notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', vhs: true, invertY: false, subs: true } };
+const defaults = { hints: [], tapes: [], met: [], notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', vhs: true, invertY: false, subs: true } };
 function loadSave() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) return { ...defaults, ...s, settings: { ...defaults.settings, ...s.settings } }; } catch (_) { /* private mode */ }
   return structuredClone(defaults);
@@ -40,7 +40,7 @@ let game;
 let pendingLevel = 0;
 let pendingDef = null;     // endless-mode / test-room level definition
 let pendingGod = false;    // test rooms: invulnerable
-let viewer = null;
+let viewer = null, beastViewer = null;
 let noteFromArchive = false;
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -205,6 +205,19 @@ function buildArchive() {
   const list = $('archive-list'); list.innerHTML = '';
   const found = new Set(save.notesRead), tapes = new Set(save.tapes.map(String));
   let total = 0, have = 0;
+  // residents met so far
+  const hb = document.createElement('h3'); hb.textContent = 'Penghuni'; list.appendChild(hb);
+  const grid = document.createElement('div'); grid.className = 'beast-grid'; list.appendChild(grid);
+  const met = new Set(save.met);
+  for (const k of [...LEVELS.flatMap((l) => l.entities.map((e) => e.type)), ...RESIDENTS, 'pupil'].filter((k, i, a) => a.indexOf(k) === i)) {
+    total++; const ok = met.has(k); if (ok) have++;
+    const b = document.createElement('button');
+    b.className = 'archive-item' + (ok ? '' : ' locked');
+    b.textContent = ok ? '👁 ' + ENTITY_INFO[k].name : '??? — belum ditemui';
+    b.disabled = !ok;
+    b.onclick = () => openBeast(k);
+    grid.appendChild(b);
+  }
   LEVELS.forEach((l) => {
     const h = document.createElement('h3'); h.textContent = `${l.code} — ${l.name}`; list.appendChild(h);
     const add = (label, ok, title, body) => {
@@ -259,6 +272,19 @@ function buildRooms() {
   viewer.start();
 }
 
+function openBeast(k) {
+  const info = ENTITY_INFO[k];
+  $('beast-name').textContent = info.name;
+  $('beast-lore').textContent = info.lore || '';
+  $('beast-tip').textContent = info.hint || info.death;
+  show('beast');
+  if (!beastViewer) beastViewer = new ModelViewer($('beast-canvas'), assets);
+  const clips = beastViewer.show(k);
+  const cl = $('beast-clips'); cl.innerHTML = '';
+  clips.forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { beastViewer.playClip(n); for (const x of cl.children) x.classList.toggle('on', x === b); }; cl.appendChild(b); });
+  beastViewer.start();
+}
+
 function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
@@ -284,6 +310,7 @@ document.addEventListener('click', (e) => {
   if (go === 'levels') buildLevels();
   if (go === 'rooms') buildRooms();
   if (current === 'rooms' && go !== 'rooms' && viewer) viewer.stop();
+  if (current === 'beast' && beastViewer) beastViewer.stop();
   if (go === 'settings') { buildSettings(); returnTo = b.dataset.from === 'pause' ? 'pause' : 'title'; }
   if (go === 'title' && current === 'settings' && returnTo === 'pause') { show('pause'); return; }
   show(go);
@@ -312,6 +339,8 @@ async function boot() {
   game.hintsSeen = new Set(save.hints || []);
   game.onHint = (id) => { save.hints = [...game.hintsSeen]; persist(); };
   game.onTape = (id) => { if (!save.tapes.map(String).includes(String(id))) { save.tapes.push(id); persist(); } };
+  game.met = new Set(save.met || []);
+  game.onMeet = (kind) => { if (save.met.includes(kind)) return false; save.met.push(kind); persist(); return true; };
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
   if (!DEV_ROOMS) $('btn-rooms').remove();

@@ -44,6 +44,12 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 **Mode Tanpa Ujung**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar dan gelap; tiap lantai dihuni satu penghuni acak. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
 
+**Arsip Penghuni**: setiap penghuni yang pernah kamu lihat langsung tercatat di menu **Arsip**, lengkap dengan model 3D yang bisa diputar, animasinya, kisahnya, dan cara bertahan darinya.
+
+**Lab Biologi**: level 2 kini dipenuhi ruang lab berisi meja praktikum, rak toples spesimen, dan rangka anatomi (aset Blender baru di `blender/props3.py`).
+
+**Meteran tatapan**: saat Mata Papan menatapmu, muncul meteran 👁 DITATAP dan layar memerah. Kalau meterannya penuh, kamu mati.
+
 **Kaset rahasia & Arsip**: tiap level story menyimpan satu kaset VHS di salah satu ruangan terjauh. Kaset dan catatan yang sudah ditemukan bisa dibaca ulang di menu **Arsip**.
 
 **Pengumuman pengeras suara**: sesekali bel intercom berbunyi lalu ada pengumuman. Ada yang sekadar menyeramkan, ada yang membocorkan posisimu ke penghuni (sembunyi supaya tidak terlacak), dan ada yang memadamkan listrik ±14 detik.

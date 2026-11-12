@@ -71,7 +71,7 @@ export const LEVELS = [
     seed: 7031, blocksX: 4, blocksZ: 3,
     lightsOff: 0.4, flicker: 0.3, fog: 0.065,
     fuses: 3, keys: 1, batteries: 6, notes: 3, erasers: 5,
-    smallRooms: ['storage', 'office', 'restroom'],
+    smallRooms: ['storage', 'office', 'restroom'], labChance: 0.75,
     entities: [{ type: 'gaper' }], hallTheme: 'hall',
   },
   {
@@ -125,7 +125,7 @@ export function endlessDef(floor, seed) {
     fog: Math.min(0.08, 0.055 + f * 0.003),
     fuses: Math.min(5, 2 + Math.ceil(f / 2)), keys: Math.min(2, Math.floor(f / 2)), batteries: 4, notes: 2, erasers: 5,
     mergeChance: 0.6,
-    bigRooms: ['library', 'studyhall', 'gym'], smallRooms: ['storage', 'office', 'restroom'],
+    bigRooms: ['library', 'studyhall', 'gym'], smallRooms: ['storage', 'office', 'restroom'], labChance: 0.2,
     entities, tape: false,
   };
 }

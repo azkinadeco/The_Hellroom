@@ -20,6 +20,7 @@ if HERE not in sys.path:
 import hr_lib  # noqa: E402
 import props  # noqa: E402
 import props2  # noqa: E402
+import props3  # noqa: E402
 import items  # noqa: E402
 import entities  # noqa: E402
 import entities2  # noqa: E402
@@ -29,7 +30,8 @@ import title  # noqa: E402
 
 GROUPS = {
     "textures": textures.ASSETS,
-    "props": {**props.ASSETS, **props2.ASSETS},
+    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS},
+    "lab": props3.ASSETS,
     "items": items.ASSETS,
     "entities": {**entities.ASSETS, **entities2.ASSETS, **entities3.ASSETS},
     "creatures": entities3.ASSETS,

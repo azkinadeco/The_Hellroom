@@ -107,6 +107,7 @@ export class Game {
     this.deathT = -1; this.winT = -1;
     this.glitch = 0; this.danger = 0; this.gazeFx = 0;
     this.chasers.clear();
+    this.met = this.met || new Set();
     this.input.resetToggles();
 
     // entities spawn far from the player, preferring hallways
@@ -349,6 +350,16 @@ export class Game {
     if (input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
 
     for (const e of this.entities) e.update(dt);
+    // first sighting unlocks the resident's archive entry
+    this.metT = (this.metT || 0) - dt;
+    if (this.metT <= 0 && p.alive) {
+      this.metT = 0.4;
+      for (const e of this.entities) {
+        if (this.met.has(e.kind) || e.distTo(p.pos) > 22 || !this.isSeenByPlayer(e)) continue;
+        this.met.add(e.kind);
+        if (this.onMeet && this.onMeet(e.kind)) this.hud.caption(`📁 Arsip Penghuni baru: ${(ENTITY_INFO[e.kind] || {}).name}`, 3);
+      }
+    }
     this.doorSys.update(dt);
     for (const L of this.built.lockers) {
       const tgt = L.target || 0;
@@ -427,7 +438,7 @@ export class Game {
     const u = this.vhs.uniforms;
     u.uDanger.value = this.state === 'playing' ? this.danger : 0;
     u.uNV.value = this.player.nightVision ? 1 : 0;
-    u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.45);
+    u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
     this.vhs.render(this.scene, this.camera, t);
   }
