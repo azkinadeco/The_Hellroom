@@ -53,7 +53,7 @@ export const LEVELS = [
   {
     id: 1, code: 'LEVEL 0', name: 'Sekolah Malam',
     subtitle: 'Dua lantai, satu lapangan, dan tidak ada yang pulang.',
-    seed: 1996, layout: 'school', size: [26, 22], floors: 2, rail: 'parapet',
+    tint: [1.02, 0.95, 0.8], fogColor: 0x080806, grade: [1.03, 1.0, 0.94], seed: 1996, layout: 'school', size: [26, 22], floors: 2, rail: 'parapet',
     lightsOff: 0.14, flicker: 0.12, fog: 0.05,
     fuses: 3, keys: 1, batteries: 4, notes: 3, erasers: 5,
     entities: [{ type: 'pale' }], hallTheme: 'hall',
@@ -61,7 +61,7 @@ export const LEVELS = [
   {
     id: 2, code: 'LEVEL 1', name: 'Sayap Detensi',
     subtitle: 'Tiga lantai sel mengelilingi satu menara. Penggarisnya berbunyi sebelum ia datang.',
-    seed: 451, layout: 'detention', size: [28, 24], floors: 3, rail: 'bars', seeAll: true,
+    tint: [0.82, 0.92, 1.04], fogColor: 0x05070a, grade: [0.94, 0.99, 1.06], seed: 451, layout: 'detention', size: [28, 24], floors: 3, rail: 'bars', seeAll: true,
     textures: ['floor_tile', 'floor_tile', 'ceiling_tile', 'cell_wall', 'cell_wall'],
     lightsOff: 0.3, flicker: 0.2, fog: 0.065,
     fuses: 3, keys: 1, batteries: 4, notes: 3, erasers: 5,
@@ -70,7 +70,7 @@ export const LEVELS = [
   {
     id: 3, code: 'LEVEL 2', name: 'Rumah Sakit',
     subtitle: 'Jangan berkedip. Di lantai bawah ada hutan.',
-    seed: 7031, layout: 'hospital', size: [28, 20], floors: 3, rail: 'bars', seeAll: true,
+    tint: [0.92, 1.0, 0.93], fogColor: 0x050806, grade: [0.97, 1.02, 0.98], seed: 7031, layout: 'hospital', size: [28, 20], floors: 3, rail: 'bars', seeAll: true,
     textures: ['hosp_floor', 'hosp_floor', 'ceiling_tile', 'hosp_wall', 'hosp_wall'],
     lightsOff: 0.35, flicker: 0.3, fog: 0.06,
     fuses: 4, keys: 1, batteries: 6, notes: 3, erasers: 5,
@@ -79,7 +79,7 @@ export const LEVELS = [
   {
     id: 4, code: 'LEVEL 3', name: 'Mal Tanpa Ujung',
     subtitle: 'Tiga lantai, satu atrium, dan sebuah perumahan yang seharusnya tidak ada di dalamnya.',
-    seed: 2207, layout: 'mall', size: [34, 26], floors: 3, theme: 'mall', clean: true, rail: 'glass', seeAll: true,
+    tint: [1.02, 0.97, 0.9], fogColor: 0x0a0807, grade: [1.03, 0.99, 0.96], seed: 2207, layout: 'mall', size: [34, 26], floors: 3, theme: 'mall', clean: true, rail: 'glass', seeAll: true,
     lightsOff: 0.45, flicker: 0.18, fog: 0.045, lockerReach: 5,
     fuses: 4, keys: 1, batteries: 7, notes: 3, erasers: 5,
     entities: [{ type: 'shade' }], hallTheme: 'hall',
@@ -87,7 +87,7 @@ export const LEVELS = [
   {
     id: 5, code: 'LEVEL 4', name: 'Kolam Renang',
     subtitle: 'Lima lantai keramik putih. Satu-satunya jalan cepat ke bawah adalah meluncur.',
-    seed: 3112, layout: 'poolrooms', size: [26, 24], floors: 5, theme: 'pool', clean: true, rail: 'parapet', railColor: 0xe9eef0, railCap: 0x5aa6b8, seeAll: true,
+    tint: [0.92, 1.0, 1.04], fogColor: 0x0c1416, grade: [0.96, 1.02, 1.05], seed: 3112, layout: 'poolrooms', size: [26, 24], floors: 5, theme: 'pool', clean: true, rail: 'parapet', railColor: 0xe9eef0, railCap: 0x5aa6b8, seeAll: true,
     lightsOff: 0.04, flicker: 0.04, fog: 0.028,
     fuses: 4, keys: 1, batteries: 4, notes: 3, erasers: 7,
     entities: [{ type: 'centipede' }], hallTheme: 'hall',
@@ -95,7 +95,7 @@ export const LEVELS = [
   {
     id: 6, code: 'LEVEL 5', name: 'Ruang Patung',
     subtitle: 'Museum tiga lantai. Mereka tidak bergerak. Mereka hanya menunggu.',
-    seed: 1313, layout: 'museum', size: [30, 26], floors: 3, rail: 'parapet', railColor: 0xd9d4c8, railCap: 0x6b5a3e, seeAll: true,
+    tint: [1.06, 0.94, 0.78], fogColor: 0x0a0705, grade: [1.05, 0.99, 0.92], seed: 1313, layout: 'museum', size: [30, 26], floors: 3, rail: 'parapet', railColor: 0xd9d4c8, railCap: 0x6b5a3e, seeAll: true,
     textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'],
     lightsOff: 0.22, flicker: 0.2, fog: 0.05,
     fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6, clean: true,
@@ -113,12 +113,12 @@ const ENDLESS_NAMES = ['Lorong Basah', 'Sayap Tanpa Jendela', 'Lantai Bawah Tana
   'Bangsal Kosong', 'Galeri Tanpa Wajah', 'Kolam Dalam', 'Sel Nomor Nol', 'Lantai Kuning'];
 const ENDLESS_STYLE_ORDER = ['school', 'hospital', 'detention', 'pool', 'museum', 'backroom'];
 const ENDLESS_LOOK = {
-  school: { rail: 'parapet', dress: 'school' },
-  hospital: { rail: 'bars', dress: 'hospital', textures: ['hosp_floor', 'hosp_floor', 'ceiling_tile', 'hosp_wall', 'hosp_wall'] },
-  detention: { rail: 'bars', textures: ['floor_tile', 'floor_tile', 'ceiling_tile', 'cell_wall', 'cell_wall'] },
-  pool: { rail: 'parapet', theme: 'pool', clean: true, railColor: 0xe9eef0, railCap: 0x5aa6b8 },
-  museum: { rail: 'parapet', clean: true, railColor: 0xd9d4c8, railCap: 0x6b5a3e, textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'] },
-  backroom: { rail: 'parapet', theme: 'backroom', clean: true, railColor: 0xc9b98a, railCap: 0x8a7a4a },
+  school: { rail: 'parapet', dress: 'school', tint: [1.02, 0.95, 0.8], fogColor: 0x080806, grade: [1.03, 1.0, 0.94] },
+  hospital: { rail: 'bars', dress: 'hospital', tint: [0.92, 1.0, 0.93], fogColor: 0x050806, grade: [0.97, 1.02, 0.98], textures: ['hosp_floor', 'hosp_floor', 'ceiling_tile', 'hosp_wall', 'hosp_wall'] },
+  detention: { rail: 'bars', tint: [0.82, 0.92, 1.04], fogColor: 0x05070a, grade: [0.94, 0.99, 1.06], textures: ['floor_tile', 'floor_tile', 'ceiling_tile', 'cell_wall', 'cell_wall'] },
+  pool: { rail: 'parapet', theme: 'pool', tint: [0.92, 1.0, 1.04], fogColor: 0x0c1416, grade: [0.96, 1.02, 1.05], clean: true, railColor: 0xe9eef0, railCap: 0x5aa6b8 },
+  museum: { rail: 'parapet', clean: true, tint: [1.06, 0.94, 0.78], fogColor: 0x0a0705, grade: [1.05, 0.99, 0.92], railColor: 0xd9d4c8, railCap: 0x6b5a3e, textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'] },
+  backroom: { rail: 'parapet', theme: 'backroom', tint: [1.05, 1.0, 0.72], fogColor: 0x0b0a05, grade: [1.04, 1.02, 0.88], clean: true, railColor: 0xc9b98a, railCap: 0x8a7a4a },
 };
 export function endlessDef(floor, seed) {
   const f = floor;

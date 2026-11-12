@@ -5,15 +5,27 @@ const frag = /* glsl */`
 precision highp float;
 uniform sampler2D tDiffuse;
 uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery, uClean;
-uniform vec2 uRes;
+uniform vec2 uRes, uTexel;
+uniform vec3 uGrade;
 varying vec2 vUv;
+// cheap single-pass glow: two rings of taps, only the bright part counts
+vec3 bloom(vec2 uv){
+  vec3 b = vec3(0.0);
+  for (int i = 0; i < 8; i++) {
+    float a = float(i) * 0.785398 + 0.39;
+    vec2 o = vec2(cos(a), sin(a)) * uTexel;
+    b += max(texture2D(tDiffuse, uv + o * 2.5).rgb - 0.68, 0.0) * 0.6;
+    b += max(texture2D(tDiffuse, uv + o * 7.0).rgb - 0.68, 0.0) * 0.5;
+  }
+  return b * 0.3;
+}
 
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
 
 void main(){
   // "Layar jernih": no lens, jitter, tracking, aberration, grain, scanlines or static
   if (uClean > 0.5) {
-    vec3 c = pow(max(texture2D(tDiffuse, vUv).rgb, 0.0), vec3(1.0 / 2.2));
+    vec3 c = pow(max(texture2D(tDiffuse, vUv).rgb + bloom(vUv), 0.0), vec3(1.0 / 2.2)) * uGrade;
     if (uNV > 0.5) { float n = pow(dot(c, vec3(0.3, 0.6, 0.1)) * 2.6, 0.75); c = vec3(0.25, 1.0, 0.35) * n; }
     vec2 q = vUv - 0.5;
     c *= mix(0.82, 1.0, smoothstep(0.9, 0.3, length(q * vec2(1.1, 1.25))));
@@ -43,7 +55,8 @@ void main(){
   col.g = texture2D(tDiffuse, uv).g;
   col.b = texture2D(tDiffuse, uv - vec2(ca, 0.0)).b;
   // render target is sRGB-encoded storage, sampled back as linear -> encode for display
-  col = pow(max(col, 0.0), vec3(1.0 / 2.2));
+  col += bloom(uv);
+  col = pow(max(col, 0.0), vec3(1.0 / 2.2)) * uGrade;
 
   // camcorder colour grade: lifted blacks, yellow-green cast, mild desaturation
   float l = dot(col, vec3(0.299, 0.587, 0.114));
@@ -89,6 +102,7 @@ export class VHS {
     this.uniforms = {
       tDiffuse: { value: this.target.texture }, uTime: { value: 0 }, uDanger: { value: 0 }, uNV: { value: 0 },
       uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uClean: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
+      uTexel: { value: new THREE.Vector2(0.001, 0.001) }, uGrade: { value: new THREE.Vector3(1, 1, 1) },
     };
     this.mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
@@ -105,6 +119,7 @@ export class VHS {
     const s = this.scale * pr;
     this.target.setSize(Math.max(2, Math.floor(w * s)), Math.max(2, Math.floor(h * s)));
     this.uniforms.uRes.value.set(w, h);
+    this.uniforms.uTexel.value.set(1 / this.target.width, 1 / this.target.height);
   }
   render(scene, camera, t) {
     this.uniforms.uTime.value = t;

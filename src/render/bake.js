@@ -50,6 +50,7 @@ export function bakeMaterial(src, mode = 'attr') {
       .replace('#include <common>', '#include <common>\nvarying vec2 vBake;\nuniform float uFlicker;\nuniform float uPower;\nuniform vec3 uBakeTint;\nuniform float uNV;')
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         float bk = (vBake.x + vBake.y * uFlicker) * uPower;
+        bk = bk < 0.6 ? bk : 0.6 + (1.0 - exp(-(bk - 0.6) * 1.2)) * 0.75;   // soft knee: hot spots keep a gradient
         reflectedLight.indirectDiffuse += diffuseColor.rgb * uBakeTint * bk + diffuseColor.rgb * uNV;`);
   };
   m.customProgramCacheKey = () => 'bake-' + mode;

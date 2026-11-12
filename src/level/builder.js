@@ -3,6 +3,7 @@
 // individually animated doors, lockers and items.
 import * as THREE from 'three';
 import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y } from '../config.js';
+import { AOBuilder, contactShadows, lightGlows } from '../render/dressing.js';
 import { DIRS, EDGE, VOID } from './map.js';
 import { bakeMaterial, LightField } from '../render/bake.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -114,13 +115,14 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     if (openAbove[i]) continue;
     if (noCeil[i]) { sky.push([x, z]); continue; }
     gb(texFor(r, 'ceil')).quadGrid([x * CELL, WALL_H, z * CELL], [1, 0, 0], [0, 0, 1], CELL, CELL, 2, 2, [0, -1, 0],
-      (p) => [p[0] / ceilTile, p[2] / ceilTile], (p) => { const s = field.sample(p[0], WALL_H, p[2], null, null, null, c); return [s[0] * 0.55, s[1] * 0.55]; });
+      (p) => [p[0] / ceilTile, p[2] / ceilTile], (p) => { const s = field.sample(p[0], WALL_H, p[2], null, null, null, c); return [s[0] * 0.42, s[1] * 0.42]; });
   }
 
   // ---------- walls ----------
   const isSolid = (x, z, d) => { const e = map.edge(x, z, d); return e === EDGE.WALL || e === EDGE.DOOR; };
   const perp = (d) => DIRS.filter((t) => t.dx !== d.dx && t.dz !== d.dz && !(t.dx === -d.dx && t.dz === -d.dz) && (t.dx * d.dx + t.dz * d.dz === 0));
   const wallTop = (i) => (openAbove[i] ? FH : WALL_H);
+  const ao = new AOBuilder(), UP = [0, 1, 0], DOWN = [0, -1, 0];
   for (let z = 0; z < map.H; z++) for (let x = 0; x < map.W; x++) {
     const r = map.reg(x, z), i = x + z * map.W;
     if (!isSpace(r)) continue;
@@ -172,6 +174,25 @@ export function buildLevel(gen, assets, def, ctx = {}) {
         const vs = Math.max(1, Math.round((y1 - y0) / 1.0));
         wb.quadGrid(o, tan, [0, 1, 0], s1 - s0, y1 - y0, steps, vs, normal, uvFn, bakeFn);
       };
+      // fake ambient occlusion along the creases of this wall
+      {
+        const rr = roomById.get(r);
+        const flat = r >= 0 && !noFloor[i] && !(rr && rr.type === 'stairs');
+        const ceil = !openAbove[i] && !noCeil[i] && top === WALL_H;
+        const P = (s, y, n) => [px + tan[0] * s + normal[0] * n, y, pz + tan[2] * s + normal[2] * n];
+        const spans = hole ? [[a, -hole[0]], [hole[0], b]] : [[a, b]];
+        for (const [s0, s1] of spans) {
+          if (s1 - s0 < 0.01) continue;
+          if (flat) { ao.quad(P(s0, 0.01, 0), tan, normal, s1 - s0, 1.0); ao.quad(P(s0, 0, 0.004), tan, UP, s1 - s0, 0.85); }
+        }
+        if (ceil) { ao.quad(P(a, WALL_H - 0.01, 0), tan, normal, b - a, 0.8); ao.quad(P(a, WALL_H, 0.004), tan, DOWN, b - a, 0.6); }
+        for (const t of tz) {
+          if (!isSolid(x, z, t)) continue;
+          const sign = t.dx * tan[0] + t.dz * tan[2];
+          const neg = [-tan[0], 0, -tan[2]];
+          if (sign > 0) ao.quad(P(b, 0, 0.004), UP, neg, top, 0.6); else ao.quad(P(a, 0, 0.004), UP, tan, top, 0.6);
+        }
+      }
       if (hole) {
         seg(a, -hole[0], 0, top);
         seg(hole[0], b, 0, top);
@@ -195,6 +216,8 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     m.matrixAutoUpdate = false;
     root.add(m);
   }
+  const aoMesh = ao.mesh(def.aoStrength ?? 0.7);
+  if (aoMesh) root.add(aoMesh);
   if (sky.length) root.add(skyMesh(sky));
   if ((gen.signs || []).length) root.add(signsMesh(gen.signs, field));
 
@@ -286,6 +309,15 @@ export function buildLevel(gen, assets, def, ctx = {}) {
       figures.push(fig);
     });
   }
+  // soft contact shadows under everything that stands on the floor
+  const shadowList = gen.props.slice();
+  for (const l of gen.lockers) shadowList.push({ type: l.kind === 'stall' ? 'toilet_stall' : 'school_locker', x: l.x, z: l.z, rot: l.rot });
+  const cs = contactShadows(assets, shadowList);
+  if (cs) root.add(cs);
+  // light pools on the floor and halos on the ceiling round lit fixtures
+  const floorAt = (wx, wz) => { const cx = Math.floor(wx / CELL), cz = Math.floor(wz / CELL); if (!map.inside(cx, cz)) return false; const rg = map.reg(cx, cz), rr = roomById.get(rg); return rg >= 0 && !noFloor[cx + cz * map.W] && !(rr && rr.type === 'stairs'); };
+  const glows = lightGlows(gen.lights, WALL_H, def.tint || [1, 0.98, 0.9], floorAt);
+  for (const m of glows.meshes) root.add(m);
   // ceiling fixtures, grouped by state so emissive can differ
   const fixtureMats = { on: null, off: null, flicker: null };
   for (const l of gen.lights) if (l.fixture !== 'none') inst.add('ceiling_light', l.x, l.y ?? WALL_H, l.z, l.rot, 'light_' + l.state, (m) => {
@@ -389,7 +421,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
 
   inst.finish();
   root.updateMatrixWorld(true);
-  return { lifts, chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, waterMat, poolMats, figures };
+  return { lifts, chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, glowMats: glows.mats, waterMat, poolMats, figures };
 }
 
 function itemLift(type) {
@@ -702,13 +734,45 @@ function skyMesh(cells) {
   let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
   for (const [x, z] of cells) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); }
   if (!SKY_TEX) {
-    const c = document.createElement('canvas'); c.width = c.height = 512;
+    const S = 1024, c = document.createElement('canvas'); c.width = c.height = S;
     const g = c.getContext('2d');
-    const gr = g.createRadialGradient(256, 256, 30, 256, 256, 360); gr.addColorStop(0, '#0b1222'); gr.addColorStop(1, '#03050a');
-    g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 260; i++) { const a = Math.random(); g.fillStyle = `rgba(220,226,255,${0.25 + a * 0.6})`; g.fillRect(Math.random() * 512, Math.random() * 512, a > 0.93 ? 2 : 1, a > 0.93 ? 2 : 1); }
-    g.fillStyle = 'rgba(214,220,200,0.9)'; g.beginPath(); g.arc(380, 140, 16, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgba(3,5,10,1)'; g.beginPath(); g.arc(388, 134, 14, 0, Math.PI * 2); g.fill();
+    let seed = 77; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const gr = g.createRadialGradient(S * 0.68, S * 0.3, 20, S / 2, S / 2, S * 0.75);
+    gr.addColorStop(0, '#16213a'); gr.addColorStop(0.45, '#0a1020'); gr.addColorStop(1, '#020309');
+    g.fillStyle = gr; g.fillRect(0, 0, S, S);
+    // faint milky band across the sky
+    g.save(); g.translate(S / 2, S / 2); g.rotate(-0.6);
+    for (let i = 0; i < 900; i++) {
+      const x = (rnd() - 0.5) * S * 1.4, y = (rnd() + rnd() + rnd() - 1.5) * S * 0.09, r = 6 + rnd() * 26;
+      g.fillStyle = `rgba(120,135,180,${0.012 + rnd() * 0.02})`; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    g.restore();
+    // stars: mostly faint, a few bright with a soft cross
+    for (let i = 0; i < 1100; i++) {
+      const a = rnd(), x = rnd() * S, y = rnd() * S;
+      const tint = rnd() < 0.15 ? '255,214,180' : rnd() < 0.3 ? '190,210,255' : '228,232,255';
+      g.fillStyle = `rgba(${tint},${0.15 + a * a * 0.8})`;
+      const sz = a > 0.97 ? 2.5 : a > 0.85 ? 1.6 : 1;
+      g.fillRect(x, y, sz, sz);
+      if (a > 0.985) { g.fillStyle = `rgba(${tint},0.25)`; g.fillRect(x - 4, y + sz / 2 - 0.5, 8 + sz, 1); g.fillRect(x + sz / 2 - 0.5, y - 4, 1, 8 + sz); }
+    }
+    // moon: halo, pale disc with maria, then the shadow that makes it a crescent
+    const mx = S * 0.74, my = S * 0.27, mr = 30;
+    const halo = g.createRadialGradient(mx, my, mr, mx, my, mr * 7);
+    halo.addColorStop(0, 'rgba(190,200,190,0.28)'); halo.addColorStop(0.3, 'rgba(120,130,140,0.1)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = halo; g.fillRect(mx - mr * 7, my - mr * 7, mr * 14, mr * 14);
+    g.fillStyle = '#dcdcc8'; g.beginPath(); g.arc(mx, my, mr, 0, Math.PI * 2); g.fill();
+    for (let i = 0; i < 9; i++) { g.fillStyle = `rgba(150,150,135,${0.25 + rnd() * 0.3})`; g.beginPath(); g.arc(mx + (rnd() - 0.5) * mr * 1.2, my + (rnd() - 0.5) * mr * 1.2, 3 + rnd() * 8, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = 'rgba(5,8,16,0.93)'; g.beginPath(); g.arc(mx + 12, my - 9, mr - 1, 0, Math.PI * 2); g.fill();
+    // thin clouds, lit from the moon side
+    for (let i = 0; i < 70; i++) {
+      const cx = rnd() * S, cy = rnd() * S, w = 60 + rnd() * 180, h = 8 + rnd() * 18;
+      const near = Math.max(0, 1 - Math.hypot(cx - mx, cy - my) / (S * 0.5));
+      const cg = g.createRadialGradient(cx, cy, 0, cx, cy, w / 2);
+      cg.addColorStop(0, `rgba(${60 + near * 70},${66 + near * 70},${84 + near * 60},${0.18 + near * 0.12})`); cg.addColorStop(1, 'rgba(20,24,34,0)');
+      g.save(); g.translate(cx, cy); g.scale(1, h / w); g.translate(-cx, -cy);
+      g.fillStyle = cg; g.beginPath(); g.arc(cx, cy, w / 2, 0, Math.PI * 2); g.fill(); g.restore();
+    }
     SKY_TEX = new THREE.CanvasTexture(c); SKY_TEX.colorSpace = THREE.SRGBColorSpace;
   }
   const w = (x1 - x0 + 1) * CELL + 40, d = (z1 - z0 + 1) * CELL + 40;

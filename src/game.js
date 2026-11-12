@@ -5,6 +5,7 @@ import { generateBuilding, FH } from './level/building.js';
 import { buildLevel, cloneWithBake, buildSlides } from './level/builder.js';
 import { bakeUniforms } from './render/bake.js';
 import { VHS } from './render/vhs.js';
+import { Dust } from './render/dressing.js';
 import { World } from './world.js';
 import { Player } from './player.js';
 import { DoorSystem, Interactor } from './interact.js';
@@ -32,6 +33,8 @@ export class Game {
     this.player = new Player(this.camera, this.scene);
     this.ambient = new THREE.AmbientLight(0xd8e0d0, 0.05);
     this.scene.add(this.ambient);
+    this.dust = new Dust(260);
+    this.scene.add(this.dust.points);
     this.state = 'menu';
     this.time = 0;
     this.entities = [];
@@ -128,8 +131,14 @@ export class Game {
     this.setFloor(startFloor);
     this.interactor = new Interactor(this);
     this.anomalies = new Anomalies(this);
-    this.scene.fog = new THREE.FogExp2(0x070806, def.fog);
-    this.scene.background = new THREE.Color(0x070806);
+    // per-level look: tint of the baked light, colour of the dark
+    const fogC = def.fogColor ?? 0x070806;
+    this.scene.fog = new THREE.FogExp2(fogC, def.fog);
+    this.scene.background = new THREE.Color(fogC);
+    const tint = def.tint || [1, 0.98, 0.9];
+    bakeUniforms.uBakeTint.value.setRGB(tint[0], tint[1], tint[2]);
+    this.vhs.uniforms.uGrade.value.set(...(def.grade || [1, 1, 1]));
+    this.dust.u.uCol.value.setRGB(0.9 * tint[0], 0.86 * tint[1], 0.74 * tint[2]);
     this.start = start;
 
     const p = this.player;
@@ -629,6 +638,7 @@ export class Game {
       const fm = f.built.fixtureMats;
       if (fm.flicker) fm.flicker.emissiveIntensity = this.flickerVal;
       if (fm.on) fm.on.emissiveIntensity = bakeUniforms.uPower.value;
+      for (const g of f.built.glowMats) g.m.opacity = g.base * bakeUniforms.uPower.value * (g.flick ? this.flickerVal : 1) * (p.nightVision ? 0.4 : 1);
     }
     bakeUniforms.uNV.value = p.nightVision ? 0.55 : 0;
     this.themeT -= dt;
@@ -706,6 +716,7 @@ export class Game {
     u.uNV.value = this.player.nightVision ? 1 : 0;
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
+    this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);
     this.vhs.render(this.scene, this.camera, t);
   }
 
