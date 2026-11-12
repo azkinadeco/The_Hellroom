@@ -7,7 +7,7 @@ export const MODEL_KEYS = [
   'student_desk', 'teacher_desk', 'chalkboard', 'school_locker', 'locker_bank',
   'door_classroom', 'door_locked', 'exit_door', 'ceiling_light', 'wall_clock',
   'bookshelf', 'trash_bin', 'water_fountain', 'cardboard_box', 'chair_fallen',
-  'fuse_box', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
+  'fuse_box', 'toilet_stall', 'sink_counter', 'bleachers', 'basketball_hoop', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
   'entity_monitor', 'entity_substitute', 'entity_pupil',
 ];
 export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal'];
@@ -22,6 +22,8 @@ const FALLBACK = {
   cardboard_box: [0.55, 0.5, 0.55, 0xa07a4a], chair_fallen: [0.45, 0.4, 0.8, 0x9a6b3f],
   fuse_box: [0.6, 0.8, 0.15, 0x777777, 1.0], item_fuse: [0.04, 0.12, 0.04, 0xffaa55, -0.06],
   item_key: [0.09, 0.02, 0.03, 0xd4a640, -0.01], item_battery: [0.1, 0.06, 0.05, 0x333333, -0.03],
+  toilet_stall: [0.95, 1.95, 1.4, 0xa7907a], sink_counter: [1.6, 0.9, 0.5, 0xe6e0cf], bleachers: [3.0, 1.5, 2.0, 0xb8864f],
+  basketball_hoop: [1.2, 0.8, 0.1, 0xe8e6dd, 2.05],
   item_eraser: [0.14, 0.03, 0.055, 0x8a5a32, -0.015],
   item_note: [0.21, 0.005, 0.28, 0xf0eedc, 0], item_tape: [0.19, 0.025, 0.1, 0x111111, -0.012],
   entity_monitor: [0.6, 2.5, 0.4, 0x8a8f99], entity_substitute: [0.5, 1.8, 0.35, 0xe8e4dc],
@@ -94,10 +96,10 @@ function makeFallbackModel(k) {
   if (k === 'chalkboard' || k === 'fuse_box' || k === 'wall_clock') mesh.position.z = d / 2;
   if (k.startsWith('item')) mesh.position.y = 0;
   g.add(mesh);
-  if (k === 'school_locker' || k.startsWith('door')) {
+  if (k === 'school_locker' || k === 'toilet_stall' || k.startsWith('door')) {
     const pivot = new THREE.Group();
-    pivot.name = k === 'school_locker' ? 'Door' : 'DoorLeaf';
-    if (k === 'school_locker') { pivot.position.set(-w / 2, 0, d / 2); mesh.scale.z = 0.95; }
+    pivot.name = k.startsWith('door') ? 'DoorLeaf' : 'Door';
+    if (!k.startsWith('door')) { pivot.position.set(-w / 2, 0, d / 2); mesh.scale.z = 0.95; }
     else {
       mesh.geometry = new THREE.BoxGeometry(1.0, 2.15, 0.05);
       mesh.position.set(0.5, 1.075, 0);

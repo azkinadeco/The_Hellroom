@@ -56,7 +56,8 @@ export class Player {
         let d = this.yaw - base;
         while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
         this.yaw = base + clamp(d, -0.6, 0.6);
-        this.pitch = clamp(this.pitch, -0.35, 0.3);
+        const pr = this.hidden.kind === 'stall' ? [-0.9, 0.3] : [-0.35, 0.3];
+        this.pitch = clamp(this.pitch, pr[0], pr[1]);
       }
       this.pitch = clamp(this.pitch, -1.45, 1.45);
     }

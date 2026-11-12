@@ -21,6 +21,11 @@ export const NOTES = {
     { title: 'Robekan Rapor', body: 'Nama: (dicoret)\nKelas: Malam\nKehadiran: 10.957 hari\n\nKeterangan: Siswa terus mencoba pulang. Mohon orang tua membantu.' },
     { title: 'Tulisan di Balik Pintu Loker', body: 'Kalau kamu baca ini, kamu masih punya nama.\n\nEmpat sekring. Satu panel. Satu pintu.\nJangan berhenti merekam. Selama kamera masih merekam, kamu masih nyata.' },
   ],
+  4: [
+    { title: 'Jadwal Olahraga — Kelas Malam', body: 'Pemanasan: 10 putaran lorong.\nInti: petak umpet.\nPendinginan: tidak ada.\n\nCatatan guru: "Dua petugas berjaga malam ini. Kalau peluit bersahutan, artinya mereka sudah tahu kamu di mana."' },
+    { title: 'Coretan di Bilik Toilet', body: 'BILIK KETIGA AMAN\n(dicoret)\nTIDAK ADA YANG AMAN\n\nLihat ke bawah pintu. Kalau ada kaki yang berhenti, JANGAN BERNAPAS.' },
+    { title: 'Daftar Nilai Olahraga', body: 'Lari: tidak lulus.\nSembunyi: lulus.\nPulang: —\n\nPintu darurat gedung olahraga adalah satu-satunya pintu yang langsung ke luar. Itu yang dikatakan penjaga sebelum ia berhenti datang.' },
+  ],
 };
 
 export const ENDING = 'Pintu terbuka. Cahaya putih. Kaset berhenti berputar.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu — hanya bahwa handycam ini kembali, sendirian, ke meja guru di Kelas Malam.';

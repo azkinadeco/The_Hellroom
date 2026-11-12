@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NOISE, PLAYER } from './config.js';
+import { NOISE, PLAYER, HIDE } from './config.js';
 import { damp } from './util/rng.js';
 
 const OPEN_ANGLE = -1.55; // doors swing into the room
@@ -43,7 +43,7 @@ export class Interactor {
   candidates() {
     const g = this.game, out = [];
     for (const d of g.built.doors) out.push({ kind: 'door', ref: d, x: d.x, y: 1.1, z: d.z, r: 0.9 });
-    for (const l of g.built.lockers) out.push({ kind: 'locker', ref: l, x: l.x + Math.sin(l.rot) * 0.3, y: 1.0, z: l.z + Math.cos(l.rot) * 0.3, r: 0.55 });
+    for (const l of g.built.lockers) { const f = HIDE[l.kind || 'locker'].front; out.push({ kind: 'locker', ref: l, x: l.x + Math.sin(l.rot) * f, y: 1.0, z: l.z + Math.cos(l.rot) * f, r: 0.55 }); }
     for (const it of g.built.items) if (!it.taken) out.push({ kind: 'item', ref: it, x: it.obj.position.x, y: it.obj.position.y, z: it.obj.position.z, r: 0.35 });
     const fb = g.gen.fusebox;
     out.push({ kind: 'fusebox', x: fb.x + Math.sin(fb.rot) * 0.1, y: 1.4, z: fb.z + Math.cos(fb.rot) * 0.1, r: 0.5 });
@@ -86,7 +86,7 @@ export class Interactor {
         if (d.locked) return inv.keys > 0 ? 'Buka kunci pintu' : 'Terkunci — butuh kunci';
         return d.target ? 'Tutup pintu' : 'Buka pintu';
       }
-      case 'locker': return g.player.hidden ? 'Keluar dari loker' : 'Sembunyi di loker';
+      case 'locker': { const n = HIDE[t.ref.kind || 'locker'].label; return g.player.hidden ? `Keluar dari ${n}` : `Sembunyi di ${n}`; }
       case 'item': return { eraser: 'Ambil penghapus papan', fuse: 'Ambil sekring', key: 'Ambil kunci', battery: 'Ambil baterai', note: 'Baca catatan', tape: 'Ambil kaset' }[t.ref.type];
       case 'fusebox': {
         const need = g.def.fuses - g.fusesInstalled;

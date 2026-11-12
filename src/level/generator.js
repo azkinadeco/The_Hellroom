@@ -60,16 +60,16 @@ export function generateLevel(def, seed = def.seed) {
     if (!interior) continue;
     const A = s.hor ? [s.i, s.j - 1] : [s.i - 1, s.j];
     const B = [s.i, s.j];
-    if (blockRoom.has(A.join()) || blockRoom.has(B.join()) || !rng.chance(0.6)) continue;
+    if (blockRoom.has(A.join()) || blockRoom.has(B.join()) || !rng.chance(def.mergeChance ?? 0.6)) continue;
     const [ax0, az0] = bCells(...A); const [, , bx1, bz1] = bCells(...B);
-    const r = newRoom(ax0, az0, bx1, bz1, rng.chance(0.5) ? 'library' : 'studyhall');
+    const r = newRoom(ax0, az0, bx1, bz1, rng.pick(def.bigRooms || ['library', 'studyhall']));
     blockRoom.set(A.join(), r); blockRoom.set(B.join(), r);
   }
   for (let j = 0; j < bz; j++) for (let i = 0; i < bx; i++) {
     if (blockRoom.has(i + ',' + j)) continue;
     const [x0, z0, x1, z1] = bCells(i, j);
     if (rng.chance(0.28)) {
-      const types = rng.shuffle(['storage', 'office']);
+      const types = rng.shuffle([...(def.smallRooms || ['storage', 'office', 'restroom'])]);
       if (rng.chance(0.5)) { newRoom(x0, z0, x0 + 1, z1, types[0]); newRoom(x0 + 2, z0, x1, z1, types[1]); }
       else { newRoom(x0, z0, x1, z0 + 1, types[0]); newRoom(x0, z0 + 2, x1, z1, types[1]); }
     } else newRoom(x0, z0, x1, z1, 'classroom');
@@ -104,7 +104,7 @@ export function generateLevel(def, seed = def.seed) {
     }
     if (!cand.length) continue;
     rng.shuffle(cand);
-    const want = r.type === 'library' || r.type === 'studyhall' ? 2 : 1;
+    const want = r.type === 'library' || r.type === 'studyhall' || r.type === 'gym' ? 2 : 1;
     const usedSides = new Set();
     for (const c of cand) {
       if (r.doors.length >= want) break;
@@ -360,7 +360,7 @@ function furnishRoom(r, map, rng, out) {
   const lockerOnBackWall = (u) => {
     if (sideHasDoorNear(r, back, u - 0.6, u + 0.6)) return false;
     const [x, z] = back.toWorld(u, wallOff + 0.3);
-    out.lockers.push({ x, z, rot: yawFor(back.n[0], back.n[1]) });
+    out.lockers.push({ kind: 'locker', x, z, rot: yawFor(back.n[0], back.n[1]) });
     out.colliders.push(aabb(x, z, 0.62, 0.58, yawFor(back.n[0], back.n[1])));
     return true;
   };
@@ -403,6 +403,56 @@ function furnishRoom(r, map, rng, out) {
     emitProp(out, 'teacher_desk', tx, tz, faceIn, [1.5, 0.75, 0.8]);
     spot(W_ / 2, 0.8, 0.79);
     lockerOnBackWall(1.0);
+  } else if (r.type === 'restroom') {
+    // row of hideable stalls against the back wall, sinks on the front wall
+    const n = Math.floor((W_ - 0.4) / 0.97);
+    const startU = (W_ - n * 0.97) / 2 + 0.485;
+    const rotBack = yawFor(back.n[0], back.n[1]);
+    for (let i = 0; i < n; i++) {
+      const u = startU + i * 0.97;
+      if (sideHasDoorNear(r, back, u - 0.6, u + 0.6)) continue;
+      const [x, z] = back.toWorld(u, wallOff + 0.7);
+      out.lockers.push({ kind: 'stall', x, z, rot: rotBack });
+      // partitions only: the stall interior stays walkable for the hiding camera
+      const c = Math.abs(Math.cos(rotBack)) > 0.5;
+      for (const s of [-1, 1]) {
+        const [px, pz] = back.toWorld(u + s * 0.47, wallOff + 0.7);
+        out.colliders.push(c ? { minX: px - 0.03, maxX: px + 0.03, minZ: pz - 0.7, maxZ: pz + 0.7, h: 2 } : { minX: px - 0.7, maxX: px + 0.7, minZ: pz - 0.03, maxZ: pz + 0.03, h: 2 });
+      }
+      const [fx, fz] = back.toWorld(u, wallOff + 1.38);
+      out.colliders.push(c ? { minX: fx - 0.48, maxX: fx + 0.48, minZ: fz - 0.03, maxZ: fz + 0.03, h: 2 } : { minX: fx - 0.03, maxX: fx + 0.03, minZ: fz - 0.48, maxZ: fz + 0.48, h: 2 });
+    }
+    if (!sideHasDoorNear(r, f, W_ / 2 - 1.0, W_ / 2 + 1.0)) {
+      const [sx, sz] = at(W_ / 2, wallOff);
+      emitProp(out, 'sink_counter', sx, sz, faceIn, null);
+      const [cx, cz] = at(W_ / 2, wallOff + 0.25);
+      out.colliders.push(aabb(cx, cz, 1.6, 0.5, faceIn));
+      spot(W_ / 2 - 0.6, 0.3, 0.9);
+    }
+    const [bx2, bz2] = at(0.5, 0.5); emitProp(out, 'trash_bin', bx2, bz2, 0, [0.4, 0.4, 0.5]);
+    spot(W_ / 2, D / 2 + 0.3, 0.02); spot(1.0, D / 2, 0.02);
+  } else if (r.type === 'gym') {
+    // bleachers along the front wall, hoops on the two short ends
+    for (let u = 1.8; u < W_ - 1.6; u += 3.2) {
+      if (sideHasDoorNear(r, f, u - 1.6, u + 1.6)) continue;
+      const [x, z] = at(u, wallOff + 1.0);
+      emitProp(out, 'bleachers', x, z, faceFront + Math.PI, [3.0, 2.0, 1.5]);
+      r.spots.push([x, 0.78, z]);
+    }
+    for (const side of f.alongX ? ['W', 'E'] : ['N', 'S']) {
+      const sf = roomFrame(r, side);
+      if (sideHasDoorNear(r, sf, sf.width / 2 - 1, sf.width / 2 + 1)) continue;
+      const [hx, hz] = sf.toWorld(sf.width / 2, wallOff);
+      emitProp(out, 'basketball_hoop', hx, hz, yawFor(sf.n[0], sf.n[1]), null);
+    }
+    for (let i = 0; i < 5; i++) {
+      const u = rng.range(1, W_ - 1), v = rng.range(D * 0.45, D - 1);
+      if (Math.abs(((u % 3) + 3) % 3 - 1.5) < 0.6 || Math.abs(((v % 3) + 3) % 3 - 1.5) < 0.6) continue;
+      const [x, z] = at(u, v);
+      emitProp(out, rng.chance(0.5) ? 'cardboard_box' : 'chair_fallen', x, z, rng.range(0, 6), [0.6, 0.6, 0.5]);
+    }
+    lockerOnBackWall(1.2); lockerOnBackWall(W_ - 1.2);
+    spot(W_ / 2, D * 0.6, 0.02); spot(W_ / 3, D * 0.75, 0.02); spot(W_ * 0.7, D * 0.5, 0.02);
   } else if (r.type === 'storage') {
     for (let i = 0; i < 6; i++) {
       const u = rng.range(0.6, W_ - 0.6), v = rng.range(1.0, D - 0.6);
@@ -468,7 +518,7 @@ function dressHalls(map, rng, out, reserved) {
         for (let i = 0; i < n; i++) {
           const k = o + (i - (n - 1) / 2) * 0.62;
           const lx = px + along[0] * k, lz = pz + along[1] * k;
-          out.lockers.push({ x: lx, z: lz, rot });
+          out.lockers.push({ kind: 'locker', x: lx, z: lz, rot });
           out.colliders.push(aabb(lx, lz, 0.62, 0.58, rot));
         }
         axis = ax;
@@ -500,7 +550,7 @@ function dressHalls(map, rng, out, reserved) {
     const clash = out.colliders.some((c) => lx > c.minX - 0.3 && lx < c.maxX + 0.3 && lz > c.minZ - 0.3 && lz < c.maxZ + 0.3);
     if (clash) continue;
     const rot = yawFor(-d.dx, -d.dz);
-    out.lockers.push({ x: lx, z: lz, rot });
+    out.lockers.push({ kind: 'locker', x: lx, z: lz, rot });
     out.colliders.push(aabb(lx, lz, 0.62, 0.58, rot));
     lockerCells.push([x, z]);
   }

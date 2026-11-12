@@ -18,7 +18,7 @@ export const PLAYER = {
   staminaDrain: 22,   // per second sprinting
   staminaRegen: 14,
   breathMax: 100,
-  breathDrain: 16,    // per second holding breath (~6s)
+  breathDrain: 12,    // per second holding breath (~8s)
   breathRegen: 20,
   batteryDrainLight: 0.55, // % per second
   batteryDrainNV: 1.1,
@@ -28,6 +28,12 @@ export const PLAYER = {
 // Noise radius (meters) emitted by player actions
 export const NOISE = {
   walk: 7, sprint: 15, crouch: 2.2, door: 9, locker: 5, pickup: 3, gasp: 9, fuse: 8, throw: 14,
+};
+
+// Hideable spots: distances along the front direction (metres)
+export const HIDE = {
+  locker: { front: 0.3, cam: 0.34, exit: 0.85, inspect: 1.0, open: -1.6, pitch: [-0.35, 0.3], label: 'loker' },
+  stall:  { front: 0.7, cam: -0.12, exit: 1.25, inspect: 1.35, open: -1.6, pitch: [-0.9, 0.3], label: 'bilik' },
 };
 
 export const DIFFICULTY = {
@@ -76,6 +82,22 @@ export const LEVELS = [
     fog: 0.065,
     fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6,
     entities: [{ type: 'monitor' }, { type: 'substitute' }, { type: 'pupil' }, { type: 'pupil' }],
+    hallTheme: 'hall',
+  },
+  {
+    id: 4,
+    code: 'LEVEL 3',
+    name: 'Gedung Olahraga',
+    subtitle: 'Pelajaran olahraga tidak pernah selesai.',
+    seed: 3112,
+    blocksX: 5, blocksZ: 4,
+    lightsOff: 0.4, flicker: 0.3,
+    fog: 0.07,
+    fuses: 4, keys: 2, batteries: 6, notes: 3, erasers: 7,
+    mergeChance: 0.85,
+    bigRooms: ['gym', 'gym', 'studyhall'],
+    smallRooms: ['restroom', 'restroom', 'storage', 'office'],
+    entities: [{ type: 'monitor' }, { type: 'monitor' }, { type: 'pupil' }, { type: 'pupil' }],
     hallTheme: 'hall',
   },
 ];

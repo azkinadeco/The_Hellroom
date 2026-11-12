@@ -5,8 +5,34 @@ import * as THREE from 'three';
 import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H } from '../config.js';
 import { DIRS, EDGE } from './map.js';
 import { bakeMaterial, LightField } from '../render/bake.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const CHUNK = 30;
+// One shared vertex-colour material for all merged opaque props.
+const VC_SRC = new THREE.MeshLambertMaterial({ vertexColors: true });
+VC_SRC.name = 'MergedVC';
+
+// Merge every opaque, non-emissive, untextured mesh of a model into a single
+// vertex-coloured geometry (1 draw call instead of 1 per material).
+// parts: [{mesh, matrix}] (matrix = mesh transform in model space)
+function mergeParts(parts, key = 'matrix') {
+  const keep = [], geos = [];
+  for (const p of parts) {
+    const m = p.mesh.material;
+    if (!m || m.transparent || m.map || (m.userData && m.userData.emissive)) { keep.push(p); continue; }
+    const g = p.mesh.geometry.clone().applyMatrix4(p[key]);
+    for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+    const n = g.attributes.position.count, col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { col[i * 3] = m.color.r; col[i * 3 + 1] = m.color.g; col[i * 3 + 2] = m.color.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geos.push(g.index ? g.toNonIndexed() : g);
+  }
+  if (geos.length < 2) return parts;
+  const merged = mergeGeometries(geos, false);
+  if (!merged) return parts;
+  return [{ mesh: { geometry: merged, material: VC_SRC }, [key]: new THREE.Matrix4() }, ...keep];
+}
+
+const CHUNK = 24;
 
 class GeoBuilder {
   constructor() { this.pos = []; this.nrm = []; this.uv = []; this.bake = []; this.idx = []; }
@@ -45,6 +71,7 @@ export function buildLevel(gen, assets, def) {
   const root = new THREE.Group();
   const field = new LightField(map, gen.lights);
   const T = assets.textures;
+  const tiled = new Set([0, ...gen.rooms.filter((r) => r.type === 'restroom').map((r) => r.id)]);
 
   // ---------- floors & ceilings ----------
   const floorHall = new GeoBuilder(), floorRoom = new GeoBuilder(), ceil = new GeoBuilder();
@@ -52,7 +79,7 @@ export function buildLevel(gen, assets, def) {
     const r = map.reg(x, z);
     if (r < 0) continue;
     const c = map.center(x, z);
-    const fb = r === 0 ? floorHall : floorRoom;
+    const fb = tiled.has(r) ? floorHall : floorRoom;
     fb.quadGrid([x * CELL, 0, (z + 1) * CELL], [1, 0, 0], [0, 0, -1], CELL, CELL, 2, 2, [0, 1, 0],
       (p) => [p[0] / CELL, -p[2] / CELL], (p) => field.sample(p[0], 0, p[2], 0, 1, 0, c));
     ceil.quadGrid([x * CELL, WALL_H, z * CELL], [1, 0, 0], [0, 0, 1], CELL, CELL, 2, 2, [0, -1, 0],
@@ -67,7 +94,7 @@ export function buildLevel(gen, assets, def) {
     const r = map.reg(x, z);
     if (r < 0) continue;
     const c = map.center(x, z);
-    const gb = r === 0 ? wallHall : wallRoom;
+    const gb = tiled.has(r) ? wallHall : wallRoom;
     for (const d of DIRS) {
       if (!isSolid(x, z, d)) continue;
       const k = map.edgeKey(x, z, d);
@@ -154,7 +181,10 @@ export function buildLevel(gen, assets, def) {
     return fixtureMats[l.state];
   });
   // hideable lockers: body instanced + door instanced (door matrices animated)
-  const lockers = inst.addLockers(gen.lockers);
+  const lockers = [
+    ...inst.addLockers(gen.lockers.filter((l) => l.kind !== 'stall'), 'school_locker'),
+    ...inst.addLockers(gen.lockers.filter((l) => l.kind === 'stall'), 'toilet_stall'),
+  ];
   inst.finish();
 
   // ---------- doors ----------
@@ -202,7 +232,7 @@ export function buildLevel(gen, assets, def) {
   });
 
   root.updateMatrixWorld(true);
-  return { root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats };
+  return { chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats };
 }
 
 function itemLift(type) {
@@ -212,6 +242,22 @@ function itemLift(type) {
 // clone a model, converting materials to per-object baked uniform materials
 export function cloneWithBake(model, bakeVal, minLight = 0) {
   const obj = model.clone(true);
+  // merge sibling meshes under the same parent (keeps animated nodes intact)
+  const byParent = new Map();
+  obj.traverse((o) => { if (o.isMesh && !o.isSkinnedMesh && o.parent) { if (!byParent.has(o.parent)) byParent.set(o.parent, []); byParent.get(o.parent).push(o); } });
+  for (const [parent, meshes] of byParent) {
+    if (meshes.length < 2) continue;
+    for (const m of meshes) m.updateMatrix();
+    const parts = mergeParts(meshes.map((m) => ({ mesh: m, matrix: m.matrix.clone() })));
+    if (parts.length >= meshes.length) continue;
+    for (const m of meshes) parent.remove(m);
+    for (const p of parts) {
+      const mesh = p.mesh.isMesh ? p.mesh : new THREE.Mesh(p.mesh.geometry, p.mesh.material);
+      if (!p.mesh.isMesh) mesh.name = parent.name + '_merged';
+      else mesh.matrix.copy(p.matrix), mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+      parent.add(mesh);
+    }
+  }
   const mats = new Map();
   obj.traverse((o) => {
     if (!o.isMesh) return;
@@ -233,6 +279,7 @@ class Instancer {
     this.groups = new Map(); // key -> {geo, mat, matrices[], bakes[]}
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._v = new THREE.Vector3(); this._s = new THREE.Vector3(1, 1, 1);
     this.flat = new Map();
+    this.chunked = [];
   }
   flatten(key, filter) {
     const ck = key + (filter ? ':f' : '');
@@ -241,8 +288,9 @@ class Instancer {
     model.updateMatrixWorld(true);
     const parts = [];
     model.traverse((o) => { if (o.isMesh && (!filter || filter(o))) parts.push({ mesh: o, matrix: o.matrixWorld.clone() }); });
-    this.flat.set(ck, parts);
-    return parts;
+    const merged = mergeParts(parts);
+    this.flat.set(ck, merged);
+    return merged;
   }
   add(key, x, y, z, rot, tag = '', matFn = null) {
     const parts = this.flatten(key);
@@ -255,23 +303,25 @@ class Instancer {
       if (!this.groups.has(gk)) {
         let mat = bakeMaterial(p.mesh.material, 'attr');
         if (matFn) mat = matFn(mat);
-        this.groups.set(gk, { geo: p.mesh.geometry, mat, matrices: [], bakes: [] });
+        this.groups.set(gk, { geo: p.mesh.geometry, mat, matrices: [], bakes: [], chunk });
       }
       const g = this.groups.get(gk);
       g.matrices.push(base.clone().multiply(p.matrix));
       g.bakes.push(b[0], b[1]);
     });
   }
-  addLockers(list) {
-    const model = this.assets.models.school_locker;
+  addLockers(list, key) {
+    if (!list.length) return [];
+    const model = this.assets.models[key];
     model.updateMatrixWorld(true);
     const doorNode = model.getObjectByName('Door');
     const inDoor = (o) => { let p = o; while (p) { if (p === doorNode) return true; p = p.parent; } return false; };
-    const bodyParts = this.flatten('school_locker', (o) => !inDoor(o));
-    const doorParts = [];
+    const bodyParts = this.flatten(key, (o) => !inDoor(o));
+    let doorParts = [];
     if (doorNode) {
       const inv = new THREE.Matrix4().copy(doorNode.matrixWorld).invert();
       doorNode.traverse((o) => { if (o.isMesh) doorParts.push({ mesh: o, local: inv.clone().multiply(o.matrixWorld) }); });
+      doorParts = mergeParts(doorParts, 'local');
     }
     const pivotBase = doorNode ? doorNode.matrixWorld.clone() : new THREE.Matrix4();
     const lockers = [];
@@ -290,8 +340,8 @@ class Instancer {
       const b = this.field.sample(l.x, 1.0, l.z, null, null, null, null);
       const chunk = Math.floor(l.x / CHUNK) + ',' + Math.floor(l.z / CHUNK);
       bodyParts.forEach((p, i) => {
-        const gk = 'locker#' + i + '#' + chunk;
-        if (!this.groups.has(gk)) this.groups.set(gk, { geo: p.mesh.geometry, mat: bakeMaterial(p.mesh.material, 'attr'), matrices: [], bakes: [] });
+        const gk = key + '#body#' + i + '#' + chunk;
+        if (!this.groups.has(gk)) this.groups.set(gk, { geo: p.mesh.geometry, mat: bakeMaterial(p.mesh.material, 'attr'), matrices: [], bakes: [], chunk });
         const g = this.groups.get(gk);
         g.matrices.push(base.clone().multiply(p.matrix));
         g.bakes.push(b[0], b[1]);
@@ -323,6 +373,9 @@ class Instancer {
       g.matrices.forEach((m, i) => im.setMatrixAt(i, m));
       im.computeBoundingSphere();
       im.matrixAutoUpdate = false;
+      const [cx, cz] = g.chunk.split(',').map(Number);
+      im.userData.chunk = { minX: cx * CHUNK, maxX: (cx + 1) * CHUNK, minZ: cz * CHUNK, maxZ: (cz + 1) * CHUNK };
+      this.chunked.push(im);
       this.root.add(im);
     }
   }

@@ -34,11 +34,14 @@ Tujuan setiap level: kumpulkan semua **sekring**, pasang di **kotak panel** deka
 | LEVEL 0 | Lorong Tak Berujung | Petugas Ketertiban |
 | LEVEL 1 | Sayap Detensi (lebih gelap) | Guru Pengganti, Si Murid |
 | LEVEL 2 | Kantor Kepala Sekolah | Ketiganya |
+| LEVEL 3 | Gedung Olahraga (gym, toilet, final) | Dua Petugas Ketertiban, Si Murid |
 
 **Penghuni sekolah**
 - **Petugas Ketertiban (The Hall Monitor)**: tinggi kurus, tanpa mata. Berpatroli, mendengar langkahmu, melihat siluetmu. Saat mengejar, ia meniup peluit. Kalau ia melihatmu masuk loker, ia akan langsung menarikmu keluar. Kalau kamu bernapas saat ia memeriksa loker, kamu ketahuan.
 - **Guru Pengganti (The Substitute)**: manekin berkapur yang hanya bergerak saat tidak kamu lihat. Dalam gelap, tatapanmu tidak berarti, jadi nyalakan senter atau mode malam.
 - **Si Murid (The Pupil)**: anak berjas hujan dengan kantong kertas di kepala. Tidak menyerang, tapi jeritannya memanggil penghuni lain.
+
+**Tempat sembunyi**: loker (mengintip lewat celah) dan bilik toilet (kaki penghuni yang lewat terlihat dari celah bawah pintu).
 
 **Sistem**: penghapus papan yang bisa dilempar untuk memancing Petugas, subtitle suara berarah (berguna saat iPhone dalam mode senyap), petunjuk tutorial di awal, resolusi otomatis turun kalau FPS drop, suara langkah (jalan, lari, jongkok), pintu yang terdengar jauh, loker dengan meteran napas, baterai handycam (senter dan mode malam), stamina, lampu neon yang berkedip atau mati, catatan lore, tiga tingkat kesulitan, progres tersimpan otomatis.
 

@@ -167,3 +167,7 @@ body.hiding .tbtn.breath { display: block; }
 .caption.show { opacity: 1; }
 .tbtn.throw { display: none; }
 body.can-throw .tbtn.throw { display: block; }
+@media (max-width: 900px) {
+  .toast { top: 34%; font-size: 22px; }
+  .objectives { font-size: 18px; top: 62px; }
+}

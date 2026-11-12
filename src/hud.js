@@ -62,7 +62,7 @@ export class HUD {
     this.breath.classList.toggle('show', !!p.hidden);
     this.breath.classList.toggle('warn', br < 0.3);
     this.breath.querySelector('i').style.width = (br * 100) + '%';
-    this.louvers.classList.toggle('show', !!p.hidden);
+    this.louvers.classList.toggle('show', !!p.hidden && p.hidden.kind !== 'stall');
     document.body.classList.toggle('hiding', !!p.hidden);
 
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) this.toastEl.classList.remove('show'); }

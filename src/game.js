@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LEVELS, DIFFICULTY, NOISE, CELL } from './config.js';
+import { LEVELS, DIFFICULTY, NOISE, CELL, HIDE } from './config.js';
 import { generateLevel } from './level/generator.js';
 import { buildLevel, cloneWithBake } from './level/builder.js';
 import { bakeUniforms } from './render/bake.js';
@@ -182,9 +182,10 @@ export class Game {
     this.deathT = 0;
     this.killer = entity;
     if (locker) { // dragged out of the locker
-      locker.target = -1.6;
+      const h = HIDE[locker.kind || 'locker'];
+      locker.target = h.open;
       p.hidden = null;
-      p.pos.x = locker.x + Math.sin(locker.rot) * 0.9; p.pos.z = locker.z + Math.cos(locker.rot) * 0.9;
+      p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
     }
     this.audio.jumpscare();
     this.input.resetToggles();
@@ -194,7 +195,8 @@ export class Game {
     const p = this.player;
     if (this.busy) return;
     this.busy = true;
-    L.target = -1.6;
+    const h = HIDE[L.kind || 'locker'];
+    L.target = h.open;
     this.audio.lockerClang({ x: L.x, y: 1, z: L.z }, 0.35);
     this.emitNoise(L.x, L.z, NOISE.locker, 'locker');
     const entering = !p.hidden;
@@ -202,14 +204,14 @@ export class Game {
       if (!p.alive) { this.busy = false; return; }
       if (entering) {
         L.viewYaw = L.rot + Math.PI;
-        L.camX = L.x + Math.sin(L.rot) * 0.34; L.camZ = L.z + Math.cos(L.rot) * 0.34;
+        L.camX = L.x + Math.sin(L.rot) * h.cam; L.camZ = L.z + Math.cos(L.rot) * h.cam;
         p.hidden = L; p.crouched = false;
         p.yaw = L.viewYaw; p.pitch = 0;
         p.flashlight = false;
         this.hud.toast(this.input.touch ? 'Tahan tombol NAPAS saat ada yang mendekat' : 'Tahan SPASI untuk menahan napas', 2.5);
       } else {
         p.hidden = null;
-        p.pos.x = L.x + Math.sin(L.rot) * 0.85; p.pos.z = L.z + Math.cos(L.rot) * 0.85;
+        p.pos.x = L.x + Math.sin(L.rot) * h.exit; p.pos.z = L.z + Math.cos(L.rot) * h.exit;
         p.yaw = L.rot + Math.PI;
       }
       L.target = 0;
@@ -302,6 +304,7 @@ export class Game {
     if (input.consume('throw')) this.throwEraser();
     this.updateProjectiles(dt);
     this.updateHints(dt);
+    this.cullChunks(dt);
     this.adaptResolution(dt);
     this.interactor.update();
     if (input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
@@ -463,6 +466,18 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- performance
+  // hide instanced chunks the fog would swallow anyway
+  cullChunks(dt) {
+    this.cullT = (this.cullT || 0) - dt;
+    if (this.cullT > 0) return;
+    this.cullT = 0.2;
+    const c = this.camera.position, far = this.player.nightVision ? 40 : 34;
+    for (const m of this.built.chunked) {
+      const b = m.userData.chunk;
+      const dx = Math.max(b.minX - c.x, 0, c.x - b.maxX), dz = Math.max(b.minZ - c.z, 0, c.z - b.maxZ);
+      m.visible = dx * dx + dz * dz < far * far;
+    }
+  }
   adaptResolution(dt) {
     if (!this.vhs.enabled) return;
     this.frameEma += (this.realDt - this.frameEma) * 0.05;

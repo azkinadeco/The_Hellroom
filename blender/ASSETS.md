@@ -224,3 +224,9 @@ Sneaker, SneakerSole.
 
 ## item_eraser.glb (batch 2)
 Chalkboard eraser lying felt-side down, 0.14 x 0.03 x 0.055 m (three.js X/Y/Z). Origin at bbox centre (game lifts it 0.016 m). Single mesh `Eraser`, materials `EraserWood`, `EraserFelt`, `ChalkDust`, `EraserInk`. Throwable distraction item.
+
+## Batch 3 (blender/props2.py)
+- `toilet_stall.glb` — hideable stall 0.95w x 1.4d x 1.95h, back (three −Z) against the wall, origin floor centre. Child `Door` pivots on the left hinge at the front face; negative `rotation.y` opens outward (same as school_locker). 0.25 m gap under the door.
+- `sink_counter.glb` — wall-mounted double sink + mirror, 1.6 w, origin on the wall plane at floor level, front +Z.
+- `bleachers.glb` — 4-tier bleachers 3.0w x 2.0d x 1.5h, low side at the front (+Z), origin floor centre.
+- `basketball_hoop.glb` — wall-mounted backboard (y 2.05–2.85), rim at 2.3 m, origin on the wall plane at floor level.

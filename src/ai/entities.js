@@ -3,7 +3,7 @@
 //  - Substitute: only moves while nobody is looking at it.
 //  - Pupil:      harmless wanderer that screams and summons the others.
 import * as THREE from 'three';
-import { CELL } from '../config.js';
+import { CELL, HIDE } from '../config.js';
 import { findPath, randomReachableCell } from './path.js';
 import { cloneWithBake } from '../level/builder.js';
 import { angleDiff, clamp } from '../util/rng.js';
@@ -257,7 +257,8 @@ export class Monitor extends Entity {
       case 'locker': { // walking to / inspecting a locker
         const L = this.lockerTarget;
         speed = (this.lockerSure ? this.run : this.walk * 1.2) * this.speedMul;
-        const fx = L.x + Math.sin(L.rot) * 1.0, fz = L.z + Math.cos(L.rot) * 1.0;
+        const fd = HIDE[L.kind || 'locker'].inspect;
+        const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
         const arrived = this.path && this.pathIdx < this.path.length ? this.followPath(dt, speed) : this.moveToward(fx, fz, dt, speed, 0.25, true);
         if (arrived || this.distTo({ x: fx, z: fz }) < 0.35) {
           this.velocity = 0;
@@ -295,7 +296,8 @@ export class Monitor extends Entity {
     if (!p.hidden) return;
     const L = p.hidden;
     const d = Math.hypot(L.x - this.pos.x, L.z - this.pos.z);
-    if (d > 4.5 || !this.game.world.los(this.pos.x, this.pos.z, L.x + Math.sin(L.rot) * 0.6, L.z + Math.cos(L.rot) * 0.6)) return;
+    const fd = HIDE[L.kind || 'locker'].front + 0.3;
+    if (d > 4.5 || !this.game.world.los(this.pos.x, this.pos.z, L.x + Math.sin(L.rot) * fd, L.z + Math.cos(L.rot) * fd)) return;
     const breathing = !p.holdingBreath;
     const chance = (breathing ? 0.35 + p.fear * 0.5 : 0.02) * this.game.diff.hearing * (1 - d / 4.5);
     if (Math.random() < chance * dt) this.targetLocker(L, false);
@@ -304,9 +306,10 @@ export class Monitor extends Entity {
   targetLocker(L, sure) {
     this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0;
     this.setState('locker');
-    const fx = L.x + Math.sin(L.rot) * 1.0, fz = L.z + Math.cos(L.rot) * 1.0;
+    const fd = HIDE[L.kind || 'locker'].inspect;
+    const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
     this.goToWorld(fx, fz);
-    if (!sure) this.game.hud.toast('Ada yang mendekati lokermu… tahan napas!', 2.5);
+    if (!sure) this.game.hud.toast(`Ada yang mendekati ${HIDE[L.kind || 'locker'].label}mu… tahan napas!`, 2.5);
   }
 
   attack(locker = null) {
