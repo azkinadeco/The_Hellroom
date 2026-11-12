@@ -3,7 +3,9 @@ import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { HUD } from './hud.js';
 import { Game } from './game.js';
-import { LEVELS, DIFFICULTY, endlessDef } from './config.js';
+import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS } from './config.js';
+import { ENTITY_INFO } from './ai/creatures.js';
+import { ModelViewer } from './viewer.js';
 import { INTRO, ENDING, NOTES, TAPES } from './story.js';
 
 const $ = (id) => document.getElementById(id);
@@ -36,7 +38,9 @@ const input = new Input($('game'));
 const hud = new HUD();
 let game;
 let pendingLevel = 0;
-let pendingDef = null;     // endless-mode level definition
+let pendingDef = null;     // endless-mode / test-room level definition
+let pendingGod = false;    // test rooms: invulnerable
+let viewer = null;
 let noteFromArchive = false;
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -85,13 +89,15 @@ const ui = {
       return;
     }
     const key = game.def.id + ':' + game.diffKey;
-    const prev = save.best[key];
-    if (!prev || t < prev) save.best[key] = t;
-    save.unlocked = Math.max(save.unlocked, Math.min(LEVELS.length, game.levelIndex + 2));
-    persist();
+    if (!game.def.test) {
+      const prev = save.best[key];
+      if (!prev || t < prev) save.best[key] = t;
+      save.unlocked = Math.max(save.unlocked, Math.min(LEVELS.length, game.levelIndex + 2));
+      persist();
+    }
     $('win-title').textContent = `${game.def.code} SELESAI`;
     $('win-stats').innerHTML = [
-      ['Waktu rekaman', fmt(t)], ['Rekor', fmt(save.best[key])], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
+      ['Waktu rekaman', fmt(t)], ['Rekor', save.best[key] ? fmt(save.best[key]) : '—'], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
       ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
     const last = game.levelIndex >= LEVELS.length - 1;
@@ -109,10 +115,15 @@ document.addEventListener('pointerlockchange', () => {
   if (game && game.state === 'playing' && !input.touch) ui.pause();
 });
 
-function startLevel(index) {
+function startLevel(index, test = null) {
   pendingLevel = index;
-  pendingDef = null;
-  const def = LEVELS[index];
+  pendingDef = null; pendingGod = false;
+  let def = LEVELS[index];
+  if (test) {
+    const ents = test.resident === 'default' ? def.entities : test.resident === 'none' ? [] : [{ type: test.resident }];
+    pendingDef = def = { ...def, entities: ents, test: true };
+    pendingGod = test.god;
+  }
   $('intro-code').textContent = def.code;
   $('intro-name').textContent = def.name;
   $('intro-sub').textContent = def.subtitle;
@@ -122,7 +133,7 @@ function startLevel(index) {
 
 function startEndless(floor) {
   pendingLevel = -1;
-  pendingDef = endlessDef(floor, Math.floor(Math.random() * 1e6));
+  pendingDef = endlessDef(floor, Math.floor(Math.random() * 1e6)); pendingGod = false;
   $('intro-code').textContent = 'MODE TANPA UJUNG · ' + pendingDef.code;
   $('intro-name').textContent = pendingDef.name;
   $('intro-sub').textContent = pendingDef.subtitle;
@@ -135,6 +146,7 @@ function beginPlay() {
   goFullscreen();
   try {
     game.loadLevel(pendingLevel, save.diff, pendingDef);
+    game.godMode = pendingGod;
   } catch (e) { showError(e.stack || e); return; }
   hideAll();
   hud.show(true);
@@ -210,6 +222,43 @@ function buildArchive() {
   });
   $('archive-count').textContent = `${have}/${total} ditemukan  ·  Rekor Mode Tanpa Ujung: ${save.bestFloor} lantai`;
 }
+// test rooms: every level unlocked, pick the resident, optional invulnerability
+const roomOpts = { resident: 'default', god: false };
+function buildRooms() {
+  const list = $('room-list'); list.innerHTML = '';
+  LEVELS.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.className = 'level-item';
+    const res = l.entities.map((e) => ENTITY_INFO[e.type].name).join(', ');
+    b.innerHTML = `<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">Penghuni: ${res}</div></span>`;
+    b.onclick = () => { viewer && viewer.stop(); startLevel(i, { ...roomOpts }); };
+    list.appendChild(b);
+  });
+  const sel = $('room-resident');
+  sel.innerHTML = [['default', 'Bawaan level'], ['none', 'Tanpa penghuni (jelajah bebas)'], ...RESIDENTS.map((k) => [k, ENTITY_INFO[k].name])]
+    .map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  sel.value = roomOpts.resident;
+  sel.onchange = () => { roomOpts.resident = sel.value; };
+  $('room-god').checked = roomOpts.god;
+  $('room-god').onchange = () => { roomOpts.god = $('room-god').checked; };
+  // model gallery
+  if (!viewer) viewer = new ModelViewer($('viewer-canvas'), assets);
+  const pick = $('viewer-pick'); pick.innerHTML = '';
+  const showModel = (k) => {
+    for (const b of pick.children) b.classList.toggle('on', b.dataset.k === k);
+    const clips = viewer.show(k);
+    const cl = $('viewer-clips'); cl.innerHTML = '';
+    clips.forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { viewer.playClip(n); for (const x of cl.children) x.classList.toggle('on', x === b); }; cl.appendChild(b); });
+    $('viewer-desc').textContent = ENTITY_INFO[k].hint || ENTITY_INFO[k].death;
+  };
+  [...RESIDENTS, 'pupil'].forEach((k) => {
+    const b = document.createElement('button'); b.textContent = ENTITY_INFO[k].name; b.dataset.k = k;
+    b.onclick = () => showModel(k); pick.appendChild(b);
+  });
+  showModel(RESIDENTS[0]);
+  viewer.start();
+}
+
 function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
@@ -233,6 +282,8 @@ document.addEventListener('click', (e) => {
   if (go === 'endless') { startEndless(1); return; }
   if (go === 'archive') buildArchive();
   if (go === 'levels') buildLevels();
+  if (go === 'rooms') buildRooms();
+  if (current === 'rooms' && go !== 'rooms' && viewer) viewer.stop();
   if (go === 'settings') { buildSettings(); returnTo = b.dataset.from === 'pause' ? 'pause' : 'title'; }
   if (go === 'title' && current === 'settings' && returnTo === 'pause') { show('pause'); return; }
   show(go);
@@ -263,6 +314,7 @@ async function boot() {
   game.onTape = (id) => { if (!save.tapes.map(String).includes(String(id))) { save.tapes.push(id); persist(); } };
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
+  if (!DEV_ROOMS) $('btn-rooms').remove();
   buildTitle();
   show('title');
   let last = performance.now();

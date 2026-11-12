@@ -6,6 +6,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#000000" />
   <title>The Hellroom — Kelas Malam</title>
+  <link rel="icon" href="assets/ui/icon.png" />
+  <link rel="apple-touch-icon" href="assets/ui/icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Special+Elite&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
@@ -22,6 +24,7 @@
   <!-- loading -->
   <section id="loading" class="screen active">
     <div class="load-box">
+      <img class="logo logo-load" src="assets/ui/logo.jpg" alt="The Hellroom" />
       <div class="vhs-label">MEMUAT KASET…</div>
       <div class="bar"><i id="load-bar"></i></div>
     </div>
@@ -31,13 +34,15 @@
   <section id="title" class="screen">
     <div class="title-bg"></div>
     <div class="title-inner">
-      <h1>THE HELLROOM</h1>
+      <h1 class="sr">THE HELLROOM</h1>
+      <img class="logo" src="assets/ui/logo.jpg" alt="" />
       <p class="tag">Rekaman Kelas Malam · 1996</p>
       <nav class="menu">
         <button data-go="play">▶ Lanjutkan</button>
         <button data-go="levels">Pilih Level</button>
         <button data-go="endless">Mode Tanpa Ujung</button>
         <button data-go="archive">Arsip</button>
+        <button data-go="rooms" id="btn-rooms">Pilih Room <small>(uji)</small></button>
         <button data-go="settings">Pengaturan</button>
         <button data-go="howto">Cara Bermain</button>
       </nav>
@@ -62,6 +67,30 @@
       <h2>Arsip Rekaman</h2>
       <p class="archive-count" id="archive-count"></p>
       <div id="archive-list" class="archive-list"></div>
+      <button class="back" data-go="title">← Kembali</button>
+    </div>
+  </section>
+
+  <!-- test rooms (development) -->
+  <section id="rooms" class="screen panel-screen">
+    <div class="panel wide">
+      <h2>Pilih Room <small class="dim">— mode uji, semua terbuka</small></h2>
+      <div class="rooms-grid">
+        <div>
+          <div id="room-list" class="level-list"></div>
+          <label class="row">Penghuni
+            <select id="room-resident"></select>
+          </label>
+          <label class="row">Mode kebal (tidak bisa mati) <input id="room-god" type="checkbox" /></label>
+        </div>
+        <div class="viewer">
+          <h3>Galeri Penghuni</h3>
+          <div class="seg wrap" id="viewer-pick"></div>
+          <canvas id="viewer-canvas"></canvas>
+          <div class="seg wrap" id="viewer-clips"></div>
+          <p class="dim small" id="viewer-desc"></p>
+        </div>
+      </div>
       <button class="back" data-go="title">← Kembali</button>
     </div>
   </section>
@@ -105,10 +134,13 @@
         </table>
         <div class="tips">
           <h3>Penghuni</h3>
-          <p><b>Petugas Ketertiban</b> — buta tapi tajam pendengaran, juga bisa melihat siluetmu. Kalau terdengar peluit, sembunyi.</p>
-          <p><b>Guru Pengganti</b> — hanya bergerak saat tidak kamu lihat. Dalam gelap, tatapanmu tidak berarti.</p>
-          <p><b>Kepala Sekolah</b> — lambat, tapi setiap kali melihatmu ia mengumumkan posisimu ke seluruh sekolah. Putuskan pandangannya.</p>
-          <p><b>Si Murid</b> — tidak berbahaya, tapi jeritannya memanggil yang lain.</p>
+          <p>Setiap level dihuni <b>satu</b> penghuni dengan aturannya sendiri.</p>
+          <p><b>Si Pucat</b> — buta, merangkak, mendengar segalanya. Jongkok dan jangan berlari.</p>
+          <p><b>Guru Bertopeng</b> — melihat & mendengar. Bunyi penggaris diketuk = ia dekat.</p>
+          <p><b>Si Penganga</b> — hanya bergerak saat tidak kamu lihat. Dalam gelap, tatapanmu tidak berarti.</p>
+          <p><b>Bayang Kelas</b> — hanya hidup di gelap. Tetap di bawah lampu, sorotkan senter padanya.</p>
+          <p><b>Mata Papan</b> — tumbuh di papan tulis. Jangan berdiri lama dalam pandangannya.</p>
+          <p><b>Kelabang</b> — banyak wajah, melihat ke segala arah. Putus pandangannya dengan dinding.</p>
           <h3>Tips</h3>
           <p>Berjalan & jongkok lebih senyap. Pintu yang dibuka-tutup terdengar jauh. Jangan masuk loker saat sedang terlihat. Di dalam loker, tahan napas ketika ada yang mendekat. Lempar penghapus papan untuk memancing Petugas menjauh.</p>
         </div>

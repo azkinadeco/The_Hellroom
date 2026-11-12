@@ -340,6 +340,80 @@ export class Audio {
     const hf = this._filter('bandpass', 3000, 0.7), hg = this._out(pos, 0.4);
     hiss.connect(hf).connect(hg); hg.gain.value = 0.015; hiss.start(t); hiss.stop(t + dur + 0.3);
   }
+  // ---------- residents ----------
+  hiss(pos) {
+    if (!this.ready) return;
+    this._cue('hiss', pos);
+    const t = this.t, src = this._noiseSrc(), f = this._filter('bandpass', 3200, 1.5), g = this._out(pos, 0.5);
+    f.frequency.setValueAtTime(2200, t); f.frequency.linearRampToValueAtTime(4200, t + 0.9);
+    src.connect(f).connect(g); this._env(g, t, 0.08, 0.5, 1.0); src.start(t, Math.random()); src.stop(t + 1.2);
+    const o = this._osc('sawtooth', 70), og = this._out(pos, 0.3), lp = this._filter('lowpass', 300);
+    o.frequency.linearRampToValueAtTime(45, t + 1); o.connect(lp).connect(og); this._env(og, t, 0.05, 0.25, 0.9); o.start(t); o.stop(t + 1.1);
+  }
+  rulerTap(pos, vol = 1) {
+    if (!this.ready) return;
+    this._cue('ruler', pos);
+    const t = this.t;
+    const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const f = this._filter('bandpass', 2600, 3), g = this._out(pos, 0.5);
+    src.connect(f).connect(g); this._env(g, t, 0.001, 0.5 * vol, 0.05); src.start(t, Math.random()); src.stop(t + 0.08);
+    for (const fr of [1870, 3120]) { // metallic ring of the steel ruler
+      const o = this._osc('sine', fr * (0.97 + Math.random() * 0.06)), og = this._out(pos, 0.5);
+      o.connect(og); this._env(og, t, 0.002, 0.06 * vol, 0.35); o.start(t); o.stop(t + 0.4);
+    }
+  }
+  chorus(pos) {
+    if (!this.ready) return;
+    this._cue('chorus', pos);
+    const t = this.t, g = this._out(pos, 0.7), bp = this._filter('bandpass', 900, 0.8);
+    bp.connect(g);
+    for (let i = 0; i < 6; i++) {
+      const f = 260 + i * 95 + Math.random() * 40;
+      const o = this._osc('sawtooth', f), og = this.ctx.createGain(); og.gain.value = 0.09;
+      o.frequency.setValueAtTime(f * 0.7, t + i * 0.05); o.frequency.linearRampToValueAtTime(f * 1.1, t + 0.5); o.frequency.linearRampToValueAtTime(f * 0.6, t + 1.8);
+      o.connect(og).connect(bp); o.start(t + i * 0.05); o.stop(t + 2);
+    }
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.55, t + 0.15);
+    g.gain.setValueAtTime(0.5, t + 1.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 2);
+  }
+  bones(pos) {
+    if (!this.ready) return;
+    this._cue('bones', pos);
+    const t = this.t;
+    for (let i = 0; i < 4; i++) {
+      const dt = i * (0.04 + Math.random() * 0.06);
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+      const f = this._filter('bandpass', 900 + Math.random() * 1500, 5), g = this._out(pos, 0.4);
+      src.connect(f).connect(g); this._env(g, t + dt, 0.001, 0.35, 0.03); src.start(t + dt, Math.random()); src.stop(t + dt + 0.06);
+    }
+  }
+  whisper(pos, vol = 0.5) {
+    if (!this.ready) return;
+    this._cue('whisper', pos);
+    const t = this.t, dur = 1.2 + Math.random();
+    const src = this._noiseSrc(), out = this._out(pos, 0.8);
+    const f1 = this._filter('bandpass', 1800, 9), f2 = this._filter('bandpass', 3400, 7);
+    const mix = this.ctx.createGain(); mix.gain.value = 0.0001;
+    src.connect(f1).connect(mix); src.connect(f2).connect(mix); mix.connect(out);
+    out.gain.value = 0.9 * vol;
+    let k = t;
+    while (k < t + dur) {
+      const syl = 0.08 + Math.random() * 0.14;
+      f1.frequency.setValueAtTime(1200 + Math.random() * 1200, k);
+      f2.frequency.setValueAtTime(2800 + Math.random() * 1500, k);
+      mix.gain.setValueAtTime(0.0001, k); mix.gain.exponentialRampToValueAtTime(0.6, k + 0.03); mix.gain.exponentialRampToValueAtTime(0.0001, k + syl);
+      k += syl + Math.random() * 0.08;
+    }
+    src.start(t, Math.random()); src.stop(t + dur + 0.2);
+  }
+  squelch(pos, vol = 0.5) {
+    if (!this.ready) return;
+    this._cue('squelch', pos);
+    const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.brownBuf;
+    const f = this._filter('lowpass', 500, 6), g = this._out(pos, 0.4);
+    f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(180, t + 0.35);
+    src.connect(f).connect(g); this._env(g, t, 0.02, 0.7 * vol, 0.35); src.start(t, Math.random() * 2); src.stop(t + 0.45);
+  }
   clack(pos) {
     if (!this.ready) return;
     const t = this.t;

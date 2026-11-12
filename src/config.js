@@ -42,77 +42,78 @@ export const DIFFICULTY = {
   sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6 },
 };
 
-// Level definitions. Layouts are generated from the seed so every run of a
-// level is identical (designed feel) unless the player picks "random seed".
+// Test rooms in the main menu: every level unlocked, resident override and
+// invulnerability. Set to false for the public release.
+export const DEV_ROOMS = true;
+
+// Level definitions. Every level has exactly ONE resident. Layouts are
+// generated from the seed so every run of a level is identical.
 export const LEVELS = [
   {
-    id: 1,
-    code: 'LEVEL 0',
-    name: 'Lorong Tak Berujung',
+    id: 1, code: 'LEVEL 0', name: 'Lorong Tak Berujung',
     subtitle: 'Sekolah ini tidak pernah selesai dibangun.',
-    seed: 1996,
-    blocksX: 3, blocksZ: 3,
-    lightsOff: 0.12, flicker: 0.12,
-    fog: 0.055,
-    fuses: 3, keys: 1, batteries: 3, notes: 3, erasers: 4,
-    entities: [{ type: 'monitor' }],
-    hallTheme: 'hall',
+    seed: 1996, blocksX: 3, blocksZ: 3,
+    lightsOff: 0.12, flicker: 0.12, fog: 0.055,
+    fuses: 3, keys: 1, batteries: 3, notes: 3, erasers: 5,
+    entities: [{ type: 'pale' }], hallTheme: 'hall',
   },
   {
-    id: 2,
-    code: 'LEVEL 1',
-    name: 'Sayap Detensi',
-    subtitle: 'Jangan berkedip. Jangan berpaling.',
-    seed: 451,
-    blocksX: 4, blocksZ: 3,
-    lightsOff: 0.45, flicker: 0.2,
-    fog: 0.07,
+    id: 2, code: 'LEVEL 1', name: 'Sayap Detensi',
+    subtitle: 'Penggarisnya berbunyi sebelum ia datang.',
+    seed: 451, blocksX: 4, blocksZ: 3,
+    lightsOff: 0.3, flicker: 0.2, fog: 0.065,
     fuses: 3, keys: 1, batteries: 4, notes: 3, erasers: 5,
-    entities: [{ type: 'substitute' }, { type: 'pupil' }],
-    hallTheme: 'hall',
+    entities: [{ type: 'masked' }], hallTheme: 'hall',
   },
   {
-    id: 3,
-    code: 'LEVEL 2',
-    name: 'Kantor Kepala Sekolah',
-    subtitle: 'Semua murid diharap melapor.',
-    seed: 7031,
-    blocksX: 4, blocksZ: 4,
-    lightsOff: 0.35, flicker: 0.35,
-    fog: 0.065,
+    id: 3, code: 'LEVEL 2', name: 'Lab Biologi',
+    subtitle: 'Jangan berkedip. Jangan berpaling.',
+    seed: 7031, blocksX: 4, blocksZ: 3,
+    lightsOff: 0.4, flicker: 0.3, fog: 0.065,
+    fuses: 3, keys: 1, batteries: 6, notes: 3, erasers: 5,
+    smallRooms: ['storage', 'office', 'restroom'],
+    entities: [{ type: 'gaper' }], hallTheme: 'hall',
+  },
+  {
+    id: 4, code: 'LEVEL 3', name: 'Sayap Tanpa Listrik',
+    subtitle: 'Yang tinggal di gelap tidak suka cahaya.',
+    seed: 2207, blocksX: 4, blocksZ: 4,
+    lightsOff: 0.6, flicker: 0.35, fog: 0.075,
+    fuses: 4, keys: 1, batteries: 7, notes: 3, erasers: 5,
+    entities: [{ type: 'shade' }], hallTheme: 'hall',
+  },
+  {
+    id: 5, code: 'LEVEL 4', name: 'Kelas 3-C',
+    subtitle: 'Papan tulisnya memperhatikan.',
+    seed: 1313, blocksX: 4, blocksZ: 4,
+    lightsOff: 0.3, flicker: 0.25, fog: 0.065,
     fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6,
-    entities: [{ type: 'monitor' }, { type: 'substitute' }, { type: 'principal' }, { type: 'pupil' }],
-    hallTheme: 'hall',
+    bigRooms: ['studyhall', 'library'], smallRooms: ['storage', 'office'],
+    entities: [{ type: 'eyes' }], hallTheme: 'hall',
   },
   {
-    id: 4,
-    code: 'LEVEL 3',
-    name: 'Gedung Olahraga',
+    id: 6, code: 'LEVEL 5', name: 'Gedung Olahraga',
     subtitle: 'Pelajaran olahraga tidak pernah selesai.',
-    seed: 3112,
-    blocksX: 5, blocksZ: 4,
-    lightsOff: 0.4, flicker: 0.3,
-    fog: 0.07,
+    seed: 3112, blocksX: 5, blocksZ: 4,
+    lightsOff: 0.4, flicker: 0.3, fog: 0.07,
     fuses: 4, keys: 2, batteries: 6, notes: 3, erasers: 7,
     mergeChance: 0.85,
     bigRooms: ['gym', 'gym', 'studyhall'],
     smallRooms: ['restroom', 'restroom', 'storage', 'office'],
-    entities: [{ type: 'monitor' }, { type: 'monitor' }, { type: 'principal' }, { type: 'pupil' }, { type: 'pupil' }],
-    hallTheme: 'hall',
+    entities: [{ type: 'centipede' }], hallTheme: 'hall',
   },
 ];
+
+// Every resident that can appear (Room menu + endless mode).
+export const RESIDENTS = ['pale', 'masked', 'gaper', 'shade', 'eyes', 'centipede', 'monitor', 'substitute', 'principal'];
 
 // Endless mode: every floor is a fresh random school that grows harder.
 const ENDLESS_NAMES = ['Lorong Basah', 'Sayap Tanpa Jendela', 'Lantai Bawah Tanah', 'Ruang Guru Kosong', 'Koridor Berulang',
   'Lab Kimia Gelap', 'Aula Upacara', 'Perpustakaan Sunyi', 'Gudang Arsip', 'Kantin Tutup', 'Ruang UKS', 'Ruang Musik'];
 export function endlessDef(floor, seed) {
   const f = floor;
-  const entities = [{ type: 'monitor' }];
-  if (f >= 2) entities.push({ type: 'pupil' });
-  if (f >= 3) entities.push({ type: 'substitute' });
-  if (f >= 4) entities.push({ type: 'principal' });
-  if (f >= 5) entities.push({ type: 'monitor' });
-  if (f >= 7) entities.push({ type: 'pupil' });
+  // one resident per floor, a different one each time
+  const entities = [{ type: RESIDENTS[(seed + f * 7) % RESIDENTS.length] }];
   return {
     id: 'endless', endless: true, floor: f,
     code: `LANTAI ${-f}`,

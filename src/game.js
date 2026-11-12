@@ -7,13 +7,16 @@ import { VHS } from './render/vhs.js';
 import { World } from './world.js';
 import { Player } from './player.js';
 import { DoorSystem, Interactor } from './interact.js';
-import { spawnEntity } from './ai/entities.js';
+import { spawnEntity, ENTITY_INFO } from './ai/creatures.js';
+import { randomReachableCell } from './ai/path.js';
 import { NOTES, TAPES, PA_LINES } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
 const CUES = {
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
+  hiss: 'Desisan panjang', ruler: 'Penggaris besi diketuk', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
+  whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah',
 };
 
 export class Game {
@@ -102,7 +105,7 @@ export class Game {
     this.stats = { spotted: 0, notes: 0 };
     this.busy = false;
     this.deathT = -1; this.winT = -1;
-    this.glitch = 0; this.danger = 0;
+    this.glitch = 0; this.danger = 0; this.gazeFx = 0;
     this.chasers.clear();
     this.input.resetToggles();
 
@@ -181,6 +184,19 @@ export class Game {
   killPlayer(entity, locker = null) {
     const p = this.player;
     if (!p.alive) return;
+    if (this.godMode) { // test rooms: shrug the hit off and throw the resident back
+      this.hud.toast(`Mode kebal: serangan ${(ENTITY_INFO[entity.kind] || {}).name || ''} diabaikan`, 2);
+      this.audio.stinger();
+      const [cx, cz] = entity.cell();
+      const t = randomReachableCell(this.map, Math.random, cx, cz, 6, 12);
+      if (t && entity.kind !== 'eyes') { const [x, z] = this.map.center(...t); entity.pos.set(x, 0, z); }
+      entity.state = entity.kind === 'eyes' ? 'watch' : entity.kind === 'shade' ? 'lurk' : 'patrol';
+      entity.path = null; entity.gaze = 0; entity.calmT = 5; entity.suspicion = 0; entity.waitT = 3;
+      if (entity.kind === 'substitute' || entity.kind === 'gaper') { entity.aware = false; entity.target = null; }
+      if (locker) this.toggleLocker(locker);
+      this.onChaseEnd(entity);
+      return;
+    }
     p.alive = false;
     this.busy = true;
     this.deathT = 0;
@@ -411,7 +427,7 @@ export class Game {
     const u = this.vhs.uniforms;
     u.uDanger.value = this.state === 'playing' ? this.danger : 0;
     u.uNV.value = this.player.nightVision ? 1 : 0;
-    u.uGlitch.value = this.glitch;
+    u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.45);
     u.uBattery.value = this.player.battery / 100;
     this.vhs.render(this.scene, this.camera, t);
   }
@@ -519,6 +535,8 @@ export class Game {
     if (this.hintT > 7) this.hint('start', t ? 'Berjalan pelan lebih senyap daripada LARI. JONGKOK paling senyap.' : 'Berjalan lebih senyap daripada berlari (Shift). Jongkok (C) paling senyap.', 5.5);
     if (this.hintT < 3 || !p.alive) return;
     if (!p.hidden && this.built.lockers.some((L) => Math.hypot(L.x - p.pos.x, L.z - p.pos.z) < 2.2)) this.hint('locker', 'Loker bisa dipakai untuk bersembunyi.', 4);
+    const first = this.entities[0];
+    if (first && this.hintT > 10 && ENTITY_INFO[first.kind] && ENTITY_INFO[first.kind].hint) this.hint('ent_' + first.kind, ENTITY_INFO[first.kind].hint, 6);
     if (this.danger > 0.3) this.hint('entity', 'Ada yang berpatroli di dekatmu. Menjauh, atau sembunyi di loker sebelum terlihat.', 5);
     if (p.battery < 60) this.hint('battery', 'Senter & mode malam menguras baterai kamera. Matikan saat tidak perlu.', 5);
     if (!p.hidden && !p.flashlight && !this.world.isLit(p.pos.x, p.pos.z)) this.hint('dark', t ? 'Gelap. Tekan SENTER — tapi cahaya membuatmu lebih mudah terlihat.' : 'Gelap. Tekan F untuk senter — tapi cahaya membuatmu lebih mudah terlihat.', 5);
@@ -561,10 +579,7 @@ export class Game {
   }
 
   deathCause(k) {
-    if (k.kind === 'monitor') return 'Petugas Ketertiban menemukanmu. Ia tidak punya mata — ia mendengar. Berjalanlah, jangan berlari, dan tahan napas di loker.';
-    if (this.blackoutT > 0 && k.kind === 'substitute') return 'Lampu padam, dan dalam gelap Guru Pengganti bebas bergerak. Nyalakan senter saat listrik mati.';
-    if (k.kind === 'principal') return 'Kepala Sekolah menangkapmu. Ia lambat, tapi setiap kali melihatmu, seluruh sekolah tahu di mana kamu. Putuskan pandangannya sebelum ia selesai berbicara.';
-    if (k.kind === 'substitute') return 'Kamu berpaling dari Guru Pengganti. Jaga pandanganmu padanya, dan jangan biarkan ia berada dalam gelap.';
-    return 'Sesuatu menemukanmu.';
+    if (this.blackoutT > 0 && (k.kind === 'substitute' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
+    return (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';
   }
 }

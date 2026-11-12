@@ -9,6 +9,7 @@ export const MODEL_KEYS = [
   'bookshelf', 'trash_bin', 'water_fountain', 'cardboard_box', 'chair_fallen',
   'fuse_box', 'toilet_stall', 'sink_counter', 'bleachers', 'basketball_hoop', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
   'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
+  'entity_pale', 'entity_masked', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];
 export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal'];
 
@@ -28,6 +29,8 @@ const FALLBACK = {
   item_note: [0.21, 0.005, 0.28, 0xf0eedc, 0], item_tape: [0.19, 0.025, 0.1, 0x111111, -0.012],
   entity_monitor: [0.6, 2.5, 0.4, 0x8a8f99], entity_substitute: [0.5, 1.8, 0.35, 0xe8e4dc],
   entity_pupil: [0.45, 1.15, 0.35, 0xd8b420], entity_principal: [0.55, 1.8, 0.35, 0x3d2b1f],
+  entity_pale: [0.5, 1.0, 1.4, 0xcdc4bd], entity_masked: [0.5, 2.0, 0.35, 0x4d4b35], entity_gaper: [0.5, 1.7, 0.5, 0xb59287],
+  entity_shade: [1.0, 2.2, 0.8, 0x050505], entity_eyes: [1.2, 1.2, 0.2, 0x5b3739, 0.9], entity_centipede: [0.9, 1.9, 2.4, 0xad8a7e],
 };
 
 export class Assets {

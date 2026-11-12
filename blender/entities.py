@@ -57,7 +57,7 @@ class Rig:
             self.joint("Foot" + s, p["Foot" + s], "Knee" + s)
 
     def objs(self):
-        return [self.j[n] for n in JOINTS] + [o for n, o in self.j.items() if n not in JOINTS]
+        return [self.j[n] for n in JOINTS if n in self.j] + [o for n, o in self.j.items() if n not in JOINTS]
 
 
 def mirror_pos(p):
@@ -784,14 +784,14 @@ def entity_pupil():
 
 
 # ----------------------------------------------------------------- finish --
-def _finish_entity(name, rig, clips, shots, view=(0.9, -1.7, 0.35)):
+def _finish_entity(name, rig, clips, shots, view=(0.9, -1.7, 0.35), humanoid=True, budget=12000):
     objs = rig.objs()
     old = L.DO_PREVIEW
     L.DO_PREVIEW = False
-    info = L.finish(name, budget=12000, max_meshes=40)
+    info = L.finish(name, budget=budget, max_meshes=40)
     L.DO_PREVIEW = old
     nodes, anims = L.glb_info(name)
-    missing = [j for j in JOINTS if j not in nodes]
+    missing = [j for j in (JOINTS if humanoid else ["Hips", "Head"]) if j not in nodes]
     if missing:
         info["WARN"] = "missing joints " + ",".join(missing)
     info["clips"] = " ".join(f"{n}:{d}s" for n, d in sorted(anims.items()))

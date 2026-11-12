@@ -233,3 +233,12 @@ Chalkboard eraser lying felt-side down, 0.14 x 0.03 x 0.055 m (three.js X/Y/Z). 
 
 ## Batch 5 (blender/entities2.py)
 - `entity_principal.glb` — "Kepala Sekolah", 2.1 m incl. horn head. Same 17-joint rig and conventions as the other entities (faces +Z, `<Joint>_geo` meshes). Head = horn loudspeaker pointing forward, ON-AIR lamp material `EmitOnAir`. Clips: `Idle` 3.0 s loop, `Walk` 1.4 s loop, `Announce` 2.0 s (non-loop: puffs up, right arm points forward, horn sweeps left-right).
+
+## Batch 6 (blender/entities3.py) — one resident per story level
+All face three.js +Z, `<Joint>_geo` meshes under joint empties, clips baked per frame. Build: `npm run assets -- creatures`.
+- `entity_pale.glb` — Si Pucat, quadruped crawler (~1.0 m high, 1.5 m long) on the 17-joint rig. Clips `Idle` 2.4, `Walk` 1.0, `Run` 0.55, `Attack` 0.95.
+- `entity_masked.glb` — Guru Bertopeng, 2.0 m, blank white mask, steel ruler in `HandR`. Clips `Idle`, `Walk`, `Run`, `Attack` (ruler strike), `Tap` (ruler tapped on palm).
+- `entity_gaper.glb` — Si Penganga, crouched skinless ghoul with an unhinged jaw. Clips `Idle`, `Pose1`–`Pose4` (static, swapped while unseen), `Attack`.
+- `entity_shade.glb` — Bayang Kelas, translucent smoke (`ShadeCore`/`ShadeSmoke` alpha blend) with emissive eye pairs `EmitShadeEye`. Joints `Hips, Chest, Head, ArmL/R, Wisp0-6`. Clips `Idle`, `Move`, `Attack`.
+- `entity_eyes.glb` — Mata Papan, wall growth whose back plane is at local z=0 (mounted flat on a wall/chalkboard), centre of mass ~1.5 m. Joints `Hips, Head, Tendril0-11`. Clips `Idle`, `Stare`, `Attack`.
+- `entity_centipede.glb` — Kelabang, ~2.2 m long. Joints `Hips, Chest, Head, Arm{L,R}{0-2}, Seg1-4, Leg{L,R}{0-4}`. Clips `Idle`, `Walk`, `Run`, `Attack`. ~18.5k tris (budget 20k).

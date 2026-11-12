@@ -29,24 +29,33 @@ Hasilnya masuk ke `assets/models/*.glb`, `assets/textures/*.png`, `assets/ui/tit
 
 Tujuan setiap level: kumpulkan semua **sekring**, pasang di **kotak panel** dekat pintu darurat, lalu **keluar**. Salah satu sekring ada di ruang terkunci, dan kuncinya tersembunyi di salah satu kelas.
 
+Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
+
 | Level | Nama | Penghuni |
 |---|---|---|
-| LEVEL 0 | Lorong Tak Berujung | Petugas Ketertiban |
-| LEVEL 1 | Sayap Detensi (lebih gelap) | Guru Pengganti, Si Murid |
-| LEVEL 2 | Kantor Kepala Sekolah | Petugas, Guru Pengganti, Kepala Sekolah, Si Murid |
-| LEVEL 3 | Gedung Olahraga (gym, toilet, final) | Dua Petugas Ketertiban, Kepala Sekolah, Si Murid |
+| LEVEL 0 | Lorong Tak Berujung | Si Pucat |
+| LEVEL 1 | Sayap Detensi | Guru Bertopeng |
+| LEVEL 2 | Lab Biologi | Si Penganga |
+| LEVEL 3 | Sayap Tanpa Listrik (sangat gelap) | Bayang Kelas |
+| LEVEL 4 | Kelas 3-C | Mata Papan |
+| LEVEL 5 | Gedung Olahraga (gym, toilet, final) | Kelabang |
 
-**Mode Tanpa Ujung**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar, gelap, dan ramai penghuni. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
+**Pilih Room (uji)**: menu khusus pengembangan untuk langsung masuk ke level mana pun. Penghuni bisa diganti (atau dikosongkan untuk jelajah bebas), ada **mode kebal**, dan ada **Galeri Penghuni** untuk memutar model 3D beserta animasinya. Untuk rilis, set `DEV_ROOMS = false` di `src/config.js`, dan menu ini akan hilang.
+
+**Mode Tanpa Ujung**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar dan gelap; tiap lantai dihuni satu penghuni acak. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
 
 **Kaset rahasia & Arsip**: tiap level story menyimpan satu kaset VHS di salah satu ruangan terjauh. Kaset dan catatan yang sudah ditemukan bisa dibaca ulang di menu **Arsip**.
 
 **Pengumuman pengeras suara**: sesekali bel intercom berbunyi lalu ada pengumuman. Ada yang sekadar menyeramkan, ada yang membocorkan posisimu ke penghuni (sembunyi supaya tidak terlacak), dan ada yang memadamkan listrik ±14 detik.
 
-**Penghuni sekolah**
-- **Petugas Ketertiban (The Hall Monitor)**: tinggi kurus, tanpa mata. Berpatroli, mendengar langkahmu, melihat siluetmu. Saat mengejar, ia meniup peluit. Kalau ia melihatmu masuk loker, ia akan langsung menarikmu keluar. Kalau kamu bernapas saat ia memeriksa loker, kamu ketahuan.
-- **Guru Pengganti (The Substitute)**: manekin berkapur yang hanya bergerak saat tidak kamu lihat. Dalam gelap, tatapanmu tidak berarti, jadi nyalakan senter atau mode malam.
-- **Kepala Sekolah (The Headmaster)**: berjas cokelat, kepalanya corong pengeras suara antik. Lambat dan tidak pernah berlari, tapi setiap kali melihatmu ia berhenti dan mengumumkan posisimu ke seluruh sekolah. Kalau ia melihatmu masuk loker, ia akan membukanya.
-- **Si Murid (The Pupil)**: anak berjas hujan dengan kantong kertas di kepala. Tidak menyerang, tapi jeritannya memanggil penghuni lain.
+**Penghuni sekolah** (model 3D dibuat di Blender, `blender/entities3.py`, dari konsep di `Image Aset/`)
+- **Si Pucat**: makhluk pucat yang merangkak, tanpa mata, wajahnya cuma satu sobekan vertikal penuh gigi. Ia buta tapi mendengar segalanya. Jongkok aman, sedangkan berlari di dekatnya berarti dikejar.
+- **Guru Bertopeng**: guru jangkung bertopeng putih yang membawa penggaris besi. Ia bisa melihat dan mendengar, dan memeriksa loker. Bunyi penggaris diketuk ke telapak tangan menandakan ia dekat.
+- **Si Penganga**: makhluk tanpa kulit dengan rahang menganga sampai ke dada. Ia hanya bergerak saat tidak kamu lihat, dan dalam gelap tatapanmu tidak berarti.
+- **Bayang Kelas**: asap hitam dengan banyak pasang mata menyala. Ia hanya bisa bergerak di sel yang gelap dan mundur kalau disorot senter. Saat listrik padam, ia bebas ke mana saja.
+- **Mata Papan**: gumpalan daging dengan banyak mata dan akar yang tumbuh di papan tulis dan dinding. Kalau kamu berdiri dalam pandangannya, meteran tatapan terisi dan layar mulai bergetar. Suara keras membuatnya pindah ke papan terdekat.
+- **Kelabang**: tubuh-tubuh yang menyatu menjadi satu kelabang dengan kumpulan wajah menjerit. Ia melihat ke segala arah tapi jarak pandangnya pendek.
+- Penghuni lama (Petugas Ketertiban, Guru Pengganti, Kepala Sekolah, Si Murid) masih muncul di Mode Tanpa Ujung.
 
 **Tempat sembunyi**: loker (mengintip lewat celah) dan bilik toilet (kaki penghuni yang lewat terlihat dari celah bawah pintu).
 

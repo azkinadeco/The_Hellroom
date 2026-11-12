@@ -1,7 +1,7 @@
 import { DIRS } from '../level/map.js';
 
 // BFS shortest path on the cell grid (maps are small: < 500 cells).
-export function findPath(map, sx, sz, tx, tz, mode = 'entity') {
+export function findPath(map, sx, sz, tx, tz, mode = 'entity', pass = null) {
   if (!map.inside(sx, sz) || !map.inside(tx, tz)) return null;
   const W = map.W, start = sx + sz * W, goal = tx + tz * W;
   if (start === goal) return [[tx, tz]];
@@ -16,6 +16,7 @@ export function findPath(map, sx, sz, tx, tz, mode = 'entity') {
       if (!map.canStep(x, z, d, mode)) continue;
       const n = x + d.dx + (z + d.dz) * W;
       if (prev[n] !== -1) continue;
+      if (pass && n !== goal && !pass(n)) continue;
       prev[n] = c; q.push(n);
     }
   }

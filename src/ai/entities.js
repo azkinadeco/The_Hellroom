@@ -10,7 +10,7 @@ import { angleDiff, clamp } from '../util/rng.js';
 
 const TMP = new THREE.Vector3();
 
-class Entity {
+export class Entity {
   constructor(game, kind, spawnCell) {
     this.game = game;
     this.kind = kind;
@@ -145,24 +145,38 @@ class Entity {
 }
 
 // ---------------------------------------------------------------------------
+// Configurable hunter: patrols, sees & hears, chases, checks hiding spots.
+// Several residents (Petugas, Guru Bertopeng, Si Pucat, Kelabang) are tuned versions.
 export class Monitor extends Entity {
-  constructor(game, cell) {
-    super(game, 'monitor', cell);
+  constructor(game, cell, kind = 'monitor', o = {}) {
+    super(game, kind, cell);
     this.suspicion = 0;
     this.lastSeen = null;
     this.lostT = 0;
     this.searchPts = [];
-    this.walk = 1.55; this.run = 4.35;
+    this.walk = o.walk ?? 1.55; this.run = o.run ?? 4.35;
+    this.sight = o.sight ?? [15, 115, 22, 200];   // range, fov, chase range, chase fov
+    this.lockers = o.lockers ?? true;
+    this.stepEvery = o.stepEvery ?? 1.1;
+    this.stepVol = o.stepVol ?? [0.35, 0.6];
+    if (o.radius) this.radius = o.radius;
     this.play('Idle');
     this.whistleCd = 0;
     this.seenEnterLocker = false;
   }
 
+  chaseSound() { this.game.audio.whistle(this.pos); }
+  sense() {
+    const c = this.state === 'chase';
+    return this.sees(c ? this.sight[2] : this.sight[0], c ? this.sight[3] : this.sight[1]);
+  }
+  onIdle() {}
+
   setState(s) {
     if (this.state === s) return;
     this.state = s; this.stateT = 0;
     if (s === 'chase') {
-      if (this.whistleCd <= 0) { this.game.audio.whistle(this.pos); this.whistleCd = 12; }
+      if (this.whistleCd <= 0) { this.chaseSound(); this.whistleCd = 12; }
       this.game.onChaseStart(this);
     }
   }
@@ -179,7 +193,7 @@ export class Monitor extends Entity {
     const g = this.game, p = g.player;
     this.stateT += dt;
     this.whistleCd -= dt;
-    const see = this.sees(this.state === 'chase' ? 22 : 15, this.state === 'chase' ? 200 : 115);
+    const see = this.sense();
     if (see > 0) {
       this.suspicion = Math.min(1.2, this.suspicion + see * dt * (this.distTo(p.pos) < 4 ? 6 : 1.9));
       this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time };
@@ -199,6 +213,7 @@ export class Monitor extends Entity {
         if (this.waitT > 0) {
           this.waitT -= dt; this.velocity = 0;
           this.yaw += Math.sin(g.time * 0.7) * dt * 0.5;
+          this.onIdle(dt);
           if (this.waitT <= 0) {
             const [cx, cz] = this.cell();
             const t = randomReachableCell(g.map, Math.random, cx, cz, 4, 18);
@@ -277,7 +292,7 @@ export class Monitor extends Entity {
     }
 
     // animation by speed
-    if (this.state !== 'attack') {
+    if (this.state !== 'attack' && !this.busyAnim) {
       const v = this.velocity || 0;
       if (v > this.walk * 1.7) this.play('Run'); else if (v > 0.2) this.play('Walk'); else this.play('Idle');
       if (this.current) this.current.timeScale = v > 0.2 ? clamp(v / (v > this.walk * 1.7 ? this.run : this.walk), 0.6, 1.6) : 1;
@@ -285,7 +300,7 @@ export class Monitor extends Entity {
     // heavy footsteps
     if ((this.velocity || 0) > 0.3) {
       this.stepAcc += (this.velocity || 0) * dt;
-      if (this.stepAcc > 1.1) { this.stepAcc = 0; g.audio.heavyStep(this.pos, this.state === 'chase' ? 0.6 : 0.35); }
+      if (this.stepAcc > this.stepEvery) { this.stepAcc = 0; g.audio.heavyStep(this.pos, this.stepVol[this.state === 'chase' ? 1 : 0]); }
     }
     this.updateCommon(dt);
   }
@@ -293,7 +308,7 @@ export class Monitor extends Entity {
   // occasionally sniff out a breathing player in a nearby locker
   checkLockers(dt) {
     const p = this.game.player;
-    if (!p.hidden) return;
+    if (!p.hidden || !this.lockers) return;
     const L = p.hidden;
     const d = Math.hypot(L.x - this.pos.x, L.z - this.pos.z);
     const fd = HIDE[L.kind || 'locker'].front + 0.3;
@@ -322,8 +337,8 @@ export class Monitor extends Entity {
 
 // ---------------------------------------------------------------------------
 export class Substitute extends Entity {
-  constructor(game, cell) {
-    super(game, 'substitute', cell);
+  constructor(game, cell, kind = 'substitute') {
+    super(game, kind, cell);
     this.speed = 4.4;
     this.poses = ['Pose1', 'Pose2', 'Pose3', 'Pose4'].filter((n) => this.actions[n]);
     this.play('Idle');
@@ -336,6 +351,7 @@ export class Substitute extends Entity {
     this.radius = 0.3;
   }
   onNoise(x, z) { this.aware = true; this.target = { x, z }; this.retargetT = 0; }
+  moveSound() { this.game.audio.scrape(this.pos, 0.5, 0.18); }
 
   update(dt) {
     const g = this.game, p = g.player;
@@ -378,7 +394,7 @@ export class Substitute extends Entity {
       }
       if ((this.velocity || 0) > 0.1) {
         this.scrapeT -= dt;
-        if (this.scrapeT <= 0) { this.scrapeT = 0.55; if (d < 22) g.audio.scrape(this.pos, 0.5, 0.18); }
+        if (this.scrapeT <= 0) { this.scrapeT = 0.55; if (d < 22) this.moveSound(); }
       }
       if (!p.hidden && p.alive && d < 1.1) { this.state = 'attack'; g.killPlayer(this); }
     }
@@ -516,9 +532,3 @@ export class Principal extends Entity {
   }
 }
 
-export function spawnEntity(game, type, cell) {
-  if (type === 'principal') return new Principal(game, cell);
-  if (type === 'monitor') return new Monitor(game, cell);
-  if (type === 'substitute') return new Substitute(game, cell);
-  return new Pupil(game, cell);
-}
