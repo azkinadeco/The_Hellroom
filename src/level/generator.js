@@ -265,6 +265,11 @@ export function generateLevel(def, seed = def.seed) {
   const noteRooms = rng.shuffle([...openRooms]);
   for (let i = 1; i < def.notes; i++) place('note', noteRooms[i % noteRooms.length], { note: i });
   place('battery', startRoom);
+  // one secret VHS tape per story level, tucked into one of the farthest rooms
+  if (def.tape !== false) {
+    const far = [...openRooms].sort((a, b) => roomDist(b) - roomDist(a)).slice(0, 3);
+    if (far.length) place('tape', rng.pick(far));
+  }
   place('eraser', startRoom);
   const eraserRooms = rng.shuffle([...openRooms]);
   for (let i = 1; i < (def.erasers || 0); i++) place('eraser', eraserRooms[i % eraserRooms.length]);

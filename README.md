@@ -36,6 +36,12 @@ Tujuan setiap level: kumpulkan semua **sekring**, pasang di **kotak panel** deka
 | LEVEL 2 | Kantor Kepala Sekolah | Ketiganya |
 | LEVEL 3 | Gedung Olahraga (gym, toilet, final) | Dua Petugas Ketertiban, Si Murid |
 
+**Mode Tanpa Ujung**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar, gelap, dan ramai penghuni. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
+
+**Kaset rahasia & Arsip**: tiap level story menyimpan satu kaset VHS di salah satu ruangan terjauh. Kaset dan catatan yang sudah ditemukan bisa dibaca ulang di menu **Arsip**.
+
+**Pengumuman pengeras suara**: sesekali bel intercom berbunyi lalu ada pengumuman. Ada yang sekadar menyeramkan, ada yang membocorkan posisimu ke penghuni (sembunyi supaya tidak terlacak), dan ada yang memadamkan listrik ±14 detik.
+
 **Penghuni sekolah**
 - **Petugas Ketertiban (The Hall Monitor)**: tinggi kurus, tanpa mata. Berpatroli, mendengar langkahmu, melihat siluetmu. Saat mengejar, ia meniup peluit. Kalau ia melihatmu masuk loker, ia akan langsung menarikmu keluar. Kalau kamu bernapas saat ia memeriksa loker, kamu ketahuan.
 - **Guru Pengganti (The Substitute)**: manekin berkapur yang hanya bergerak saat tidak kamu lihat. Dalam gelap, tatapanmu tidak berarti, jadi nyalakan senter atau mode malam.

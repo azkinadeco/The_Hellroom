@@ -222,7 +222,7 @@ export function buildLevel(gen, assets, def) {
 
   // ---------- items ----------
   const items = gen.items.map((it) => {
-    const key = 'item_' + (it.type === 'note' ? 'note' : it.type);
+    const key = 'item_' + it.type;
     const obj = cloneWithBake(assets.models[key], field.sample(it.x, it.y + 0.3, it.z, null, null, null, null), 0.25);
     obj.position.set(it.x, it.y + itemLift(it.type), it.z);
     obj.rotation.y = Math.random() * Math.PI * 2;

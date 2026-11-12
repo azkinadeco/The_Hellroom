@@ -171,3 +171,11 @@ body.can-throw .tbtn.throw { display: block; }
   .toast { top: 34%; font-size: 22px; }
   .objectives { font-size: 18px; top: 62px; }
 }
+.archive-count { color: var(--dim); font-size: 20px; margin: 0 0 6px; }
+.archive-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.archive-list h3 { grid-column: 1 / -1; margin: 14px 0 2px; }
+.archive-item { text-align: left; background: rgba(255,255,255,0.04); border: 1px solid var(--line); padding: 6px 10px; font-size: 20px; }
+.archive-item:hover:not(:disabled) { border-color: var(--accent); }
+.archive-item.locked { opacity: 0.4; cursor: default; }
+@media (max-width: 700px) { .archive-list { grid-template-columns: 1fr; } }
+#dead-cause { white-space: pre-line; }

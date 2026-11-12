@@ -36,6 +36,8 @@
       <nav class="menu">
         <button data-go="play">▶ Lanjutkan</button>
         <button data-go="levels">Pilih Level</button>
+        <button data-go="endless">Mode Tanpa Ujung</button>
+        <button data-go="archive">Arsip</button>
         <button data-go="settings">Pengaturan</button>
         <button data-go="howto">Cara Bermain</button>
       </nav>
@@ -50,6 +52,16 @@
       <div id="level-list" class="level-list"></div>
       <h3>Tingkat Kesulitan</h3>
       <div id="diff-list" class="seg"></div>
+      <button class="back" data-go="title">← Kembali</button>
+    </div>
+  </section>
+
+  <!-- archive -->
+  <section id="archive" class="screen panel-screen">
+    <div class="panel wide">
+      <h2>Arsip Rekaman</h2>
+      <p class="archive-count" id="archive-count"></p>
+      <div id="archive-list" class="archive-list"></div>
       <button class="back" data-go="title">← Kembali</button>
     </div>
   </section>
@@ -74,6 +86,7 @@
   <section id="howto" class="screen panel-screen">
     <div class="panel wide">
       <h2>Cara Bermain</h2>
+      <p class="lead">Setiap level juga menyimpan satu <b>kaset VHS rahasia</b> — temukan semuanya di menu Arsip. Waspadai <b>pengumuman pengeras suara</b>: kadang membocorkan posisimu, kadang mematikan lampu.</p>
       <p class="lead">Kumpulkan semua <b>sekring</b>, pasang di <b>kotak panel</b> dekat pintu darurat, lalu <b>keluar</b>. Hindari penghuni sekolah.</p>
       <div class="cols">
         <table>

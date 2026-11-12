@@ -29,3 +29,31 @@ export const NOTES = {
 };
 
 export const ENDING = 'Pintu terbuka. Cahaya putih. Kaset berhenti berputar.\n\nRekaman berakhir pada 23:59:59. Tidak ada yang tahu apa yang ada di balik pintu itu — hanya bahwa handycam ini kembali, sendirian, ke meja guru di Kelas Malam.';
+
+// Secret tapes: one per story level. Shown as transcripts.
+export const TAPES = {
+  1: { title: 'KASET #1 — "Hari Pertama"', body: '[Rekaman goyang. Suara anak laki-laki berbisik.]\n\n"Ini hari pertama Kelas Malam. Bu Guru bilang kami cuma belajar sampai jam sembilan. Sekarang jam… jamnya tidak bergerak.\n\nTadi ada bapak tinggi pakai selempang oranye lewat. Dia tidak punya muka. Dia meniup peluit dan Dimas lari. Dimas belum kembali."\n\n[Peluit di kejauhan. Rekaman terputus.]' },
+  2: { title: 'KASET #2 — "Pelajaran Menatap"', body: '[Gambar papan tulis. Tulisan kapur: JANGAN BERKEDIP.]\n\n"Guru pengganti datang lagi. Kami disuruh menatapnya bergiliran. Yang giliran jaga tidak boleh menoleh.\n\nRina menoleh."\n\n[Suara gesekan seperti batu diseret. Lama. Lalu sunyi.]' },
+  3: { title: 'KASET #3 — "Ruang Kepala Sekolah"', body: '[Rekaman dari balik pintu yang sedikit terbuka.]\n\nSuara pria tua: "…program ini berhasil. Mereka tidak menua. Mereka tidak lulus. Mereka tidak pernah pergi. Sekolah yang sempurna."\n\nSuara lain: "Dan anak yang masih membawa kamera itu?"\n\n"Biarkan dia merekam. Selama dia merekam, dia pikir dia masih nyata."' },
+  4: { title: 'KASET #4 — "Pulang"', body: '[Gambar lapangan basket. Tribun penuh anak-anak yang diam, semua menghadap kamera.]\n\nSuara si pemilik kamera, lebih tua sekarang: "Kalau ada yang menemukan ini… aku sudah coba semua pintu. Pintu darurat itu tidak ke luar. Pintu itu ke awal.\n\nTapi mungkin, kalau kamu cukup cepat, kamu bisa keluar sebelum bel berbunyi lagi."\n\n[Bel sekolah. Semua anak di tribun berdiri bersamaan.]' },
+};
+
+// Intercom announcements. kind: flavor (no effect), locate (reveals player), blackout
+export const PA_LINES = {
+  flavor: [
+    'Perhatian. Semua siswa diharap tetap berada di kelas masing-masing.',
+    'Kelas Malam akan diperpanjang. Tidak ada yang diizinkan pulang.',
+    'Petugas Ketertiban sedang berkeliling. Berjalanlah dengan tertib.',
+    'Diumumkan kepada orang tua: anak Anda baik-baik saja. Anak Anda akan selalu baik-baik saja.',
+    'Upacara bendera akan dilaksanakan sebentar lagi. Sebentar lagi. Sebentar lagi.',
+  ],
+  locate: [
+    'Perhatian. Ada siswa di luar kelas tanpa izin. Petugas, harap menuju lokasi.',
+    'Kami melihatmu. Tetap di tempat. Petugas sedang menuju ke sana.',
+    'Siswa yang membawa kamera, harap melapor. Kami tahu kamu di mana.',
+  ],
+  blackout: [
+    'Perhatian. Pemadaman listrik bergilir akan dimulai. Harap tenang.',
+    'Lampu akan dimatikan untuk jam tidur siang. Tutup mata kalian.',
+  ],
+};

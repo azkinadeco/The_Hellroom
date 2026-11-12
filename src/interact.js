@@ -87,7 +87,7 @@ export class Interactor {
         return d.target ? 'Tutup pintu' : 'Buka pintu';
       }
       case 'locker': { const n = HIDE[t.ref.kind || 'locker'].label; return g.player.hidden ? `Keluar dari ${n}` : `Sembunyi di ${n}`; }
-      case 'item': return { eraser: 'Ambil penghapus papan', fuse: 'Ambil sekring', key: 'Ambil kunci', battery: 'Ambil baterai', note: 'Baca catatan', tape: 'Ambil kaset' }[t.ref.type];
+      case 'item': return { tape: 'Ambil kaset VHS', eraser: 'Ambil penghapus papan', fuse: 'Ambil sekring', key: 'Ambil kunci', battery: 'Ambil baterai', note: 'Baca catatan', tape: 'Ambil kaset' }[t.ref.type];
       case 'fusebox': {
         const need = g.def.fuses - g.fusesInstalled;
         if (need <= 0) return 'Listrik menyala';

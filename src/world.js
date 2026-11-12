@@ -96,6 +96,7 @@ export class World {
 
   los(x0, z0, x1, z1) { return this.map.los(x0, z0, x1, z1); }
   isLit(x, z) {
+    if (this.blackout) return false;
     const [cx, cz] = this.map.cellOf(x, z);
     return this.map.inside(cx, cz) && this.map.lit[cx + cz * this.map.W] === 1;
   }

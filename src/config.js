@@ -101,3 +101,29 @@ export const LEVELS = [
     hallTheme: 'hall',
   },
 ];
+
+// Endless mode: every floor is a fresh random school that grows harder.
+const ENDLESS_NAMES = ['Lorong Basah', 'Sayap Tanpa Jendela', 'Lantai Bawah Tanah', 'Ruang Guru Kosong', 'Koridor Berulang',
+  'Lab Kimia Gelap', 'Aula Upacara', 'Perpustakaan Sunyi', 'Gudang Arsip', 'Kantin Tutup', 'Ruang UKS', 'Ruang Musik'];
+export function endlessDef(floor, seed) {
+  const f = floor;
+  const entities = [{ type: 'monitor' }];
+  if (f >= 2) entities.push({ type: 'pupil' });
+  if (f >= 3) entities.push({ type: 'substitute' });
+  if (f >= 5) entities.push({ type: 'monitor' });
+  if (f >= 7) entities.push({ type: 'pupil' });
+  return {
+    id: 'endless', endless: true, floor: f,
+    code: `LANTAI ${-f}`,
+    name: ENDLESS_NAMES[(seed + f) % ENDLESS_NAMES.length],
+    subtitle: f === 1 ? 'Tangganya hanya mengarah ke bawah.' : `Kamu sudah turun ${f - 1} lantai.`,
+    seed,
+    blocksX: Math.min(5, 3 + Math.floor(f / 2)), blocksZ: Math.min(5, 3 + Math.floor(f / 3)),
+    lightsOff: Math.min(0.6, 0.15 + f * 0.05), flicker: Math.min(0.4, 0.12 + f * 0.03),
+    fog: Math.min(0.08, 0.055 + f * 0.003),
+    fuses: Math.min(5, 2 + Math.ceil(f / 2)), keys: Math.min(2, Math.floor(f / 2)), batteries: 4, notes: 2, erasers: 5,
+    mergeChance: 0.6,
+    bigRooms: ['library', 'studyhall', 'gym'], smallRooms: ['storage', 'office', 'restroom'],
+    entities, tape: false,
+  };
+}

@@ -8,7 +8,7 @@ import { World } from './world.js';
 import { Player } from './player.js';
 import { DoorSystem, Interactor } from './interact.js';
 import { spawnEntity } from './ai/entities.js';
-import { NOTES } from './story.js';
+import { NOTES, TAPES, PA_LINES } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
 const CUES = {
@@ -67,9 +67,9 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ level
-  loadLevel(index, difficulty) {
+  loadLevel(index, difficulty, defOverride = null) {
     this.unload();
-    const def = this.def = LEVELS[index];
+    const def = this.def = defOverride || LEVELS[index];
     this.levelIndex = index;
     this.diffKey = difficulty;
     this.diff = DIFFICULTY[difficulty];
@@ -92,6 +92,9 @@ export class Game {
     p.inventory = { fuses: 0, keys: 0, erasers: 0 };
     this.projectiles = [];
     this.hintT = 0;
+    this.timers = [];
+    this.paT = 55 + Math.random() * 35;
+    this.blackoutT = 0;
     this.fusesInstalled = 0;
     this.powered = false;
     this.time = 0;
@@ -225,6 +228,15 @@ export class Game {
       this.readNote(it);
       return;
     }
+    if (it.type === 'tape') {
+      it.taken = true; it.obj.visible = false;
+      this.stats.tape = true;
+      const tp = TAPES[this.def.id];
+      if (this.onTape) this.onTape(this.def.id);
+      this.audio.pickup();
+      if (tp) this.ui.showNote(tp.title, tp.body);
+      return;
+    }
     if (it.type === 'eraser' && p.inventory.erasers >= 3) { this.hud.toast('Tanganmu sudah penuh (maks. 3 penghapus)'); return; }
     it.taken = true;
     it.obj.visible = false;
@@ -237,16 +249,17 @@ export class Game {
     } else if (it.type === 'key') { p.inventory.keys++; this.hud.toast('Kunci ruangan ditemukan'); }
     else if (it.type === 'eraser') {
       p.inventory.erasers++;
-      this.hud.toast('Penghapus papan diambil');
+      if (this.hintsSeen.has('eraser')) this.hud.toast('Penghapus papan diambil');
       this.hint('eraser', this.input.touch ? 'Tekan LEMPAR untuk melempar penghapus — bunyinya memancing Petugas ke sana.' : 'Tekan G / klik kanan untuk melempar penghapus — bunyinya memancing Petugas ke sana.', 5);
     }
     else if (it.type === 'battery') { p.battery = Math.min(100, p.battery + 45); this.hud.toast('Baterai kamera +45%'); }
   }
 
   readNote(it) {
-    const list = NOTES[this.def.id] || [];
-    const n = list[it.note % list.length];
-    if (!it.read) { it.read = true; this.stats.notes++; }
+    const list = NOTES[this.def.id] || Object.values(NOTES).flat();
+    const idx = this.def.endless ? (it.note + this.def.floor * 2) % list.length : it.note % list.length;
+    const n = list[idx];
+    if (!it.read) { it.read = true; this.stats.notes++; if (!this.def.endless && this.onNoteRead) this.onNoteRead(this.def.id + ':' + idx); }
     this.audio.pickup();
     this.ui.showNote(n.title, n.body);
   }
@@ -296,6 +309,8 @@ export class Game {
     const input = this.input, p = this.player;
     if (this.state !== 'playing') { input.endFrame(); return; }
     this.time += dt;
+    this.runTimers();
+    this.updatePA(dt);
 
     if (input.consume('pause')) { this.ui.pause(); input.endFrame(); return; }
     if (input.consume('objectives')) this.hud.showObjectives(this.objectiveText());
@@ -333,7 +348,9 @@ export class Game {
     danger = Math.max(danger, chase * 0.55);
     this.danger = damp(this.danger, danger, 3, dt);
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);
-    const interference = this.danger > 0.45 ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
+    let interference = this.danger > 0.45 ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
+    this.world.blackout = this.blackoutT > 0;
+    if (this.blackoutT > 0) { this.blackoutT -= dt; interference = this.blackoutT < 0.6 || Math.random() < 0.02 ? 0.6 : 0.1; }
     bakeUniforms.uFlicker.value = this.flickerVal;
     bakeUniforms.uPower.value = damp(bakeUniforms.uPower.value, interference, 20, dt);
     if (this.built.fixtureMats.flicker) this.built.fixtureMats.flicker.emissiveIntensity = this.flickerVal;
@@ -389,6 +406,40 @@ export class Game {
     u.uGlitch.value = this.glitch;
     u.uBattery.value = this.player.battery / 100;
     this.vhs.render(this.scene, this.camera, t);
+  }
+
+  // ---------------------------------------------------------------- timers & PA
+  schedule(delay, fn) { this.timers.push({ at: this.time + delay, fn }); }
+  runTimers() {
+    for (let i = this.timers.length - 1; i >= 0; i--) {
+      if (this.timers[i].at <= this.time) { const t = this.timers.splice(i, 1)[0]; t.fn(); }
+    }
+  }
+  updatePA(dt) {
+    if (!this.player.alive || this.winT >= 0) return;
+    this.paT -= dt;
+    if (this.paT > 0) return;
+    this.paT = 75 + Math.random() * 60;
+    const early = this.def.id === 1;
+    const r = Math.random();
+    const kind = r < (early ? 0.6 : 0.4) ? 'flavor' : (early || r < 0.72) ? 'locate' : 'blackout';
+    const lines = PA_LINES[kind];
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    this.audio.paChime();
+    this.schedule(1.3, () => {
+      this.audio.paVoice(2.8);
+      this.hud.toast('📢 "' + line + '"', 5);
+    });
+    if (kind === 'locate') {
+      this.schedule(4.5, () => {
+        if (!this.player.alive || this.player.hidden) return; // hiding fools the cameras
+        const p = this.player.pos;
+        const fx = p.x + (Math.random() - 0.5) * 8, fz = p.z + (Math.random() - 0.5) * 8;
+        for (const e of this.entities) e.onNoise(fx, fz, 1, 'alert');
+      });
+    } else if (kind === 'blackout') {
+      this.schedule(4.2, () => { this.blackoutT = 14; this.audio.doorSlam({ x: this.player.pos.x + 10, y: 2, z: this.player.pos.z }); });
+    }
   }
 
   // ---------------------------------------------------------------- throwing
@@ -449,7 +500,7 @@ export class Game {
 
   // ---------------------------------------------------------------- hints
   hint(id, text, dur = 5) {
-    if (this.hintsSeen.has(id)) return;
+    if (this.hintsSeen.has(id) || this.hud.toastT > 0.3) return; // never cover announcements
     this.hintsSeen.add(id);
     if (this.onHint) this.onHint(id);
     this.hud.toast(text, dur);
@@ -503,6 +554,7 @@ export class Game {
 
   deathCause(k) {
     if (k.kind === 'monitor') return 'Petugas Ketertiban menemukanmu. Ia tidak punya mata — ia mendengar. Berjalanlah, jangan berlari, dan tahan napas di loker.';
+    if (this.blackoutT > 0 && k.kind === 'substitute') return 'Lampu padam, dan dalam gelap Guru Pengganti bebas bergerak. Nyalakan senter saat listrik mati.';
     if (k.kind === 'substitute') return 'Kamu berpaling dari Guru Pengganti. Jaga pandanganmu padanya, dan jangan biarkan ia berada dalam gelap.';
     return 'Sesuatu menemukanmu.';
   }
