@@ -97,7 +97,7 @@ export class Player {
       if (this.breath <= 0) { this.breath = 0; game.audio.gasp(); game.emitNoise(this.pos.x, this.pos.z, NOISE.gasp, 'gasp'); game.hud.toast('Kamu terengah-engah!'); }
     } else this.breath = Math.min(PLAYER.breathMax, this.breath + PLAYER.breathRegen * dt);
 
-    if (this.hidden || !this.alive) {
+    if (this.hidden || !this.alive || this.locked) {
       this.vel.set(0, 0);
       this.moving = 0;
       this._applyCamera(dt);

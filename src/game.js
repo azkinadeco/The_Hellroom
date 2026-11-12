@@ -131,6 +131,7 @@ export class Game {
     this.vhs.uniforms.uFade.value = 0;
     this.chasers.clear();
     this.lockerReason = null;
+    this.liftRide = null; p.locked = false; this.liftDir = 1;
     this.met = this.met || new Set();
     this.input.resetToggles();
 
@@ -226,6 +227,56 @@ export class Game {
     }
     void prev;
   }
+  // ---------------------------------------------------------------- lifts
+  liftDef(L) { return this.bgen && this.bgen.lifts.find((q) => q.x === L.x && q.z === L.z); }
+  liftTarget(L) {
+    const B = this.liftDef(L);
+    if (!B) return null;
+    let dir = this.liftDir || 1;
+    if (!B.floors.includes(this.floorK + dir)) dir = -dir;
+    if (!B.floors.includes(this.floorK + dir)) return null;
+    this.liftDir = dir;
+    return this.floorK + dir;
+  }
+  rideLift(L) {
+    const target = this.liftTarget(L);
+    if (target === null || this.liftRide) return;
+    // now and then the lift has its own idea of where to go
+    const B = this.liftDef(L);
+    let to = target;
+    if (Math.random() < 0.22) { const alt = B.floors.filter((k) => k !== this.floorK && k !== target); if (alt.length) to = alt[Math.floor(Math.random() * alt.length)]; }
+    const p = this.player;
+    this.busy = true; p.locked = true; p.crouched = false;
+    p.pos.x = L.cx - L.d.dx * 0.3; p.pos.z = L.cz - L.d.dz * 0.3;
+    this.liftRide = { L, to, asked: target, t: 0, switched: false };
+    this.audio.liftDoors();
+    for (const e of this.entities) this.onChaseEnd(e);
+  }
+  updateLift(dt) {
+    const R = this.liftRide;
+    if (!R) return;
+    R.t += dt;
+    const p = this.player;
+    if (!R.switched) {
+      R.L.set(clamp(1 - R.t / 0.8, 0, 1));
+      if (R.t > 0.8 && !R.hum) { R.hum = true; this.audio.liftHum(2.6); }
+      if (R.t > 0.9) { p.camera.position.y += Math.sin(R.t * 55) * 0.006; this.flickerVal = Math.random() < 0.1 ? 0.3 : 1; }
+      if (R.t > 3.4) {
+        R.switched = true;
+        this.changeFloor(R.to, {});
+        R.L2 = (this.built.lifts || []).find((q) => q.x === R.L.x && q.z === R.L.z) || R.L;
+        R.L2.set(0);
+        this.audio.liftDing();
+        if (R.to !== R.asked) this.schedule(0.6, () => this.hud.caption(`…lift berhenti di Lantai ${R.to + 1}. Kamu menekan ${R.asked + 1}.`, 3.5));
+        R.t2 = 0;
+      }
+    } else {
+      R.t2 += dt;
+      if (R.t2 > 0.5 && !R.doors) { R.doors = true; this.audio.liftDoors(); }
+      R.L2.set(clamp((R.t2 - 0.5) / 0.8, 0, 1));
+      if (R.t2 > 1.35) { this.liftRide = null; this.busy = false; p.locked = false; }
+    }
+  }
   spawnFar(kind) {
     const [px, pz] = this.map.cellOf(this.player.pos.x, this.player.pos.z);
     const c = randomReachableCell(this.map, Math.random, px, pz, 9, 40) || randomReachableCell(this.map, Math.random, px, pz, 4, 60);
@@ -258,7 +309,9 @@ export class Game {
     const r = this.map.reg(cx, cz);
     if (r <= 0) return 'tile';
     const room = this.gen.rooms.find((q) => q.id === r);
-    return room && room.type === 'restroom' ? 'tile' : 'wood';
+    if (room && room.type === 'forest') return 'carpet';
+    if (this.def.layout === 'hospital' || (room && ['restroom', 'lapangan', 'stairs', 'lift'].includes(room.type))) return 'tile';
+    return 'wood';
   }
 
   isSeenByPlayer(e) {
@@ -287,7 +340,7 @@ export class Game {
 
   killPlayer(entity, locker = null) {
     const p = this.player;
-    if (!p.alive) return;
+    if (!p.alive || this.liftRide) return;
     // inside (or climbing into) a hiding spot only a resident that pulls the door open can get you
     if ((p.hidden || p.entering) && !locker) {
       entity.state = entity.kind === 'shade' ? 'lurk' : entity.kind === 'eyes' ? 'watch' : 'patrol';
@@ -464,7 +517,8 @@ export class Game {
     this.interactor.update();
     if (input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
 
-    for (const e of this.entities) e.update(dt);
+    this.updateLift(dt);
+    if (!this.liftRide) for (const e of this.entities) e.update(dt);
     this.anomalies.update(dt);
     // first sighting unlocks the resident's archive entry
     this.metT = (this.metT || 0) - dt;

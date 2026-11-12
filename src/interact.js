@@ -45,6 +45,7 @@ export class Interactor {
     for (const d of g.built.doors) out.push({ kind: 'door', ref: d, x: d.x, y: 1.1, z: d.z, r: 0.9 });
     for (const l of g.built.lockers) { const f = HIDE[l.kind || 'locker'].front; out.push({ kind: 'locker', ref: l, x: l.x + Math.sin(l.rot) * f, y: 1.0, z: l.z + Math.cos(l.rot) * f, r: 0.55 }); }
     for (const it of g.built.items) if (!it.taken) out.push({ kind: 'item', ref: it, x: it.obj.position.x, y: it.obj.position.y, z: it.obj.position.z, r: 0.35 });
+    for (const L of g.built.lifts || []) out.push({ kind: 'lift', ref: L, x: L.panel.x, y: 1.25, z: L.panel.z, r: 0.45 });
     const fb = g.gen.fusebox;
     if (fb) out.push({ kind: 'fusebox', x: fb.x + Math.sin(fb.rot) * 0.1, y: 1.4, z: fb.z + Math.cos(fb.rot) * 0.1, r: 0.5 });
     const ex = g.gen.exit;
@@ -94,6 +95,7 @@ export class Interactor {
         return inv.fuses > 0 ? `Pasang sekring (${g.fusesInstalled}/${g.def.fuses})` : `Kotak sekring kosong (${g.fusesInstalled}/${g.def.fuses})`;
       }
       case 'exit': return g.powered ? 'KELUAR' : 'Pintu keluar — tidak ada listrik';
+      case 'lift': { const k = g.liftTarget(t.ref); return k === null ? 'Lift tidak bergerak' : `Lift ▸ Lantai ${k + 1}`; }
     }
     return '';
   }
@@ -119,6 +121,7 @@ export class Interactor {
       case 'item': g.pickup(t.ref); break;
       case 'fusebox': g.useFusebox(); break;
       case 'exit': g.tryExit(); break;
+      case 'lift': g.rideLift(t.ref); break;
     }
   }
 }

@@ -29,6 +29,12 @@ export function furnishExtra(r, f, rng, def) {
     case 'kantin': kantin(r, f, rng, P); return true;
     case 'kepsek': kepsek(r, f, rng, P); return true;
     case 'lapangan': lapangan(r, f, rng, P, out); return true;
+    case 'ward': case 'icu': case 'igd': ward(r, f, rng, P); return true;
+    case 'radiology': radiology(r, f, rng, P); return true;
+    case 'pharmacy': pharmacy(r, f, rng, P); return true;
+    case 'morgue': morgue(r, f, rng, P); return true;
+    case 'surgery': surgery(r, f, rng, P); return true;
+    case 'forest': forest(r, f, rng, P); return true;
     default: return false;
   }
 }
@@ -176,9 +182,141 @@ function lapangan(r, f, rng, P, out) {
   r.spots.push([cx - 4.5, 0.02, cz + 1.5], [cx + 4.5, 0.02, cz - 1.5]);
 }
 
+// ------------------------------------------------------------- hospital
+const OPPOSITE = { N: 'S', S: 'N', W: 'E', E: 'W' };
+// beds lie along the front and back walls (out of the walking lines), each
+// with a drip stand; curtains hang between them
+function ward(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  const back = roomFrame(r, OPPOSITE[fr.side]);
+  const W = fr.width;
+  const kind = r.type === 'igd' ? 'gurney' : 'hospital_bed';
+  for (const wf of [fr, back]) {
+    const rotAlong = yawFor(wf.alongX ? 1 : 0, wf.alongX ? 0 : 1);
+    for (const ua of blocks(W)) {
+      const u = ua + 1.5;
+      if (sideHasDoorNear(r, wf, u - 1.4, u + 1.4) || rng.chance(0.12)) continue;
+      const [x, z] = wf.toWorld(u, 0.62);
+      P(rng.chance(r.type === 'igd' ? 0.3 : 0.08) ? 'gurney_body' : kind, x, z, rotAlong + (rng.chance(0.5) ? Math.PI : 0) + rng.range(-0.04, 0.04), [2.05, 0.95, 0.7]);
+      r.spots.push([x, kind === 'gurney' ? 0.92 : 0.64, z]);
+      if (rng.chance(0.7)) { const [ix, iz] = wf.toWorld(u + 1.25, 0.35); P('iv_stand', ix, iz, rng.range(0, 6), [0.3, 0.3, 1.9]); }
+      if (rng.chance(0.6)) { const [cx, cz] = wf.toWorld(u - 1.45, 1.2); P('ward_curtain', cx, cz, yawFor(wf.alongX ? 0 : 1, wf.alongX ? 1 : 0), null); }
+    }
+  }
+  if (r.type !== 'ward' && !sideHasDoorNear(r, fr, 0, 1.2)) { const [x, z] = fr.toWorld(0.55, 1.6); P('med_cart', x, z, yawFor(fr.n[0], fr.n[1]), [0.6, 0.45, 1]); r.spots.push([x, 0.98, z]); }
+  if (rng.chance(0.4)) { const [x, z] = fr.toWorld(W / 2, fr.depth / 2); P('wheelchair', x + rng.range(-0.3, 0.3), z, rng.range(0, 6), null); }
+  locker(r, f, back, W - 0.6) || locker(r, f, back, 0.6);
+  { const [x, z] = fr.toWorld(W / 2, fr.depth / 2); r.spots.push([x, 0.02, z]); }
+}
+function radiology(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  const W = fr.width, D = fr.depth, faceIn = yawFor(fr.n[0], fr.n[1]);
+  for (const u of [W / 2 - 1.2, W / 2 + 1.2]) if (!sideHasDoorNear(r, fr, u - 0.6, u + 0.6)) { const [x, z] = fr.toWorld(u, wallOff); P('xray_viewer', x, z, faceIn, null, { y: 1.6 }); }
+  const [tx, tz] = fr.toWorld(3.0, 3.0); P('surgery_table', tx, tz, yawFor(fr.alongX ? 0 : 1, fr.alongX ? 1 : 0), [0.6, 2.0, 0.9]); r.spots.push([tx, 0.9, tz]);
+  const [lx, lz] = fr.toWorld(3.0, 3.0); P('surgery_lamp', lx, lz, 0, null, { y: 3.0 });
+  const [cx, cz] = fr.toWorld(W - 0.55, D - 0.6); P('med_cart', cx, cz, faceIn, [0.6, 0.45, 1]); r.spots.push([cx, 0.98, cz]);
+  const back = roomFrame(r, OPPOSITE[fr.side]); locker(r, f, back, 1.0);
+  { const [x, z] = fr.toWorld(W / 2, D - 1.5); r.spots.push([x, 0.02, z]); }
+}
+function pharmacy(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  const W = fr.width, D = fr.depth;
+  for (const wf of [fr, roomFrame(r, OPPOSITE[fr.side])]) {
+    const rot = yawFor(wf.n[0], wf.n[1]);
+    for (let u = 0.6; u < W - 0.4; u += 1.0) {
+      if (sideHasDoorNear(r, wf, u - 0.6, u + 0.6)) continue;
+      const [x, z] = wf.toWorld(u, wallOff + 0.2);
+      P(rng.chance(0.5) ? 'medicine_cabinet' : 'specimen_shelf', x, z, rot, [0.9, 0.4, 1.8]);
+      if (rng.chance(0.3)) r.spots.push([x - wf.n[0] * 0.05, 0.95, z - wf.n[1] * 0.05]);
+    }
+  }
+  for (const ua of blocks(W)) { const [x, z] = fr.toWorld(ua + 1.5, D / 2); P('cardboard_box', x + rng.range(-0.3, 0.3), z, rng.range(0, 6), [0.6, 0.6, 0.5]); r.spots.push([x, 0.52, z]); }
+  { const [x, z] = fr.toWorld(W / 2, D / 2 + 1.5); r.spots.push([x, 0.02, z]); }
+}
+function morgue(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  const W = fr.width, D = fr.depth, faceIn = yawFor(fr.n[0], fr.n[1]);
+  r.mat = { wall: 'pool_wall', floor: 'floor_tile' };
+  for (const ua of blocks(W)) { const u = ua + 1.5; if (sideHasDoorNear(r, fr, u - 1.3, u + 1.3)) continue; const [x, z] = fr.toWorld(u, wallOff + 0.36); P('morgue_drawers', x, z, faceIn, [2.4, 0.72, 2.1]); }
+  const along = yawFor(fr.alongX ? 1 : 0, fr.alongX ? 0 : 1);
+  for (const va of blocks(D)) for (const ua of blocks(W)) {
+    if (va < 1) continue;
+    const [x, z] = fr.toWorld(ua + 1.5, va + 1.5);
+    P(rng.chance(0.75) ? 'gurney_body' : 'gurney', x, z, along + rng.range(-0.1, 0.1), [2.0, 0.65, 0.9]);
+    r.spots.push([x + rng.range(-0.5, 0.5), 0.92, z]);
+  }
+  const back = roomFrame(r, OPPOSITE[fr.side]); locker(r, f, back, W / 2);
+}
+function surgery(r, f, rng, P) {
+  const fr = frameFor(r, rng); r.front = fr;
+  const W = fr.width, D = fr.depth;
+  r.mat = { wall: 'pool_wall' };
+  const [tx, tz] = fr.toWorld(3.0, 3.0);
+  P('surgery_table', tx, tz, yawFor(fr.alongX ? 0 : 1, fr.alongX ? 1 : 0), [0.6, 2.0, 0.9]); r.spots.push([tx, 0.9, tz]);
+  P('surgery_lamp', tx, tz, rng.range(0, 6), null, { y: 3.0 });
+  const [ix, iz] = fr.toWorld(2.3, 3.6); P('iv_stand', ix, iz, 0, [0.3, 0.3, 1.9]);
+  const [cx, cz] = fr.toWorld(W - 0.6, 0.5); P('med_cart', cx, cz, yawFor(fr.n[0], fr.n[1]), [0.6, 0.45, 1]); r.spots.push([cx, 0.98, cz]);
+  if (W > 7) { const [gx, gz] = fr.toWorld(6.0, D - 1.0); P('gurney', gx, gz, yawFor(fr.alongX ? 1 : 0, fr.alongX ? 0 : 1), [2.0, 0.65, 0.9]); r.spots.push([gx, 0.92, gz]); }
+  const back = roomFrame(r, OPPOSITE[fr.side]); locker(r, f, back, 0.8);
+}
+// trees grow on the cell corners (never on the walking lines), undergrowth,
+// and the ward it used to be: beds and drip stands among the trunks
+function forest(r, f, rng, P) {
+  const m = f.map, inF = (x, z) => m.reg(x, z) === r.id;
+  for (let z = r.z0 + 1; z <= r.z1; z++) for (let x = r.x0 + 1; x <= r.x1; x++) {
+    if (!(inF(x, z) && inF(x - 1, z) && inF(x, z - 1) && inF(x - 1, z - 1))) continue;
+    const roll = rng.next();
+    const px = x * CELL + rng.range(-0.35, 0.35), pz = z * CELL + rng.range(-0.35, 0.35);
+    if (roll < 0.42) P('tree_pine', px, pz, rng.range(0, 6), [0.6, 0.6, 3]);
+    else if (roll < 0.62) P('tree_dead', px, pz, rng.range(0, 6), [0.6, 0.6, 3]);
+    else if (roll < 0.8) P('bush', px, pz, rng.range(0, 6), null);
+    else if (roll < 0.86) { P('hospital_bed', px, pz, rng.range(0, 6), [1.2, 1.2, 0.7]); r.spots.push([px, 0.64, pz]); }
+    else if (roll < 0.92) P('iv_stand', px, pz, rng.range(0, 6), [0.3, 0.3, 1.9]);
+    else if (roll < 0.95) P('wheelchair', px, pz, rng.range(0, 6), [0.6, 0.6, 1]);
+    else if (roll < 0.98) { const rot = rng.range(0, 6); f.out.lockers.push({ kind: 'locker', x: px, z: pz, rot }); f.out.colliders.push(aabb(px, pz, 0.62, 0.58, rot)); }
+    if (rng.chance(0.25)) r.spots.push([(x - 0.5) * CELL + rng.range(-0.6, 0.6), 0.02, (z - 0.5) * CELL + rng.range(-0.6, 0.6)]);
+  }
+}
+
 // ---------------------------------------------------------------- halls
 export function dressExtra(f, rng, def, reserved) {
   if (def.layout === 'school') dressSchool(f, rng, reserved);
+  if (def.layout === 'hospital') dressHospital(f, rng, reserved);
+  if (def.layout) for (const d of f.map.doors.values()) {
+    const r = d.room;
+    if (!r.sign || def.layout === 'school') continue;
+    f.out.signs.push({ x: d.x - d.inX * (wallOff + 0.01), z: d.z - d.inZ * (wallOff + 0.01), y: 2.42, rot: yawFor(-d.inX, -d.inZ), text: r.sign });
+  }
+}
+
+function dressHospital(f, rng, reserved) {
+  const m = f.map, out = f.out, W = m.W, H = m.H;
+  // reception and waiting area by the main doors
+  if (out.exit) {
+    const [ex, ez] = out.exit.cell;
+    const [cx, cz] = m.center(ex + 2, ez + 1);
+    f.prop('reception_desk', cx, cz - 1.5, 0, [3.0, 0.7, 1.1]);
+    for (const dz of [2.6, 4.4]) f.prop('waiting_chairs', cx - 0.6, cz + dz, Math.PI, [2.2, 0.5, 0.8]);
+    out.lights.push({ x: cx, z: cz, rot: 0, state: 'on', cell: m.cellOf(cx, cz) });
+  }
+  for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
+    if (m.reg(x, z) !== 0) continue;
+    const [cx, cz] = m.center(x, z);
+    for (const d of DIRS) {
+      const e = m.edge(x, z, d), k = m.edgeKey(x, z, d);
+      if (e !== EDGE.WALL || reserved.has(k)) continue;
+      const rot = yawFor(-d.dx, -d.dz);
+      const wx = cx + d.dx * (CELL / 2 - wallOff), wz = cz + d.dz * (CELL / 2 - wallOff);
+      f.prop('wall_handrail', wx, wz, rot, null);
+      const roll = rng.next();
+      const bx = cx + d.dx * (CELL / 2 - wallOff - 0.3), bz = cz + d.dz * (CELL / 2 - wallOff - 0.3);
+      if (roll < 0.07) f.prop('waiting_chairs', bx, bz, rot, [2.2, 0.5, 0.8]);
+      else if (roll < 0.11) f.prop('wheelchair', bx + d.dz * 0.9, bz + d.dx * 0.9, rot + rng.range(-0.4, 0.4), [0.65, 0.7, 1]);
+      else if (roll < 0.15) f.prop(rng.chance(0.25) ? 'gurney_body' : 'gurney', cx + d.dx * (CELL / 2 - wallOff - 0.4), cz + d.dz * (CELL / 2 - wallOff - 0.4), rot + Math.PI / 2, [2.0, 0.65, 0.9]);
+      else if (roll < 0.19) f.prop('notice_board', wx, wz, rot, null, { y: 1.55 });
+      else if (roll < 0.22) f.prop('potted_plant', cx + d.dx * 1.05 + d.dz * 1.05, cz + d.dz * 1.05 + d.dx * 1.05, 0, [0.5, 0.5, 1]);
+    }
+  }
 }
 
 const ROOMY = new Set(['kelas', 'guru', 'library', 'lab', 'uks', 'kepsek', 'office', 'kantin']);

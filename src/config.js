@@ -67,12 +67,12 @@ export const LEVELS = [
     entities: [{ type: 'masked' }], hallTheme: 'hall',
   },
   {
-    id: 3, code: 'LEVEL 2', name: 'Lab Biologi',
-    subtitle: 'Jangan berkedip. Jangan berpaling.',
-    seed: 7031, blocksX: 4, blocksZ: 3,
-    lightsOff: 0.4, flicker: 0.3, fog: 0.065,
-    fuses: 3, keys: 1, batteries: 6, notes: 3, erasers: 5,
-    smallRooms: ['storage', 'office', 'restroom'], labChance: 0.75,
+    id: 3, code: 'LEVEL 2', name: 'Rumah Sakit',
+    subtitle: 'Jangan berkedip. Di lantai bawah ada hutan.',
+    seed: 7031, layout: 'hospital', size: [28, 20], floors: 3, rail: 'bars', seeAll: true,
+    textures: ['hosp_floor', 'hosp_floor', 'ceiling_tile', 'hosp_wall', 'hosp_wall'],
+    lightsOff: 0.35, flicker: 0.3, fog: 0.06,
+    fuses: 4, keys: 1, batteries: 6, notes: 3, erasers: 5,
     entities: [{ type: 'gaper' }], hallTheme: 'hall',
   },
   {

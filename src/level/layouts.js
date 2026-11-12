@@ -60,3 +60,60 @@ function school(b, rng) {
 
 export const LAYOUTS = { school };
 export { CELL };
+
+// ---------------------------------------------------------------------------
+// LEVEL 2 — Rumah Sakit: three floors along a central spine corridor, a lift
+// that serves every floor, two stairwells that do NOT line up (west links
+// 1-2, east links 2-3), and in the south wing a forest that grows through
+// all three storeys under an open night sky, with balconies over it and a
+// steel stair that goes down into the trees.
+//   spine corridor z 9..10 · north wing z 4..8 · south wing z 11..18
+// ---------------------------------------------------------------------------
+function hospital(b, rng) {
+  const [F0, F1, F2] = b.F;
+  const R = (f, x0, z0, x1, z1, type, sign, o = {}) => { const r = f.room(x0, z0, x1, z1, type, { sign, ...o }); f.autoDoor(r, null, rng); return r; };
+  for (const f of b.F) f.hall(6, 9, 26, 10);
+  // ---- ground floor
+  F0.hall(1, 7, 5, 12);                                        // lobby + main doors
+  R(F0, 6, 4, 8, 8, 'igd', 'IGD');
+  R(F0, 10, 4, 10, 8, 'storage', 'GUDANG LINEN');
+  R(F0, 11, 4, 13, 8, 'ward', 'BANGSAL A');
+  R(F0, 15, 4, 18, 8, 'radiology', 'RADIOLOGI');
+  R(F0, 19, 4, 22, 8, 'pharmacy', 'APOTEK');
+  R(F0, 23, 4, 26, 8, 'ward', 'BANGSAL B');
+  R(F0, 6, 11, 9, 15, 'ward', 'BANGSAL C');
+  R(F0, 10, 11, 13, 15, 'morgue', 'KAMAR JENAZAH');
+  R(F0, 14, 11, 14, 13, 'restroom', 'TOILET');
+  const forest = F0.room(15, 11, 25, 18, 'forest', { sign: 'BANGSAL TAMAN', mat: { floor: 'forest_ground', wall: 'forest_wall' }, noLights: true, noLock: true });
+  F0.door(forest, 16, 11, 'N');
+  R(F0, 26, 11, 26, 14, 'storage', 'GUDANG');
+  b.stair(0, 9, 8, 'N', 2, { mat: 'hosp_floor' });                 // west stairs, 1 -> 2
+  // ---- first floor
+  F1.hall(2, 9, 5, 10);
+  R(F1, 2, 4, 5, 8, 'ward', 'BANGSAL D'); R(F1, 6, 4, 8, 8, 'ward', 'BANGSAL E');
+  F1.hall(9, 6, 10, 6); F1.hall(10, 7, 10, 8);
+  R(F1, 11, 4, 13, 8, 'surgery', 'RUANG OPERASI');
+  R(F1, 15, 4, 18, 8, 'ward', 'BANGSAL F'); R(F1, 19, 4, 21, 8, 'office', 'RUANG DOKTER');
+  R(F1, 23, 5, 23, 8, 'storage', 'GUDANG'); R(F1, 24, 4, 26, 8, 'ward', 'BANGSAL G');
+  R(F1, 2, 11, 5, 15, 'ward', 'BANGSAL H'); R(F1, 6, 11, 9, 15, 'icu', 'ICU'); R(F1, 10, 11, 13, 15, 'ward', 'BANGSAL I');
+  R(F1, 14, 11, 14, 13, 'restroom', 'TOILET');
+  F1.hall(15, 11, 25, 11); F1.void(15, 12, 25, 18);              // balcony over the trees
+  b.stair(1, 22, 8, 'N', 2, { mat: 'hosp_floor' });                // east stairs, 2 -> 3
+  b.stair(0, 20, 13, 'N', 2, { open: true, mat: 'hosp_floor' });   // steel stair down into the forest
+  // ---- second floor
+  R(F2, 6, 4, 8, 8, 'ward', 'BANGSAL J');
+  const start = R(F2, 9, 4, 13, 8, 'icu', 'ICU 2');
+  R(F2, 15, 4, 18, 8, 'ward', 'BANGSAL K'); R(F2, 19, 4, 21, 8, 'ward', 'BANGSAL L');
+  F2.hall(22, 6, 23, 6); F2.hall(23, 7, 23, 8);
+  R(F2, 24, 4, 26, 8, 'office', 'KEPALA RUANGAN');
+  R(F2, 6, 11, 9, 15, 'ward', 'BANGSAL M'); R(F2, 10, 11, 13, 15, 'surgery', 'RUANG OPERASI 2');
+  R(F2, 14, 11, 14, 13, 'restroom', 'TOILET');
+  F2.hall(15, 11, 25, 11); F2.void(15, 12, 25, 18); F2.sky(15, 12, 25, 18);
+  b.lift(14, 8, 'S', [0, 1, 2]);
+  // the forest is lit by a cold light from somewhere far above
+  for (const [x, z] of [[17.5, 14.5], [23.5, 16.5], [19.5, 17.5]]) b.tallLight(0, x * 3, z * 3, 9.6, { fall: 0.035, reach2: 300, fixture: 'none', state: rng.chance(0.3) ? 'flicker' : 'on' });
+  b.start = { k: 2, room: start };
+  b.exit = { k: 0, x: 1, z: 9, side: 'W' };
+}
+
+LAYOUTS.hospital = hospital;

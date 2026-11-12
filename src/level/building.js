@@ -114,8 +114,8 @@ export class Building {
     const [lx, lz] = cells[len - 1];
     const mat = o.mat || null;
     for (const f of [this.F[k], this.F[k + 1]]) {
-      f.room(x, z, lx, lz, 'stairs', { mat, escalator: !!o.escalator, noItems: true });
-      if (o.escalator) for (const [cx, cz] of cells) for (const s of Object.keys(SIDES)) if (s !== side && s !== OPP[side]) f.rail(cx, cz, s);
+      f.room(x, z, lx, lz, 'stairs', { mat, escalator: !!(o.escalator || o.open), noItems: true });
+      if (o.escalator || o.open) for (const [cx, cz] of cells) for (const s of Object.keys(SIDES)) if (s !== side && s !== OPP[side]) f.rail(cx, cz, s);
     }
     this.F[k].arch(x, z, OPP[side]);
     this.F[k + 1].arch(lx, lz, side);
@@ -123,7 +123,7 @@ export class Building {
       this.F[k].out.openAbove[this.F[k].idx(cx, cz)] = 1;
       this.F[k + 1].out.noFloor[this.F[k + 1].idx(cx, cz)] = 1;
     }
-    const s = { k, x, z, side, d, len, cells, escalator: !!o.escalator, mat,
+    const s = { k, x, z, side, d, len, cells, escalator: !!o.escalator, open: !!o.open, mat,
       minX: Math.min(x, lx) * CELL, maxX: (Math.max(x, lx) + 1) * CELL, minZ: Math.min(z, lz) * CELL, maxZ: (Math.max(z, lz) + 1) * CELL,
       bottom: [x - d.dx, z - d.dz], top: [lx + d.dx, lz + d.dz] };
     this.stairs.push(s);
@@ -134,7 +134,7 @@ export class Building {
   lift(x, z, side, floors) {
     for (const k of floors) {
       const f = this.F[k];
-      const r = f.room(x, z, x, z, 'lift', { noItems: true, liftSide: side });
+      const r = f.room(x, z, x, z, 'lift', { noItems: true, liftSide: side, noLock: true, mat: { wall: 'lift_wall', floor: 'floor_tile' }, sign: null });
       f.arch(x, z, side);
       f.out.liftDoors.push({ x, z, side });
       r.spots = [];

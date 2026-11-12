@@ -496,6 +496,34 @@ export class Audio {
     o.frequency.linearRampToValueAtTime(120, t + 0.8);
     o.connect(f).connect(g); this._env(g, t + 0.05, 0.2, 0.15, 0.9); o.start(t); o.stop(t + 1.3);
   }
+  // lift: two-tone chime, sliding doors, a motor hum for `dur` seconds
+  liftDing() {
+    if (!this.ready) return;
+    const t = this.t;
+    [[880, 0], [698.5, 0.28]].forEach(([fr, d]) => {
+      const o = this._osc('sine', fr), g = this._out(null, 0.6);
+      o.connect(g); this._env(g, t + d, 0.01, 0.12, 1.1); o.start(t + d); o.stop(t + d + 1.3);
+    });
+  }
+  liftDoors() {
+    if (!this.ready) return;
+    const t = this.t, src = this._noiseSrc(this.brownBuf), f = this._filter('bandpass', 380, 1.2), g = this._out(null, 0.5);
+    src.connect(f).connect(g); this._env(g, t, 0.1, 0.12, 0.6); src.start(t); src.stop(t + 0.9);
+  }
+  liftHum(dur = 2.5) {
+    if (!this.ready) return;
+    const t = this.t, o = this._osc('sawtooth', 52), f = this._filter('lowpass', 180), g = this._out(null, 0.7);
+    o.frequency.setValueAtTime(48, t); o.frequency.linearRampToValueAtTime(58, t + dur * 0.5); o.frequency.linearRampToValueAtTime(46, t + dur);
+    o.connect(f).connect(g); this._env(g, t, 0.4, 0.09, dur - 0.4); o.start(t); o.stop(t + dur + 0.2);
+    const src = this._noiseSrc(this.brownBuf), nf = this._filter('lowpass', 120), ng = this._out(null, 0.6);
+    src.connect(nf).connect(ng); this._env(ng, t, 0.3, 0.15, dur - 0.3); src.start(t); src.stop(t + dur + 0.2);
+  }
+  whoosh(dur = 3) {
+    if (!this.ready) return;
+    const t = this.t, src = this._noiseSrc(), f = this._filter('bandpass', 600, 0.7), g = this._out(null, 0.6);
+    f.frequency.setValueAtTime(400, t); f.frequency.linearRampToValueAtTime(1500, t + dur);
+    src.connect(f).connect(g); this._env(g, t, 0.3, 0.18, dur - 0.3); src.start(t); src.stop(t + dur + 0.2);
+  }
   powerUp() {
     if (!this.ready) return;
     const t = this.t;

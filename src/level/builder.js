@@ -297,7 +297,6 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     ...inst.addLockers(gen.lockers.filter((l) => l.kind !== 'stall'), 'school_locker'),
     ...inst.addLockers(gen.lockers.filter((l) => l.kind === 'stall'), 'toilet_stall'),
   ];
-  inst.finish();
 
   // ---------- doors ----------
   const doors = [];
@@ -348,8 +347,42 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     return { ...it, obj, taken: false };
   });
 
+  // ---------- lift cabins: sliding doors + call panel ----------
+  const lifts = [];
+  const liftMat = bakeMaterial(new THREE.MeshLambertMaterial({ color: 0xa4a9ac }), 'uniform');
+  for (const ld of gen.liftDoors || []) {
+    const d = DIRS.find((q) => q.dx === { E: 1, W: -1 }[ld.side] || (q.dx === 0 && q.dz === { S: 1, N: -1 }[ld.side]));
+    const [cx, cz] = map.center(ld.x, ld.z);
+    const ex = cx + d.dx * (CELL / 2 - 0.05), ez = cz + d.dz * (CELL / 2 - 0.05);
+    const tx = -d.dz, tz = d.dx;          // along the doorway
+    const b = field.sample(cx, 1.2, cz, null, null, null, null);
+    liftMat.userData.bake.value.set(Math.max(0.3, b[0]), b[1]);
+    const g = new THREE.BoxGeometry(CELL / 2 - 0.05, 2.5, 0.06);
+    const rot = Math.atan2(tx, tz) + Math.PI / 2;
+    const panels = [-1, 1].map((s) => { const p = new THREE.Mesh(g, liftMat); p.rotation.y = rot; root.add(p); return { mesh: p, s }; });
+    // frame round the opening
+    const frameG = new THREE.BoxGeometry(CELL + 0.1, 0.5, 0.12);
+    const fm = new THREE.Mesh(frameG, liftMat); fm.position.set(ex, 2.75, ez); fm.rotation.y = rot; root.add(fm);
+    const L = {
+      x: ld.x, z: ld.z, side: ld.side, open: 1, cx, cz, d,
+      panel: { x: cx - d.dx * (CELL / 2 - WALL_T / 2 - 0.02) + tx * 0.9, z: cz - d.dz * (CELL / 2 - WALL_T / 2 - 0.02) + tz * 0.9 },
+      set(v) {
+        L.open = v;
+        for (const p of panels) {
+          const off = p.s * (CELL / 4 - 0.02 + v * (CELL / 2 - 0.3));
+          p.mesh.position.set(ex + tx * off, 1.25, ez + tz * off);
+          p.mesh.updateMatrix();
+        }
+      },
+    };
+    L.set(1);
+    inst.add('lift_panel', L.panel.x, 1.25, L.panel.z, Math.atan2(d.dx, d.dz));
+    lifts.push(L);
+  }
+
+  inst.finish();
   root.updateMatrixWorld(true);
-  return { chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, waterMat, poolMats, figures };
+  return { lifts, chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, waterMat, poolMats, figures };
 }
 
 function itemLift(type) {
@@ -581,7 +614,7 @@ function buildSteps(st, FH, g, field, root, def) {
   const [fx, fz] = st.cells[0];
   const c0 = [(fx + 0.5) * CELL - a[0] * CELL / 2, (fz + 0.5) * CELL - a[2] * CELL / 2];  // bottom edge middle
   const L = st.len * CELL, n = Math.round(FH / 0.18), h = FH / n, run = L / n;
-  const wid = st.escalator ? 1.6 : CELL - WALL_T;
+  const wid = st.escalator ? 1.6 : st.open ? CELL - 0.7 : CELL - WALL_T;
   const O = (s, y, w) => [c0[0] + a[0] * s + l[0] * w, y, c0[1] + a[2] * s + l[2] * w];
   const bk = (s) => field.sample(c0[0] + a[0] * s, 1.2, c0[1] + a[2] * s, null, null, null, null);
   const uv = (p) => [(p[0] * Math.abs(l[0]) + p[2] * Math.abs(l[2])) / CELL, (p[0] * Math.abs(a[0]) + p[2] * Math.abs(a[2])) / CELL + p[1] / CELL];
@@ -589,6 +622,21 @@ function buildSteps(st, FH, g, field, root, def) {
     const s0 = i * run, y0 = i * h, b = bk(s0);
     g.quadGrid(O(s0, y0, -wid / 2), l, [0, 1, 0], wid, h, 1, 1, [-a[0], 0, -a[2]], uv, () => b);       // riser
     g.quadGrid(O(s0, y0 + h, -wid / 2), l, a, wid, run, 1, 1, [0, 1, 0], uv, () => b);                // tread
+  }
+  if (st.open) { // free-standing steel flight: stringers, handrails and posts
+    const bx = new BoxBatch(), steel = 0x55595b, b0 = bk(L / 2);
+    for (const side of [-1, 1]) {
+      const w = side * (wid / 2 + 0.05);
+      bx.beam(O(0, -0.1, w), O(L, FH - 0.1, w), 0.22, steel, b0);
+      bx.beam(O(0, 1.0, w), O(L, FH + 1.0, w), 0.05, steel, b0);
+      for (let s = 0.3; s < L; s += 1.2) bx.beam(O(s, s / L * FH, w), O(s, s / L * FH + 1.0, w), 0.04, steel, b0);
+    }
+    const ug = new THREE.BoxGeometry(wid, 0.12, Math.hypot(L, FH));
+    const m = new THREE.Matrix4().lookAt(new THREE.Vector3(...O(0, 0, 0)), new THREE.Vector3(...O(L, FH, 0)), new THREE.Vector3(0, 1, 0));
+    m.setPosition(new THREE.Vector3(...O(L / 2, FH / 2 - 0.12, 0)));
+    ug.applyMatrix4(m); bx._finish(ug, 0x3b3e40, b0);
+    root.add(bx.mesh());
+    return;
   }
   if (!st.escalator) return;
   // escalator: steel side skirts, sloped handrails and glass balustrades
