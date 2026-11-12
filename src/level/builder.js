@@ -2,7 +2,7 @@
 // geometry with baked light, instanced props (chunked for culling), and
 // individually animated doors, lockers and items.
 import * as THREE from 'three';
-import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H } from '../config.js';
+import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y } from '../config.js';
 import { DIRS, EDGE } from './map.js';
 import { bakeMaterial, LightField } from '../render/bake.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -143,10 +143,13 @@ export function buildLevel(gen, assets, def) {
 
   const tex = (k, rx = 1, ry = 1) => { const t = T[k]; t.repeat.set(rx, ry); return t; };
   const mkMat = (map_) => bakeMaterial(new THREE.MeshLambertMaterial({ map: map_ }), 'attr');
-  const meshes = [
-    [floorHall, tex('floor_tile')], [floorRoom, tex('floor_classroom')],
-    [ceil, tex('ceiling_tile')], [wallHall, tex('wall_hall')], [wallRoom, tex('wall_classroom')],
-  ];
+  const THEMES = {
+    pool: ['pool_floor', 'pool_floor', 'pool_ceiling', 'pool_wall', 'pool_wall'],
+    mall: ['mall_floor', 'mall_floor', 'mall_ceiling', 'mall_wall', 'mall_wall'],
+    backroom: ['bk_carpet', 'bk_carpet', 'bk_ceiling', 'bk_wallpaper', 'bk_wallpaper'],
+  };
+  const th = THEMES[def.theme] || ['floor_tile', 'floor_classroom', 'ceiling_tile', 'wall_hall', 'wall_classroom'];
+  const meshes = [[floorHall, tex(th[0])], [floorRoom, tex(th[1])], [ceil, tex(th[2])], [wallHall, tex(th[3])], [wallRoom, tex(th[4])]];
   for (const [gb, t] of meshes) {
     if (!gb.pos.length) continue;
     const m = new THREE.Mesh(gb.build(), mkMat(t));
@@ -154,8 +157,45 @@ export function buildLevel(gen, assets, def) {
     root.add(m);
   }
 
+  // ---------- pool water ----------
+  let waterMat = null;
+  const poolMats = [];
+  if (gen.water.length) {
+    const wt = T.pool_water.clone(); wt.needsUpdate = true;
+    wt.wrapS = wt.wrapT = THREE.RepeatWrapping;
+    waterMat = new THREE.MeshBasicMaterial({ map: wt, color: 0xbfeff2, transparent: true, opacity: 0.72, depthWrite: false });
+    waterMat.userData.base = waterMat.color.clone(); poolMats.push(waterMat);
+    const lm = new THREE.MeshBasicMaterial({ color: 0x24507a }); lm.userData.base = lm.color.clone(); poolMats.push(lm);
+    const cm = new THREE.MeshBasicMaterial({ color: 0xdfe5e4 }); cm.userData.base = cm.color.clone(); poolMats.push(cm);
+    for (const w of gen.water) {
+      const sx = w.maxX - w.minX, sz = w.maxZ - w.minZ;
+      const g = new THREE.PlaneGeometry(sx, sz).rotateX(-Math.PI / 2);
+      const uv = g.getAttribute('uv');
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * sx / 3, uv.getY(i) * sz / 3);
+      const m = new THREE.Mesh(g, waterMat);
+      m.position.set((w.minX + w.maxX) / 2, POOL_Y, (w.minZ + w.maxZ) / 2);
+      m.renderOrder = 2;
+      root.add(m);
+      // dark navy lane lines on the pool floor, seen through the water
+      const alongX = sx >= sz;
+      for (let k = 1.5; k < (alongX ? sz : sx) - 0.5; k += 3) {
+        const lg = new THREE.PlaneGeometry(alongX ? sx - 2 : 0.25, alongX ? 0.25 : sz - 2).rotateX(-Math.PI / 2);
+        const l = new THREE.Mesh(lg, lm);
+        l.position.set(alongX ? (w.minX + w.maxX) / 2 : w.minX + k, 0.008, alongX ? w.minZ + k : (w.minZ + w.maxZ) / 2);
+        root.add(l);
+      }
+      // white coping strip around the edge
+      for (const [cx, cz, ex, ez] of [[(w.minX + w.maxX) / 2, w.minZ - 0.15, sx + 0.6, 0.3], [(w.minX + w.maxX) / 2, w.maxZ + 0.15, sx + 0.6, 0.3],
+        [w.minX - 0.15, (w.minZ + w.maxZ) / 2, 0.3, sz], [w.maxX + 0.15, (w.minZ + w.maxZ) / 2, 0.3, sz]]) {
+        const c = new THREE.Mesh(new THREE.BoxGeometry(ex, 0.06, ez), cm);
+        c.position.set(cx, 0.03, cz);
+        root.add(c);
+      }
+    }
+  }
+
   // ---------- floor decals ----------
-  if (gen.decals.length) {
+  if (gen.decals.length && !def.theme) {
     const dm = bakeMaterial(new THREE.MeshLambertMaterial({ map: T.stain_decal, transparent: true, depthWrite: false, opacity: 0.75 }), 'attr');
     const dg = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const inst = new THREE.InstancedMesh(dg, dm, gen.decals.length);
@@ -240,7 +280,7 @@ export function buildLevel(gen, assets, def) {
   });
 
   root.updateMatrixWorld(true);
-  return { chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats };
+  return { chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, waterMat, poolMats };
 }
 
 function itemLift(type) {

@@ -21,16 +21,22 @@ import hr_lib  # noqa: E402
 import props  # noqa: E402
 import props2  # noqa: E402
 import props3  # noqa: E402
+import props4  # noqa: E402
+import props5  # noqa: E402
 import items  # noqa: E402
 import entities  # noqa: E402
 import entities2  # noqa: E402
 import entities3  # noqa: E402
 import textures  # noqa: E402
+import textures2  # noqa: E402
 import title  # noqa: E402
 
 GROUPS = {
-    "textures": textures.ASSETS,
-    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS},
+    "textures": {**textures.ASSETS, **textures2.ASSETS},
+    "pool": textures2.ASSETS,
+    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS},
+    "figures": props5.ASSETS,
+    "poolprops": props4.ASSETS,
     "lab": props3.ASSETS,
     "items": items.ASSETS,
     "entities": {**entities.ASSETS, **entities2.ASSETS, **entities3.ASSETS},

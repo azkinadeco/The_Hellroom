@@ -4,7 +4,8 @@ export const WALL_H = 3;          // wall / ceiling height
 export const WALL_T = 0.2;        // wall thickness
 export const DOOR_W = 1.1;        // door opening width
 export const DOOR_H = 2.2;
-export const BLOCK = 5;           // corridor pitch: corridor every 5 cells -> 4x4 cell rooms
+export const BLOCK = 5;
+export const POOL_Y = 0.42;      // water surface height in pool rooms           // corridor pitch: corridor every 5 cells -> 4x4 cell rooms
 
 export const PLAYER = {
   radius: 0.3,
@@ -27,7 +28,7 @@ export const PLAYER = {
 
 // Noise radius (meters) emitted by player actions
 export const NOISE = {
-  walk: 7, sprint: 15, crouch: 2.2, door: 9, locker: 5, pickup: 3, gasp: 9, fuse: 8, throw: 14,
+  walk: 7, sprint: 15, crouch: 2.2, splash: 11, door: 9, locker: 5, pickup: 3, gasp: 9, fuse: 8, throw: 14,
 };
 
 // Hideable spots: distances along the front direction (metres)
@@ -75,32 +76,34 @@ export const LEVELS = [
     entities: [{ type: 'gaper' }], hallTheme: 'hall',
   },
   {
-    id: 4, code: 'LEVEL 3', name: 'Sayap Tanpa Listrik',
-    subtitle: 'Yang tinggal di gelap tidak suka cahaya.',
+    id: 4, code: 'LEVEL 3', name: 'Mal Tanpa Ujung',
+    subtitle: 'Semua toko tutup. Semua lorong terlihat sama.',
     seed: 2207, blocksX: 4, blocksZ: 4,
-    lightsOff: 0.6, flicker: 0.35, fog: 0.075,
+    lightsOff: 0.5, flicker: 0.18, fog: 0.05,
     fuses: 4, keys: 1, batteries: 7, notes: 3, erasers: 5,
+    theme: 'mall', clean: true, mergeChance: 0.25, splitChance: 0.45,
+    mainRooms: ['shop'], bigRooms: ['shop'], smallRooms: ['shop', 'shop'],
     entities: [{ type: 'shade' }], hallTheme: 'hall',
   },
   {
-    id: 5, code: 'LEVEL 4', name: 'Kelas 3-C',
-    subtitle: 'Papan tulisnya memperhatikan.',
-    seed: 1313, blocksX: 4, blocksZ: 4,
-    lightsOff: 0.3, flicker: 0.25, fog: 0.065,
-    fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6,
-    bigRooms: ['studyhall', 'library'], smallRooms: ['storage', 'office'],
-    entities: [{ type: 'eyes' }], hallTheme: 'hall',
+    id: 5, code: 'LEVEL 4', name: 'Kolam Renang',
+    subtitle: 'Airnya hangat. Tidak ada yang pernah berenang di sini.',
+    seed: 3112, blocksX: 5, blocksZ: 4,
+    lightsOff: 0.03, flicker: 0.03, fog: 0.03,
+    fuses: 4, keys: 1, batteries: 4, notes: 3, erasers: 7,
+    theme: 'pool', clean: true, mergeChance: 0.8, splitChance: 0.3,
+    mainRooms: ['pool', 'pool', 'changing'], bigRooms: ['pool'], smallRooms: ['changing', 'restroom'],
+    entities: [{ type: 'centipede' }], hallTheme: 'hall',
   },
   {
-    id: 6, code: 'LEVEL 5', name: 'Gedung Olahraga',
-    subtitle: 'Pelajaran olahraga tidak pernah selesai.',
-    seed: 3112, blocksX: 5, blocksZ: 4,
-    lightsOff: 0.4, flicker: 0.3, fog: 0.07,
-    fuses: 4, keys: 2, batteries: 6, notes: 3, erasers: 7,
-    mergeChance: 0.85,
-    bigRooms: ['gym', 'gym', 'studyhall'],
-    smallRooms: ['restroom', 'restroom', 'storage', 'office'],
-    entities: [{ type: 'centipede' }], hallTheme: 'hall',
+    id: 6, code: 'LEVEL 5', name: 'Ruang Patung',
+    subtitle: 'Mereka tidak bergerak. Mereka hanya menunggu.',
+    seed: 1313, blocksX: 5, blocksZ: 4,
+    lightsOff: 0.22, flicker: 0.2, fog: 0.055,
+    fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6,
+    theme: 'backroom', clean: true, mergeChance: 0.6, splitChance: 0.2,
+    mainRooms: ['statues', 'statues', 'shop'], bigRooms: ['statues'], smallRooms: ['statues', 'shop'],
+    entities: [{ type: 'eyes' }], hallTheme: 'hall',
   },
 ];
 
@@ -110,6 +113,11 @@ export const RESIDENTS = ['pale', 'masked', 'gaper', 'shade', 'eyes', 'centipede
 // Endless mode: every floor is a fresh random school that grows harder.
 const ENDLESS_NAMES = ['Lorong Basah', 'Sayap Tanpa Jendela', 'Lantai Bawah Tanah', 'Ruang Guru Kosong', 'Koridor Berulang',
   'Lab Kimia Gelap', 'Aula Upacara', 'Perpustakaan Sunyi', 'Gudang Arsip', 'Kantin Tutup', 'Ruang UKS', 'Ruang Musik'];
+const ENDLESS_THEMES = [null, null,
+  { theme: 'mall', clean: true, mainRooms: ['shop'], bigRooms: ['shop'], smallRooms: ['shop'], labChance: 0 },
+  null,
+  { theme: 'pool', clean: true, mainRooms: ['pool', 'changing'], bigRooms: ['pool'], smallRooms: ['changing', 'restroom'], lightsOff: 0.05 },
+  { theme: 'backroom', clean: true, mainRooms: ['statues', 'shop'], bigRooms: ['statues'], smallRooms: ['statues'] }];
 export function endlessDef(floor, seed) {
   const f = floor;
   // one resident per floor, a different one each time
@@ -126,6 +134,7 @@ export function endlessDef(floor, seed) {
     fuses: Math.min(5, 2 + Math.ceil(f / 2)), keys: Math.min(2, Math.floor(f / 2)), batteries: 4, notes: 2, erasers: 5,
     mergeChance: 0.6,
     bigRooms: ['library', 'studyhall', 'gym'], smallRooms: ['storage', 'office', 'restroom'], labChance: 0.2,
+    ...(ENDLESS_THEMES[f % ENDLESS_THEMES.length] || {}),
     entities, tape: false,
   };
 }

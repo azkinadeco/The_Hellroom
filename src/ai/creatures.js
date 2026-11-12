@@ -28,19 +28,19 @@ export const ENTITY_INFO = {
     hint: 'Si Penganga hanya bergerak saat tidak kamu lihat. Jaga pandanganmu padanya, dan jangan biarkan ia masuk ke kegelapan.',
   },
   shade: {
-    lore: 'Sesuatu yang tumbuh di sayap sekolah yang listriknya sudah lama mati. Tidak ada yang tahu berapa banyak mata yang dimilikinya. Cahaya menyakitinya, dan kegelapan adalah rumahnya.',
+    lore: 'Sesuatu yang tinggal di mal tanpa ujung, di bagian yang lampunya sudah padam. Tidak ada yang tahu berapa banyak mata yang dimilikinya. Cahaya menyakitinya, dan kegelapan adalah rumahnya.',
     name: 'Bayang Kelas',
     death: 'Bayang Kelas menelanmu dalam gelap. Ia tidak bisa masuk ke ruang yang terang, dan cahaya senter membuatnya mundur.',
     hint: 'Bayang Kelas hanya hidup di kegelapan. Tetaplah di bawah lampu, dan sorotkan senter ke arahnya.',
   },
   eyes: {
-    lore: 'Akar-akarnya merambat dari papan tulis ke dinding kelas 3-C. Setiap mata yang menangis hitam itu dulu milik seseorang. Ia tidak bisa berjalan, tapi selalu tahu harus pindah ke papan yang mana.',
+    lore: 'Akar-akarnya merambat di dinding ruang patung dan papan tulis Kelas Malam. Setiap mata yang menangis hitam itu dulu milik seseorang. Ia tidak bisa berjalan, tapi selalu tahu harus pindah ke dinding yang mana.',
     name: 'Mata Papan',
-    death: 'Mata Papan menatapmu terlalu lama. Begitu kamu merasa diperhatikan, putuskan pandangannya: keluar dari jangkauan matanya atau sembunyi.',
-    hint: 'Ada mata di papan tulis. Jangan berdiri dalam pandangannya. Suara keras membuatnya pindah ke papan terdekat.',
+    death: 'Mata Papan menatapmu terlalu lama dari dinding. Begitu kamu merasa diperhatikan, putuskan pandangannya: keluar dari jangkauan matanya atau sembunyi.',
+    hint: 'Ada mata yang tumbuh di dinding. Jangan berdiri dalam pandangannya. Suara keras membuatnya pindah ke dinding terdekat.',
   },
   centipede: {
-    lore: 'Murid-murid yang tidak pernah pulang dari pelajaran olahraga. Mereka sekarang berjalan bersama sebagai satu tubuh, dan semua wajahnya masih menjerit.',
+    lore: 'Murid-murid yang tidak pernah pulang dari pelajaran renang. Mereka sekarang merayap bersama sebagai satu tubuh di kolam putih yang tak berujung, dan semua wajahnya masih menjerit.',
     name: 'Kelabang',
     death: 'Kelabang menangkapmu. Wajah-wajahnya melihat ke segala arah. Kamu tidak bisa menyelinap di belakangnya, jadi putuskan garis pandangnya dengan pintu dan dinding.',
     hint: 'Kelabang melihat ke segala arah, tapi jarak pandangnya pendek. Gunakan dinding dan loker untuk memutus pandangannya.',
@@ -73,7 +73,8 @@ class Pale extends Monitor {
   onNoise(x, z, strength, type) {
     if (this.state === 'attack' || this.state === 'locker') return;
     if (strength > 0.25 || type === 'alert' || type === 'throw') {
-      this.lastSeen = { x, z, t: this.game.time };
+      // heard, not seen: chase the sound but never 'know' which locker you are in
+      this.lastSeen = { x, z, t: -99 };
       this.suspicion = 1.1; this.lostT = 0;
       this.path = null; this.goToWorld(x, z);
       if (this.state !== 'chase') this.setState('chase');
@@ -184,6 +185,19 @@ class Shade extends Entity {
     if (this.path && !this.darkCell(tx, tz)) this.path.pop();   // stop at the edge of the light
     return !!this.path;
   }
+  // boxed in by light: fade out and seep back in from another dark corner, out of sight
+  dissolve() {
+    const g = this.game, m = g.map, p = g.player, cand = [];
+    for (let i = 0; i < m.W * m.H; i++) {
+      if (m.region[i] < 0 || !this.darkIdx(i)) continue;
+      const [x, z] = m.center(i % m.W, (i / m.W) | 0);
+      const d = Math.hypot(x - p.pos.x, z - p.pos.z);
+      if (d > 14 && d < 40) cand.push([x, z]);
+    }
+    if (!cand.length) return;
+    const [x, z] = cand[Math.floor(Math.random() * cand.length)];
+    this.pos.set(x, 0, z); this.path = null;
+  }
   onNoise(x, z) {
     if (this.state === 'flee' || this.state === 'attack' || this.calmT > 0) return;
     this.state = 'stalk'; this.target = { x, z }; this.pathTo(x, z);
@@ -233,6 +247,7 @@ class Shade extends Entity {
           const c = this.darkReach(2, 10);
           const t = c.length ? c[Math.floor(Math.random() * c.length)] : null;
           if (t) this.pathTo(...g.map.center(t[0], t[1]));
+          else if (!g.isSeenByPlayer(this)) this.dissolve();
         }
       } else { speed = this.walk * this.speedMul; this.followPath(dt, speed); }
     } else if (this.state === 'stalk') {
@@ -287,9 +302,11 @@ class Eyes extends Entity {
       if (pr.type !== 'chalkboard') continue;
       out.push({ x: pr.x + Math.sin(pr.rot) * 0.1, z: pr.z + Math.cos(pr.rot) * 0.1, yaw: pr.rot, board: true });
     }
-    // bare hallway walls (every other cell so they do not cluster)
+    // bare walls (every third cell so they do not cluster); rooms too when there are few boards
+    const rooms = out.length < 6;
     for (let z = 0; z < m.H; z++) for (let x = 0; x < m.W; x++) {
-      if (m.reg(x, z) !== 0 || (x + z) % 3) continue;
+      const rg = m.reg(x, z);
+      if (rg < 0 || (rg > 0 && !rooms) || (x + z) % 3) continue;
       for (const d of DIRS) {
         const e = m.edge(x, z, d);
         if (!(e === EDGE.WALL || (e === EDGE.NONE && m.reg(x + d.dx, z + d.dz) < 0))) continue;

@@ -4,13 +4,24 @@ import * as THREE from 'three';
 const frag = /* glsl */`
 precision highp float;
 uniform sampler2D tDiffuse;
-uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery;
+uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery, uClean;
 uniform vec2 uRes;
 varying vec2 vUv;
 
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
 
 void main(){
+  // "Layar jernih": no lens, jitter, tracking, aberration, grain, scanlines or static
+  if (uClean > 0.5) {
+    vec3 c = pow(max(texture2D(tDiffuse, vUv).rgb, 0.0), vec3(1.0 / 2.2));
+    if (uNV > 0.5) { float n = pow(dot(c, vec3(0.3, 0.6, 0.1)) * 2.6, 0.75); c = vec3(0.25, 1.0, 0.35) * n; }
+    vec2 q = vUv - 0.5;
+    c *= mix(0.82, 1.0, smoothstep(0.9, 0.3, length(q * vec2(1.1, 1.25))));
+    c = mix(c, vec3(1.0), uWhite);
+    c *= (1.0 - uFade);
+    gl_FragColor = vec4(c, 1.0);
+    return;
+  }
   vec2 uv = vUv;
   // slight lens barrel
   vec2 cc = uv - 0.5;
@@ -77,7 +88,7 @@ export class VHS {
     this.target.texture.colorSpace = THREE.SRGBColorSpace;
     this.uniforms = {
       tDiffuse: { value: this.target.texture }, uTime: { value: 0 }, uDanger: { value: 0 }, uNV: { value: 0 },
-      uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) },
+      uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uClean: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
     };
     this.mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms,

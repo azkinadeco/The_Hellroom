@@ -36,9 +36,15 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 | LEVEL 0 | Lorong Tak Berujung | Si Pucat |
 | LEVEL 1 | Sayap Detensi | Guru Bertopeng |
 | LEVEL 2 | Lab Biologi | Si Penganga |
-| LEVEL 3 | Sayap Tanpa Listrik (sangat gelap) | Bayang Kelas |
-| LEVEL 4 | Kelas 3-C | Mata Papan |
-| LEVEL 5 | Gedung Olahraga (gym, toilet, final) | Kelabang |
+| LEVEL 3 | Mal Tanpa Ujung (toko-toko kosong yang berulang, separuh gelap) | Bayang Kelas |
+| LEVEL 4 | Kolam Renang (kolam keramik putih yang bersih dan terang, air setinggi lutut) | Kelabang |
+| LEVEL 5 | Ruang Patung (backroom berwallpaper kuning penuh patung tanpa wajah, final) | Mata Papan |
+
+Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker untuk bersembunyi, dan suasana yang janggal (musik mal yang samar, tetesan air kolam, dengung lampu backroom). Di kolam, berjalan di dalam air memperlambat langkahmu dan membuat setiap langkah terdengar jauh.
+
+**Tampilan layar**: di Pengaturan ada pilihan **Jernih HD** yang menghilangkan semua efek kaset rusak (garis, getaran, noise, kedip, dan guncangan saat mati) untuk pemain yang pusing melihatnya.
+
+**Loker**: di dalam loker kamu aman dari serangan langsung. Penghuni hanya bisa menarikmu keluar kalau ia melihatmu masuk, atau kalau ia mendengar napasmu cukup lama saat memeriksa loker (tahan napas!).
 
 **Pilih Room (uji)**: menu khusus pengembangan untuk langsung masuk ke level mana pun. Penghuni bisa diganti (atau dikosongkan untuk jelajah bebas), ada **mode kebal**, dan ada **Galeri Penghuni** untuk memutar model 3D beserta animasinya. Untuk rilis, set `DEV_ROOMS = false` di `src/config.js`, dan menu ini akan hilang.
 

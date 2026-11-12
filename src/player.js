@@ -107,7 +107,8 @@ export class Player {
     // ----- movement -----
     const ax = input.axis();
     const wantSprint = input.sprint() && !this.crouched && ax.y < 0 && !this.exhausted;
-    const speed = this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint : PLAYER.walk;
+    this.wading = !!(this.water && this.water.some((w) => this.pos.x > w.minX && this.pos.x < w.maxX && this.pos.z > w.minZ && this.pos.z < w.maxZ));
+    const speed = (this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint : PLAYER.walk) * (this.wading ? 0.62 : 1);
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     const tx = (ax.x * cos + ax.y * sin) * speed;
     const tz = (-ax.x * sin + ax.y * cos) * speed;
@@ -138,8 +139,14 @@ export class Player {
       if (this.stepDist >= stride) {
         this.stepDist = 0;
         const kind = this.crouched ? 'crouch' : sprinting ? 'sprint' : 'walk';
-        game.audio.footstep(kind);
-        game.emitNoise(this.pos.x, this.pos.z, NOISE[kind], 'step');
+        if (this.wading) {
+          // wading is loud: every step splashes, crouching only softens it
+          game.audio.splash(kind === 'crouch' ? 0.4 : kind === 'sprint' ? 1 : 0.7);
+          game.emitNoise(this.pos.x, this.pos.z, NOISE.splash * (kind === 'crouch' ? 0.5 : kind === 'sprint' ? 1.3 : 1), 'step');
+        } else {
+          game.audio.footstep(kind);
+          game.emitNoise(this.pos.x, this.pos.z, NOISE[kind], 'step');
+        }
       }
     } else this.bob = damp(this.bob, Math.round(this.bob / Math.PI) * Math.PI, 6, dt);
     this.sprinting = sprinting;

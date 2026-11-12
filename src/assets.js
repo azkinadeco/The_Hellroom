@@ -7,11 +7,12 @@ export const MODEL_KEYS = [
   'student_desk', 'teacher_desk', 'chalkboard', 'school_locker', 'locker_bank',
   'door_classroom', 'door_locked', 'exit_door', 'ceiling_light', 'wall_clock',
   'bookshelf', 'trash_bin', 'water_fountain', 'cardboard_box', 'chair_fallen',
-  'fuse_box', 'toilet_stall', 'sink_counter', 'bleachers', 'basketball_hoop', 'lab_bench', 'specimen_shelf', 'anatomy_skeleton', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
+  'fuse_box', 'toilet_stall', 'sink_counter', 'bleachers', 'basketball_hoop', 'lab_bench', 'specimen_shelf', 'anatomy_skeleton', 'pool_ladder', 'lane_rope', 'locker_bench', 'figure_stand', 'figure_reach', 'figure_kneel', 'item_eraser', 'item_fuse', 'item_key', 'item_battery', 'item_note', 'item_tape',
   'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
   'entity_pale', 'entity_masked', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];
-export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal'];
+export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal',
+  'pool_floor', 'pool_wall', 'pool_ceiling', 'pool_water', 'mall_floor', 'mall_wall', 'mall_ceiling', 'bk_wallpaper', 'bk_carpet', 'bk_ceiling'];
 
 // Rough sizes used for fallback boxes [w, h, d] and their color
 const FALLBACK = {
@@ -26,6 +27,8 @@ const FALLBACK = {
   toilet_stall: [0.95, 1.95, 1.4, 0xa7907a], sink_counter: [1.6, 0.9, 0.5, 0xe6e0cf], bleachers: [3.0, 1.5, 2.0, 0xb8864f],
   basketball_hoop: [1.2, 0.8, 0.1, 0xe8e6dd, 2.05],
   lab_bench: [1.8, 0.92, 0.75, 0x1b1d1c], specimen_shelf: [1.2, 1.85, 0.38, 0x4a4f53], anatomy_skeleton: [0.5, 1.8, 0.4, 0xddd3bb],
+  pool_ladder: [0.55, 0.95, 0.45, 0xa3a9ad], lane_rope: [3.0, 0.1, 0.1, 0x2f6fb0], locker_bench: [1.6, 0.45, 0.4, 0xb8895a],
+  figure_stand: [0.5, 1.8, 0.3, 0xd6d2c8], figure_reach: [0.5, 1.8, 0.6, 0xd6d2c8], figure_kneel: [0.5, 1.3, 0.6, 0xd6d2c8],
   item_eraser: [0.14, 0.03, 0.055, 0x8a5a32, -0.015],
   item_note: [0.21, 0.005, 0.28, 0xf0eedc, 0], item_tape: [0.19, 0.025, 0.1, 0x111111, -0.012],
   entity_monitor: [0.6, 2.5, 0.4, 0x8a8f99], entity_substitute: [0.5, 1.8, 0.35, 0xe8e4dc],

@@ -248,3 +248,8 @@ All face three.js +Z, `<Joint>_geo` meshes under joint empties, clips baked per 
 - `specimen_shelf.glb` — 1.2 w x 0.38 d x 1.85 h steel shelf of specimen jars, back against the wall (+Y Blender / −Z three).
 - `anatomy_skeleton.glb` — ~1.95 m anatomy skeleton on a five-wheel stand.
 Used by the new `lab` room type (`def.labChance`).
+
+## Batch 8 — map themes
+- `blender/textures2.py`: `pool_floor`, `pool_wall`, `pool_ceiling`, `pool_water` (scrolled caustics), `mall_floor`, `mall_wall`, `mall_ceiling`, `bk_wallpaper`, `bk_carpet`, `bk_ceiling`. Selected per level with `def.theme` (`pool` / `mall` / `backroom`).
+- `blender/props4.py`: `pool_ladder` (origin on the pool edge, descends toward +Z), `lane_rope` (3 m, placed at water height 0.42), `locker_bench`, `lifeguard_chair` (built, currently unused to keep the pool bare).
+- `blender/props5.py`: `figure_stand`, `figure_reach`, `figure_kneel` featureless plaster figures on a plinth, origin floor centre.

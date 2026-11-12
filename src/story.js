@@ -22,19 +22,19 @@ export const NOTES = {
     { title: 'Gambar di Papan Tulis', body: '[Kapur: sosok membungkuk dengan mulut menganga sampai ke dada.]\n\nDi bawahnya tertulis berulang-ulang:\nJANGAN BERPALING JANGAN BERPALING JANGAN BERPALING' },
   ],
   4: [
-    { title: 'Laporan Penjaga Sekolah', body: 'Listrik sayap timur rusak sejak lama. Lampu yang masih menyala jangan dimatikan.\n\nAnak-anak bilang ada bayangan di ujung lorong yang punya banyak mata. Bayangan itu tidak pernah masuk ke tempat yang terang.' },
-    { title: 'Coretan di Dinding', body: 'SOROTKAN SENTERMU KE MATANYA\n\ndia mundur\ndia selalu mundur\ntapi baterainya tidak pernah cukup' },
-    { title: 'Pengumuman yang Disobek', body: 'Pemadaman bergilir akan dilakukan setiap malam.\n\n(Ditambahkan dengan pulpen:) Kalau lampu padam, Bayang bisa pergi ke mana saja. Ke MANA SAJA.' },
+    { title: 'Denah Mal (Robek)', body: 'Anda berada di sini.\nAnda berada di sini.\nAnda berada di sini.\n\nSetiap lorong di denah ini diberi tanda yang sama. Sudah tiga kali aku melewati toko kosong yang sama dengan bercak yang sama di lantainya.' },
+    { title: 'Coretan di Rolling Door', body: 'SOROTKAN SENTERMU KE MATANYA\n\ndia mundur\ndia selalu mundur\ntapi baterainya tidak pernah cukup\n\nJANGAN KELUAR DARI CAHAYA LAMPU' },
+    { title: 'Pengumuman Pengelola Gedung', body: 'Kepada pengunjung yang terhormat:\nMal akan ditutup sebentar lagi. Lampu akan dipadamkan secara bergilir.\n\n(Ditambahkan dengan pulpen:) Kalau semua lampu padam, Bayang bisa pergi ke mana saja.' },
   ],
   5: [
-    { title: 'Jadwal Pelajaran 3-C', body: 'Senin: Menatap.\nSelasa: Menatap.\nRabu: Menatap.\n\nWali kelas: (tidak ada)\nYang memperhatikan kalian: papan tulis.' },
-    { title: 'Surat dari Ketua Kelas', body: 'Ada mata di papan tulis. Banyak. Akarnya merambat ke dinding.\n\nKalau kamu merasa ditatap, langsung pergi dari pandangannya. Jangan berdiri lama di depannya. Kalau ada suara keras, matanya pindah ke papan yang paling dekat dengan suara itu.' },
-    { title: 'Buku Absen Basah', body: 'Semua nama dicoret, kecuali satu.\n\nDi sebelahnya ada noda hitam yang mengalir ke bawah seperti air mata.' },
+    { title: 'Papan Peraturan Kolam', body: '1. Dilarang berlari di tepi kolam.\n2. Dilarang berteriak.\n3. Dilarang berenang sendirian.\n4. Dilarang menatap ke ujung kolam terlalu lama.\n\nAirnya hanya setinggi lutut, tapi setiap langkah di dalam air terdengar sampai ke ujung gedung.' },
+    { title: 'Kertas Basah di Loker', body: 'Dia punya banyak wajah, dan semuanya melihat ke arah yang berbeda.\nKamu tidak bisa menyelinap di belakangnya. Matanya rabun, jadi jaga jarak dan pakai dinding.\n\nDan JANGAN masuk ke air kalau dia dekat.' },
+    { title: 'Daftar Absen Renang', body: 'Hadir: 14\nPulang: —\n\nCatatan pelatih: "Mereka tidak tenggelam. Mereka hanya… bergabung."' },
   ],
   6: [
-    { title: 'Jadwal Olahraga — Kelas Malam', body: 'Pemanasan: 10 putaran lorong.\nInti: petak umpet.\nPendinginan: tidak ada.\n\nCatatan guru: "Murid-murid yang tidak pernah pulang sekarang berjalan bersama. Sebagai satu tubuh."' },
-    { title: 'Coretan di Bilik Toilet', body: 'DIA PUNYA BANYAK WAJAH\nSEMUA MELIHAT KE ARAH BERBEDA\n\nkamu tidak bisa menyelinap di belakangnya\ntapi matanya rabun. jaga jarak. pakai dinding.' },
-    { title: 'Daftar Nilai Olahraga', body: 'Lari: tidak lulus.\nSembunyi: lulus.\nPulang: —\n\nPintu darurat gedung olahraga adalah satu-satunya pintu yang langsung ke luar. Itu yang dikatakan penjaga sebelum ia berhenti datang.' },
+    { title: 'Label di Kaki Patung', body: 'KARYA SISWA — KELAS MALAM\n"Teman Sekelas"\nBahan: (tidak diketahui)\n\nJumlah patung di ruangan ini berbeda dari kemarin.' },
+    { title: 'Catatan di Wallpaper', body: 'Ada mata yang tumbuh dari dinding. Mereka menatap dari balik patung-patung.\n\nKalau kamu merasa ditatap, langsung pergi dari pandangannya. Suara keras membuatnya pindah ke dinding yang paling dekat dengan suara itu.' },
+    { title: 'Halaman Terakhir Buku Harian', body: 'Pintu darurat itu ada di sini. Aku bisa mendengar bel dari baliknya.\n\nKalau kamu membaca ini, jangan berhenti merekam. Selama kamera merekam, kamu masih nyata.' },
   ],
 };
 
@@ -45,9 +45,9 @@ export const TAPES = {
   1: { title: 'KASET #1 — "Hari Pertama"', body: '[Rekaman goyang. Suara anak laki-laki berbisik.]\n\n"Ini hari pertama Kelas Malam. Bu Guru bilang kami cuma belajar sampai jam sembilan. Sekarang jam… jamnya tidak bergerak.\n\nTadi Dimas lari di lorong. Ada yang merangkak keluar dari kelas, putih, cepat sekali. Dimas belum kembali."\n\n[Desisan panjang. Rekaman terputus.]' },
   2: { title: 'KASET #2 — "Guru Piket"', body: '[Gambar meja guru. Sebuah topeng putih tergeletak di atasnya.]\n\n"Topengnya ada di sini. Jadi siapa yang berjalan di lorong itu?"\n\n[Tok. Tok. Tok. Bunyi penggaris besi dari balik pintu.]' },
   3: { title: 'KASET #3 — "Pelajaran Menatap"', body: '[Gambar papan tulis. Tulisan kapur: JANGAN BERKEDIP.]\n\n"Kami disuruh menatap spesimen itu bergiliran. Yang giliran jaga tidak boleh menoleh.\n\nRina menoleh."\n\n[Gemeretak tulang. Lama. Lalu sunyi.]' },
-  4: { title: 'KASET #4 — "Pemadaman"', body: '[Layar gelap. Hanya titik-titik cahaya putih, berpasangan.]\n\n"Satu… dua… tujuh pasang. Mereka tidak berkedip.\n\nSenterku tinggal satu bar."\n\n[Bisikan. Sangat dekat dengan mikrofon.]' },
-  5: { title: 'KASET #5 — "Ruang Kepala Sekolah"', body: '[Rekaman dari balik pintu yang sedikit terbuka.]\n\nSuara pria tua: "…program ini berhasil. Mereka tidak menua. Mereka tidak lulus. Mereka tidak pernah pergi. Dan sekolah selalu memperhatikan mereka."\n\n"Dan anak yang masih membawa kamera itu?"\n\n"Biarkan dia merekam. Selama dia merekam, dia pikir dia masih nyata."' },
-  6: { title: 'KASET #6 — "Pulang"', body: '[Gambar lapangan basket. Tribun penuh anak-anak yang diam, semua menghadap kamera.]\n\nSuara si pemilik kamera, lebih tua sekarang: "Kalau ada yang menemukan ini… aku sudah coba semua pintu. Pintu darurat itu tidak ke luar. Pintu itu ke awal.\n\nTapi mungkin, kalau kamu cukup cepat, kamu bisa keluar sebelum bel berbunyi lagi."\n\n[Bel sekolah. Semua anak di tribun berdiri bersamaan.]' },
+  4: { title: 'KASET #4 — "Jam Tutup"', body: '[Lorong mal yang terang. Kamera berputar pelan: toko kosong, toko kosong, toko kosong.]\n\n"Aku sudah belok kiri empat kali. Harusnya aku kembali ke tempat awal… dan aku memang kembali ke tempat awal.\n\nLampu di ujung sana baru saja padam. Ada titik-titik putih. Berpasangan."\n\n[Bisikan. Sangat dekat dengan mikrofon.]' },
+  5: { title: 'KASET #5 — "Pelajaran Renang"', body: '[Kolam renang putih yang sangat terang. Airnya tenang. Tidak ada suara selain tetesan.]\n\n"Tidak ada jendela. Tidak ada pintu keluar. Cuma keramik putih sejauh mata memandang.\n\nDi ujung kolam ada sesuatu yang panjang. Ia punya banyak tangan, dan semua wajahnya menoleh ke arahku bersamaan."\n\n[Jeritan banyak mulut. Rekaman terputus.]' },
+  6: { title: 'KASET #6 — "Pulang"', body: '[Ruangan berwallpaper kuning. Puluhan patung putih tanpa wajah, semuanya menghadap kamera.]\n\nSuara si pemilik kamera, lebih tua sekarang: "Kalau ada yang menemukan ini… aku sudah coba semua pintu. Pintu darurat itu tidak ke luar. Pintu itu ke awal.\n\nTapi mungkin, kalau kamu cukup cepat, kamu bisa keluar sebelum bel berbunyi lagi."\n\n[Bel sekolah. Semua patung di ruangan menoleh bersamaan.]' },
 };
 
 // Intercom announcements. kind: flavor (no effect), locate (reveals player), blackout

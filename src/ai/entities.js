@@ -279,8 +279,10 @@ export class Monitor extends Entity {
           this.velocity = 0;
           this.faceToward(L.x, L.z, dt, 10);
           this.inspectT = (this.inspectT || 0) + dt;
-          const caught = this.lockerSure || (p.hidden === L && this.inspectT > 0.6 && !p.holdingBreath && this.inspectT < 3.2);
-          if (caught && p.hidden === L) { this.attack(L); break; }
+          // only a breath it can actually hear for a while gives you away
+          if (p.hidden === L && this.inspectT > 0.6 && !p.holdingBreath && this.game.time - (p.hideT || 0) > 1.0) this.breathHeard += dt;
+          const caught = this.lockerSure || this.breathHeard > 1.3;
+          if (caught && p.hidden === L) { this.game.lockerReason = this.lockerSure ? 'seen' : 'breath'; this.attack(L); break; }
           if (this.inspectT > 3.4) { this.inspectT = 0; this.setState('patrol'); this.waitT = 1; this.suspicion = 0.3; g.onChaseEnd(this); }
         }
         break;
@@ -319,7 +321,7 @@ export class Monitor extends Entity {
   }
 
   targetLocker(L, sure) {
-    this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0;
+    this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0; this.breathHeard = 0;
     this.setState('locker');
     const fd = HIDE[L.kind || 'locker'].inspect;
     const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
@@ -486,7 +488,7 @@ export class Principal extends Entity {
       const fd = HIDE[L.kind || 'locker'].inspect;
       const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
       const done = this.path && this.pathIdx < this.path.length ? this.followPath(dt, this.walk * 1.3) : this.moveToward(fx, fz, dt, this.walk * 1.3, 0.3, true);
-      if ((done || this.distTo({ x: fx, z: fz }) < 0.4) && p.hidden === L) { this.state = 'attack'; g.killPlayer(this, L); }
+      if ((done || this.distTo({ x: fx, z: fz }) < 0.4) && p.hidden === L) { this.state = 'attack'; g.lockerReason = 'seen'; g.killPlayer(this, L); }
       else if (p.hidden !== L) { this.state = 'seek'; }
     } else if (this.state !== 'attack') {
       if (see > 0.15 && this.cd <= 0) {

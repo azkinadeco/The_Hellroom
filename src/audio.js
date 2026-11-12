@@ -32,6 +32,7 @@ export class Audio {
     this._startAmbience();
     this._startChaseBed();
     this.ready = true;
+    if (this._themeWanted !== undefined) this.setTheme(this._themeWanted);
   }
 
   setVolume(v) { this.volume = v; if (this.master) this.master.gain.value = v; }
@@ -110,6 +111,60 @@ export class Audio {
     const room = this._noiseSrc(this.brownBuf), rf = this._filter('lowpass', 260), rg = ctx.createGain();
     rg.gain.value = 0.11; room.connect(rf).connect(rg).connect(this.amb); room.start();
     this.humGain = hum;
+  }
+  // swimming pool: water lapping + echoing drips layered on the ambience bus
+  setPool(on) {
+    if (!this.ready) { this._poolWanted = on; return; }
+    if (!this.poolGain) {
+      const ctx = this.ctx;
+      this.poolGain = ctx.createGain(); this.poolGain.gain.value = 0; this.poolGain.connect(this.amb);
+      const lap = this._noiseSrc(this.brownBuf), lf = this._filter('lowpass', 520, 0.7), lg = ctx.createGain();
+      lg.gain.value = 0.12; lap.connect(lf).connect(lg).connect(this.poolGain); lap.start();
+      const lfo = this._osc('sine', 0.23), lfg = ctx.createGain(); lfg.gain.value = 0.07; lfo.connect(lfg).connect(lg.gain); lfo.start();
+      const wet = ctx.createGain(); wet.gain.value = 0.6; this.poolGain.connect(wet).connect(this.verbIn);
+    }
+    this.poolOn = on;
+    this.poolGain.gain.setTargetAtTime(on ? 1 : 0, this.t, 0.5);
+  }
+  // per-map ambience: pool water, distant slowed mall music, louder backroom hum
+  setTheme(theme) {
+    if (!this.ready) { this._themeWanted = theme; return; }
+    this.setPool(theme === 'pool');
+    if (this.humGain) this.humGain.gain.setTargetAtTime(theme === 'backroom' ? 0.06 : 0.022, this.t, 0.5);
+    if (theme === 'mall' && !this.mallGain) {
+      const ctx = this.ctx;
+      this.mallGain = ctx.createGain(); this.mallGain.gain.value = 0;
+      const lp = this._filter('lowpass', 900, 0.5);
+      lp.connect(this.mallGain); this.mallGain.connect(this.amb);
+      const wet = ctx.createGain(); wet.gain.value = 1.2; this.mallGain.connect(wet).connect(this.verbIn);
+      this.mallOsc = [0, 1, 2].map(() => { const o = this._osc('triangle', 220); const g = ctx.createGain(); g.gain.value = 0.33; o.connect(g).connect(lp); o.start(); return o; });
+      this.mallStep = 0;
+    }
+    if (this.mallGain) this.mallGain.gain.setTargetAtTime(theme === 'mall' ? 0.05 : 0, this.t, 1.5);
+    this.theme = theme;
+  }
+  // called every few seconds: next chord of a slow, slightly detuned muzak loop
+  mallChord() {
+    if (!this.ready || !this.mallOsc || this.theme !== 'mall') return;
+    const chords = [[261.6, 329.6, 392], [220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7]];
+    const c = chords[this.mallStep++ % chords.length];
+    this.mallOsc.forEach((o, i) => o.frequency.setTargetAtTime(c[i] * 0.94 * (1 + (Math.random() - 0.5) * 0.006), this.t, 0.6));
+  }
+  drip() {
+    if (!this.ready || !this.poolOn) return;
+    const t = this.t, f = 900 + Math.random() * 900;
+    const o = this._osc('sine', f), g = this.ctx.createGain(); g.gain.value = 0.0001;
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 2.2, t + 0.06);
+    g.connect(this.poolGain); o.connect(g); this._env(g, t, 0.003, 0.05, 0.12); o.start(t); o.stop(t + 0.2);
+  }
+  splash(vol = 0.7) {
+    if (!this.ready) return;
+    const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const f = this._filter('bandpass', 1400 + Math.random() * 900, 0.9), g = this._out(null, 0.5);
+    f.frequency.exponentialRampToValueAtTime(500, t + 0.25);
+    src.connect(f).connect(g); this._env(g, t, 0.01, 0.35 * vol, 0.28); src.start(t, Math.random()); src.stop(t + 0.35);
+    const o = this._osc('sine', 260 + Math.random() * 80), og = this._out(null, 0.3);
+    o.frequency.exponentialRampToValueAtTime(140, t + 0.12); o.connect(og); this._env(og, t, 0.005, 0.12 * vol, 0.1); o.start(t); o.stop(t + 0.15);
   }
   setAmbience(on) {
     if (!this.ready) return;
@@ -466,6 +521,19 @@ export class Audio {
     for (const f of [55, 58.3, 82.4, 110, 116.5]) { const o = this._osc('sawtooth', f); o.connect(ws); o.start(t); o.stop(t + 1.8); }
     const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf; src.connect(ws); src.start(t); src.stop(t + 1.8);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.7, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+  }
+  // resident-specific layer on top of the jumpscare hit
+  sting(kind, pos) {
+    if (!this.ready) return;
+    const p = pos ? { x: pos.x, y: 1.5, z: pos.z } : null;
+    const map = { pale: () => this.hiss(p), masked: () => { this.rulerTap(p, 1.4); setTimeout(() => this.rulerTap(p, 1.4), 90); }, gaper: () => { this.bones(p); this.scream(p); },
+      shade: () => this.whisper(p, 1.6), eyes: () => { this.squelch(p, 1.5); this.squelch(p, 1.2); }, centipede: () => this.chorus(p),
+      monitor: () => this.whistle(p), principal: () => this.paVoice(1, p) };
+    (map[kind] || (() => this.scream(p)))();
+    // deep sub drop
+    const t = this.t, o = this._osc('sine', 90), g = this._out(null, 0);
+    o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(28, t + 1.2);
+    o.connect(g); this._env(g, t, 0.01, 0.9, 1.3); o.start(t); o.stop(t + 1.4);
   }
   gasp() {
     if (!this.ready) return;

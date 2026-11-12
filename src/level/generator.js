@@ -3,7 +3,7 @@
 // segments keeps the halls connected while removed segments merge blocks into
 // big rooms (library / study hall) or become solid wall. Blocks become
 // classrooms, or are split into offices / storage rooms.
-import { BLOCK, CELL, WALL_T } from '../config.js';
+import { POOL_Y, BLOCK, CELL, WALL_T } from '../config.js';
 import { RNG } from '../util/rng.js';
 import { LevelMap, DIRS, EDGE } from './map.js';
 
@@ -17,7 +17,7 @@ export function generateLevel(def, seed = def.seed) {
   const map = new LevelMap(W, H);
   const out = {
     map, rooms: [], props: [], colliders: [], lockers: [], lights: [], items: [],
-    start: null, exit: null, fusebox: null, decals: [],
+    start: null, exit: null, fusebox: null, decals: [], water: [],
   };
 
   // ---------- 1. corridor graph & spanning tree ----------
@@ -68,11 +68,11 @@ export function generateLevel(def, seed = def.seed) {
   for (let j = 0; j < bz; j++) for (let i = 0; i < bx; i++) {
     if (blockRoom.has(i + ',' + j)) continue;
     const [x0, z0, x1, z1] = bCells(i, j);
-    if (rng.chance(0.28)) {
+    if (rng.chance(def.splitChance ?? 0.28)) {
       const types = rng.shuffle([...(def.smallRooms || ['storage', 'office', 'restroom'])]);
       if (rng.chance(0.5)) { newRoom(x0, z0, x0 + 1, z1, types[0]); newRoom(x0 + 2, z0, x1, z1, types[1]); }
       else { newRoom(x0, z0, x1, z0 + 1, types[0]); newRoom(x0, z0 + 2, x1, z1, types[1]); }
-    } else newRoom(x0, z0, x1, z1, def.labChance && rng.chance(def.labChance) ? 'lab' : 'classroom');
+    } else newRoom(x0, z0, x1, z1, def.mainRooms ? rng.pick(def.mainRooms) : def.labChance && rng.chance(def.labChance) ? 'lab' : 'classroom');
   }
 
   // ---------- 3. doors ----------
@@ -194,7 +194,7 @@ export function generateLevel(def, seed = def.seed) {
   for (const r of out.rooms) furnishRoom(r, map, rng, out);
 
   // ---------- 7. hallway dressing (lockers, fountains, clocks) ----------
-  dressHalls(map, rng, out, reserved);
+  dressHalls(map, rng, out, reserved, !!def.clean);
 
   // ---------- 8. lights ----------
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
@@ -423,6 +423,65 @@ function furnishRoom(r, map, rng, out) {
     }
     if (rng.chance(0.7)) lockerOnBackWall(W_ / 2);
     const [bx2, bz2] = at(0.5, 0.5); emitProp(out, 'trash_bin', bx2, bz2, rng.range(0, 6), [0.4, 0.4, 0.5]);
+  } else if (r.type === 'pool') {
+    // knee-deep water filling the room, leaving a 1.5 m tiled deck all round
+    const x0 = r.x0 * CELL + 1.5, x1 = (r.x1 + 1) * CELL - 1.5, z0 = r.z0 * CELL + 1.5, z1 = (r.z1 + 1) * CELL - 1.5;
+    out.water.push({ minX: x0, maxX: x1, minZ: z0, maxZ: z1 });
+    // lane ropes along the long axis on the cell boundary lines
+    const alongX = x1 - x0 >= z1 - z0;
+    if (alongX) {
+      for (let zz = r.z0 + 1; zz <= r.z1; zz++) for (let xx = r.x0; xx <= r.x1; xx++) {
+        const cx = (xx + 0.5) * CELL; if (cx - 1.5 < x0 - 0.01 || cx + 1.5 > x1 + 0.01) continue;
+        emitProp(out, 'lane_rope', cx, zz * CELL, 0, null, { y: POOL_Y });
+      }
+    } else {
+      for (let xx = r.x0 + 1; xx <= r.x1; xx++) for (let zz = r.z0; zz <= r.z1; zz++) {
+        const cz = (zz + 0.5) * CELL; if (cz - 1.5 < z0 - 0.01 || cz + 1.5 > z1 + 0.01) continue;
+        emitProp(out, 'lane_rope', xx * CELL, cz, Math.PI / 2, null, { y: POOL_Y });
+      }
+    }
+    // ladders on the two short edges, lifeguard chair on the deck
+    const midX = (x0 + x1) / 2, midZ = (z0 + z1) / 2;
+    if (alongX) { emitProp(out, 'pool_ladder', x0, midZ + 1.5, Math.PI / 2, null); emitProp(out, 'pool_ladder', x1, midZ - 1.5, -Math.PI / 2, null); }
+    else { emitProp(out, 'pool_ladder', midX + 1.5, z0, 0, null); emitProp(out, 'pool_ladder', midX - 1.5, z1, Math.PI, null); }
+    // nothing else: the pool rooms stay bare, bright and silent
+    if (rng.chance(0.35)) lockerOnBackWall(1.0);
+    for (const [u, v] of [[0.75, D / 2], [W_ - 0.75, D / 2], [W_ / 2, 0.75], [W_ / 2, D - 0.75]]) spot(u, v, 0.02);
+  } else if (r.type === 'shop') {
+    // empty mall unit: nothing at all, just echoing tile
+    spot(W_ / 2, D / 2, 0.02); spot(1.0, D - 1.0, 0.02); spot(W_ - 1.0, 1.0, 0.02);
+  } else if (r.type === 'statues') {
+    // bare room full of featureless figures, all turned the same wrong way
+    const kinds = ['figure_stand', 'figure_stand', 'figure_reach', 'figure_kneel'];
+    const [ccx, ccz] = at(W_ / 2, D / 2);
+    const faceCentre = rng.chance(0.5);
+    for (let v = 0.75; v < D - 0.5; v += 1.5) for (let u = 0.75; u < W_ - 0.5; u += 1.5) {
+      if (((u + 0.75) / 1.5) % 2 === 0 && ((v + 0.75) / 1.5) % 2 === 0) continue;   // keep cell centres walkable
+      if (!rng.chance(0.3)) continue;
+      const [x, z] = at(u + rng.range(-0.15, 0.15), v + rng.range(-0.15, 0.15));
+      const rot = faceCentre ? Math.atan2(ccx - x, ccz - z) : faceFront + rng.range(-0.08, 0.08);
+      emitProp(out, rng.pick(kinds), x, z, rot, [0.5, 0.5, 1.8]);
+    }
+    spot(W_ / 2, D / 2, 0.02); spot(1.5, 1.5, 0.02); spot(W_ - 1.5, D - 1.5, 0.02);
+  } else if (r.type === 'changing') {
+    // changing room: walls lined with hideable lockers, benches down the middle
+    const lineWall = (fr, startU, endU) => {
+      const rot = yawFor(fr.n[0], fr.n[1]);
+      for (let u = startU; u <= endU; u += 0.66) {
+        if (sideHasDoorNear(r, fr, u - 0.5, u + 0.5)) continue;
+        const [x, z] = fr.toWorld(u, wallOff + 0.3);
+        out.lockers.push({ kind: 'locker', x, z, rot });
+        out.colliders.push(aabb(x, z, 0.62, 0.58, rot));
+      }
+    };
+    lineWall(back, 0.6, W_ - 0.6);
+    if (D > 7) lineWall(f, 0.6, W_ - 0.6);
+    for (let v = 3; v < D - 1; v += 3) for (let u = 3; u < W_ - 1; u += 3) {
+      const [x, z] = at(u, v);
+      emitProp(out, 'locker_bench', x, z, faceIn, [1.6, 0.4, 0.45]);
+      r.spots.push([x, 0.47, z]);
+    }
+    spot(W_ / 2, D / 2, 0.02);
   } else if (r.type === 'library') {
     // shelves on the cell-boundary lines, aisles along cell centers
     for (let v = 3; v < D - 1; v += 3) for (let u = 3; u < W_ - 1; u += 3) {
@@ -524,11 +583,11 @@ function aabb(x, z, w, d, rot) {
   return { minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz, h: 2 };
 }
 
-function dressHalls(map, rng, out, reserved) {
+function dressHalls(map, rng, out, reserved, clean = false) {
   const { W, H } = map;
   const hideCount = new Map(); // corridor-run id -> lockers
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
-    if (map.reg(x, z) !== 0) continue;
+    if (clean || map.reg(x, z) !== 0) continue;   // clean themes: bare halls, only the safety lockers below
     const [cx, cz] = map.center(x, z);
     let axis = null;
     const walls = DIRS.filter((d) => map.edge(x, z, d) === EDGE.WALL && !reserved.has(map.edgeKey(x, z, d)));

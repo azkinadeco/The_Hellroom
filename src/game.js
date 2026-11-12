@@ -52,9 +52,13 @@ export class Game {
     const s = this.settings;
     const high = s.quality === 'high';
     this.pixelRatio = Math.min(devicePixelRatio || 1, high ? 1.5 : 1);
-    this.baseScale = (high ? 1 : 0.7) * (this.input.touch ? 0.8 : 1);
+    this.clear = s.screen === 'clear';
+    // clear HD: sharper image (full resolution) and none of the broken-tape effects
+    this.baseScale = this.clear ? (high ? 1 : 0.9) : (high ? 1 : 0.7) * (this.input.touch ? 0.8 : 1);
     this.vhs.scale = this.baseScale;
-    this.vhs.enabled = s.vhs;
+    this.vhs.enabled = true;
+    this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
+    document.body.classList.toggle('clear-screen', this.clear);
     this.input.sensitivity = s.sens;
     this.input.invertY = s.invertY;
     this.audio.setVolume(s.volume);
@@ -62,7 +66,7 @@ export class Game {
   }
   resize() {
     const w = innerWidth, h = innerHeight;
-    this.renderer.setPixelRatio(this.vhs.enabled ? 1 : this.pixelRatio);
+    this.renderer.setPixelRatio(1);
     this.renderer.setSize(w, h, false);
     this.vhs.setSize(w, h, this.pixelRatio);
     this.camera.aspect = w / h;
@@ -92,6 +96,8 @@ export class Game {
     const p = this.player;
     p.spawn(this.gen.start.x, this.gen.start.z, this.gen.start.yaw);
     p.battery = 100; p.flashlight = false; p.nightVision = false;
+    p.water = this.gen.water;
+    this.audio.setTheme(def.theme || null); this.themeT = 0;
     this.camera.fov = 72; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0 };
     this.projectiles = [];
@@ -105,8 +111,10 @@ export class Game {
     this.stats = { spotted: 0, notes: 0 };
     this.busy = false;
     this.deathT = -1; this.winT = -1;
-    this.glitch = 0; this.danger = 0; this.gazeFx = 0;
+    this.glitch = 0; this.danger = 0; this.gazeFx = 0; this.deathRoll = 0; this.deathDrop = 0;
+    this.vhs.uniforms.uFade.value = 0;
     this.chasers.clear();
+    this.lockerReason = null;
     this.met = this.met || new Set();
     this.input.resetToggles();
 
@@ -185,6 +193,14 @@ export class Game {
   killPlayer(entity, locker = null) {
     const p = this.player;
     if (!p.alive) return;
+    // inside (or climbing into) a hiding spot only a resident that pulls the door open can get you
+    if ((p.hidden || p.entering) && !locker) {
+      entity.state = entity.kind === 'shade' ? 'lurk' : entity.kind === 'eyes' ? 'watch' : 'patrol';
+      entity.waitT = 1.5; entity.path = null;
+      // a hunter that lost you at the door checks the hiding spot instead (hold your breath!)
+      if (p.hidden && entity.targetLocker) entity.targetLocker(p.hidden, false);
+      return;
+    }
     if (this.godMode) { // test rooms: shrug the hit off and throw the resident back
       this.hud.toast(`Mode kebal: serangan ${(ENTITY_INFO[entity.kind] || {}).name || ''} diabaikan`, 2);
       this.audio.stinger();
@@ -209,6 +225,8 @@ export class Game {
       p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
     }
     this.audio.jumpscare();
+    this.audio.sting(entity.kind, entity.pos);
+    this.ui.scare && this.ui.scare(this.clear);
     this.input.resetToggles();
   }
 
@@ -221,12 +239,14 @@ export class Game {
     this.audio.lockerClang({ x: L.x, y: 1, z: L.z }, 0.35);
     this.emitNoise(L.x, L.z, NOISE.locker, 'locker');
     const entering = !p.hidden;
+    if (entering) p.entering = true;
     setTimeout(() => {
+      p.entering = false;
       if (!p.alive) { this.busy = false; return; }
       if (entering) {
         L.viewYaw = L.rot + Math.PI;
         L.camX = L.x + Math.sin(L.rot) * h.cam; L.camZ = L.z + Math.cos(L.rot) * h.cam;
-        p.hidden = L; p.crouched = false;
+        p.hidden = L; p.crouched = false; p.hideT = this.time;
         p.yaw = L.viewYaw; p.pitch = 0;
         p.flashlight = false;
         this.hud.toast(this.input.touch ? 'Tahan tombol NAPAS saat ada yang mendekat' : 'Tahan SPASI untuk menahan napas', 2.5);
@@ -383,7 +403,7 @@ export class Game {
     danger = Math.max(danger, chase * 0.55);
     this.danger = damp(this.danger, danger, 3, dt);
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);
-    let interference = this.danger > 0.45 ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
+    let interference = this.danger > 0.45 && !this.clear ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
     this.world.blackout = this.blackoutT > 0;
     if (this.blackoutT > 0) { this.blackoutT -= dt; interference = this.blackoutT < 0.6 || Math.random() < 0.02 ? 0.6 : 0.1; }
     bakeUniforms.uFlicker.value = this.flickerVal;
@@ -391,26 +411,48 @@ export class Game {
     if (this.built.fixtureMats.flicker) this.built.fixtureMats.flicker.emissiveIntensity = this.flickerVal;
     if (this.built.fixtureMats.on) this.built.fixtureMats.on.emissiveIntensity = bakeUniforms.uPower.value;
     bakeUniforms.uNV.value = p.nightVision ? 0.55 : 0;
+    this.themeT -= dt;
+    if (this.themeT <= 0) {
+      if (this.def.theme === 'pool') { this.themeT = 0.8 + Math.random() * 3; this.audio.drip(); }
+      else if (this.def.theme === 'mall') { this.themeT = 4.5; this.audio.mallChord(); }
+      else this.themeT = 99;
+    }
+    // pool water: drifting caustics, dims with the lights
+    if (this.built.waterMat) {
+      const m = this.built.waterMat.map; m.offset.x = (this.time * 0.021) % 1; m.offset.y = (Math.sin(this.time * 0.3) * 0.03 + this.time * 0.012) % 1;
+      const k = 0.15 + 0.85 * bakeUniforms.uPower.value * (this.world.blackout ? 0.15 : 1) + (p.nightVision ? 0.4 : 0);
+      for (const pm of this.built.poolMats) pm.color.copy(pm.userData.base).multiplyScalar(Math.min(1.2, k));
+    }
     this.ambient.intensity = p.nightVision ? 0.4 : 0.05;
 
-    // death sequence
+    // death sequence: snap to the resident's face, FOV punch, fall, cut to static
     if (this.deathT >= 0) {
       this.deathT += dt;
-      const k = this.killer;
-      const hy = k.headNode ? k.headNode.getWorldPosition(new THREE.Vector3()).y : 1.7;
+      const k = this.killer, T = this.deathT;
+      const head = k.headNode ? k.headNode.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(k.pos.x, 1.7, k.pos.z);
       const dx = k.pos.x - p.camera.position.x, dz = k.pos.z - p.camera.position.z;
-      const tYaw = Math.atan2(-dx, -dz);
-      const tPitch = Math.atan2(hy - p.camera.position.y, Math.hypot(dx, dz));
-      let dy = tYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
-      p.yaw += dy * Math.min(1, dt * 14); p.pitch += (tPitch - p.pitch) * Math.min(1, dt * 14);
-      p.lookLock = true;
-      // pull the entity right into the camera
-      const want = 0.75;
       const dist = Math.hypot(dx, dz);
-      if (dist > want) { k.pos.x -= (dx / dist) * Math.min(dist - want, dt * 6); k.pos.z -= (dz / dist) * Math.min(dist - want, dt * 6); }
-      p.camera.position.x += (Math.random() - 0.5) * 0.04; p.camera.position.y += (Math.random() - 0.5) * 0.04;
-      this.glitch = clamp(this.deathT * 0.8, 0, 1);
-      if (this.deathT > 1.7 && this.state === 'playing') {
+      // pull it right up to the lens and make it face us
+      const want = k.kind === 'centipede' ? 1.0 : k.kind === 'eyes' ? 0.9 : 0.62;
+      if (dist > want) { const step = Math.min(dist - want, dt * (T < 0.25 ? 14 : 5)); k.pos.x -= (dx / dist) * step; k.pos.z -= (dz / dist) * step; }
+      k.yaw = Math.atan2(-dx, -dz);
+      const hx = head.x - p.camera.position.x, hz = head.z - p.camera.position.z;
+      const tYaw = Math.atan2(-hx, -hz);
+      const tPitch = Math.atan2(head.y - p.camera.position.y, Math.hypot(hx, hz));
+      let dy = tYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      const snap = Math.min(1, dt * (T < 0.3 ? 30 : 10));
+      p.yaw += dy * snap; p.pitch += (tPitch - p.pitch) * snap;
+      p.lookLock = true;
+      // lens punch-in, then the camcorder drops
+      const fovT = T < 0.12 ? 44 : T < 1.0 ? 50 : 50 + (T - 1.0) * 30;
+      this.camera.fov += (fovT - this.camera.fov) * Math.min(1, dt * 18); this.camera.updateProjectionMatrix();
+      this.deathRoll = T > 1.0 ? Math.min(1.3, (T - 1.0) * 2.4) : 0;
+      this.deathDrop = T > 1.0 ? Math.min(1.1, (T - 1.0) * 2.0) : 0;
+      if (!this.clear) { p.camera.position.x += (Math.random() - 0.5) * 0.05 * (T < 1 ? 1 : 0.3); p.camera.position.y += (Math.random() - 0.5) * 0.05 * (T < 1 ? 1 : 0.3); }
+      // short tear on impact, a clean look at its face, then the tape breaks up
+      this.glitch = this.clear ? 0 : T < 0.08 ? 0.7 : T < 1.0 ? 0.04 : clamp((T - 1.0) * 1.2, 0, 1);
+      this.vhs.uniforms.uFade.value = clamp((T - 1.35) / 0.35, 0, 1);
+      if (T > 1.75 && this.state === 'playing') {
         this.state = 'dead';
         this.audio.setAmbience(false);
         this.ui.showDeath(this.deathCause(k));
@@ -436,7 +478,11 @@ export class Game {
 
   render(t) {
     const u = this.vhs.uniforms;
-    u.uDanger.value = this.state === 'playing' ? this.danger : 0;
+    if (this.deathT >= 0 && this.deathRoll) {
+      this.camera.rotation.z += this.deathRoll * 0.9;
+      this.camera.position.y -= this.deathDrop;
+    }
+    u.uDanger.value = this.state === 'playing' ? (this.deathT >= 0 && this.deathT < 1 ? 0.15 : this.danger) : 0;
     u.uNV.value = this.player.nightVision ? 1 : 0;
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
@@ -567,7 +613,6 @@ export class Game {
     }
   }
   adaptResolution(dt) {
-    if (!this.vhs.enabled) return;
     this.frameEma += (this.realDt - this.frameEma) * 0.05;
     this.perfT += dt;
     if (this.perfT < 2) return;
@@ -590,6 +635,9 @@ export class Game {
   }
 
   deathCause(k) {
+    const why = this.lockerReason; this.lockerReason = null;
+    if (why === 'seen') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihatmu masuk ke ${k.lockerTarget && k.lockerTarget.kind === 'stall' ? 'bilik' : 'loker'}. Bersembunyilah saat tidak sedang terlihat.`;
+    if (why === 'breath') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} mendengar napasmu. Saat ada yang mendekati tempat persembunyianmu, tahan napas (${this.input.touch ? 'tombol NAPAS' : 'SPASI'}) sampai langkahnya pergi.`;
     if (this.blackoutT > 0 && (k.kind === 'substitute' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
     return (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';
   }

@@ -16,9 +16,17 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { hints: [], tapes: [], met: [], notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', vhs: true, invertY: false, subs: true } };
+const defaults = { hints: [], tapes: [], met: [], notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', screen: 'vhs', invertY: false, subs: true } };
 function loadSave() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) return { ...defaults, ...s, settings: { ...defaults.settings, ...s.settings } }; } catch (_) { /* private mode */ }
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (s) {
+      const st = { ...defaults.settings, ...s.settings };
+      if (s.settings && s.settings.vhs === false && !s.settings.screen) st.screen = 'clear'; // old toggle
+      delete st.vhs;
+      return { ...defaults, ...s, settings: st };
+    }
+  } catch (_) { /* private mode */ }
   return structuredClone(defaults);
 }
 const save = loadSave();
@@ -45,6 +53,11 @@ let noteFromArchive = false;
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 const ui = {
+  scare(clear) {
+    const el = $('scare');
+    el.className = clear ? 'soft' : 'hard';
+    void el.offsetWidth; el.classList.add('go');
+  },
   pause() {
     if (game.state !== 'playing') return;
     game.state = 'paused';
@@ -63,6 +76,7 @@ const ui = {
     show('note');
   },
   showDeath(cause) {
+    $('scare').className = '';
     input.enabled = false; releasePointer();
     hud.show(false); $('touch-layer').classList.add('hidden');
     if (game.def.endless) {
@@ -288,16 +302,16 @@ function openBeast(k) {
 function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
-  $('set-vhs').checked = s.vhs; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
+  $('set-screen').value = s.screen; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
 }
 function readSettings() {
   const s = save.settings;
   s.sens = +$('set-sens').value; s.volume = +$('set-vol').value; s.quality = $('set-quality').value;
-  s.vhs = $('set-vhs').checked; s.invertY = $('set-inv').checked; s.subs = $('set-subs').checked;
+  s.screen = $('set-screen').value; s.invertY = $('set-inv').checked; s.subs = $('set-subs').checked;
   persist();
   if (game) game.applySettings();
 }
-for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-vhs', 'set-inv', 'set-subs']) $(id).addEventListener('input', readSettings);
+for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs']) $(id).addEventListener('input', readSettings);
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');
