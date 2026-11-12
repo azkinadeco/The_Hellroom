@@ -206,3 +206,84 @@ function poolrooms(b, rng) {
 }
 const SIDES_ = { E: [1, 0], W: [-1, 0], S: [0, 1], N: [0, -1] };
 LAYOUTS.poolrooms = poolrooms;
+
+// ---------------------------------------------------------------------------
+// LEVEL 3 — Mal: three floors of shops round a central atrium you can see
+// every floor from, with escalators in the void and a skylight on top. Glass
+// shop fronts, some shutters down. East of the mall, behind a passage, sits a
+// whole housing estate under the mall roof: a street, houses with tiled
+// roofs, lamp posts and a parked car, three storeys of mall looking down.
+//   ring x 10 / 19, z 8 / 17 · atrium x 11..18, z 9..16 · street x 25..33
+// ---------------------------------------------------------------------------
+function mall(b, rng) {
+  const F = b.F;
+  // shop with a glass front on every hall-facing edge and an open entrance in
+  // the middle; closed shops keep their shutters down
+  const shop = (f, x0, z0, x1, z1, name, open = true, type = 'shop2') => {
+    const r = f.room(x0, z0, x1, z1, type, { sign: name, mallSign: true, noLock: true });
+    const front = [];
+    for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) for (const s of ['N', 'S', 'W', 'E']) {
+      const d = SIDES_[s];
+      if (f.map.reg(x + d[0], z + d[1]) === 0) front.push({ x, z, s });
+    }
+    if (!front.length) return r;
+    const bySide = {};
+    for (const e of front) (bySide[e.s] = bySide[e.s] || []).push(e);
+    const side = Object.keys(bySide).sort((a, c) => bySide[c].length - bySide[a].length)[0];
+    const list = bySide[side], mid = list[Math.floor(list.length / 2)];
+    r.storefront = { side, list, mid };
+    r.frontPref = { N: 'S', S: 'N', W: 'E', E: 'W' }[side];
+    for (const e of list) {
+      if (open && e === mid) f.arch(e.x, e.z, e.s);
+      else if (open) f.map.glassKeys.add(f.edgeKey(e.x, e.z, e.s));
+      else r.shutters = list;
+    }
+    if (!open) { r.noItems = true; r.noLights = true; r.closed = true; }
+    return r;
+  };
+  for (const f of F) { f.hall(10, 8, 19, 8); f.hall(10, 17, 19, 17); f.hall(10, 8, 10, 17); f.hall(19, 8, 19, 17); }
+  F[0].hall(11, 9, 18, 16);                              // plaza under the atrium
+  F[1].void(11, 9, 18, 16); F[2].void(11, 9, 18, 16); F[2].sky(11, 9, 18, 16);
+  // west corridor + lobby, east passage to the estate
+  F[0].hall(1, 11, 9, 13);
+  for (const k of [1, 2]) F[k].hall(5, 11, 9, 13);
+  for (const f of F) f.hall(20, 12, 23, 13);
+  F[0].hall(24, 12, 24, 13);
+  // ---- ground floor shops
+  shop(F[0], 3, 3, 9, 10, 'DEPARTEMEN STORE', true, 'dept');
+  shop(F[0], 10, 3, 12, 7, 'TOKO SEPATU'); shop(F[0], 13, 3, 15, 7, 'OPTIK'); shop(F[0], 16, 3, 19, 7, 'MAINAN', false);
+  shop(F[0], 3, 14, 9, 21, 'SWALAYAN', true, 'market');
+  shop(F[0], 10, 18, 13, 22, 'KASET & CD'); shop(F[0], 14, 18, 16, 22, 'JAM TANGAN', false); shop(F[0], 17, 18, 19, 22, 'BUSANA');
+  shop(F[0], 20, 8, 24, 11, 'ELEKTRONIK'); shop(F[0], 20, 14, 24, 17, 'SALON', false);
+  // ---- first floor
+  shop(F[1], 3, 3, 9, 10, 'DEPARTEMEN STORE 2', true, 'dept');
+  shop(F[1], 10, 3, 12, 7, 'BUKU'); shop(F[1], 13, 3, 15, 7, 'FOTO STUDIO', false); shop(F[1], 16, 3, 19, 7, 'MAINAN');
+  shop(F[1], 3, 14, 9, 21, 'GAME CENTER', true, 'dept');
+  shop(F[1], 10, 18, 13, 22, 'ROTI', false); shop(F[1], 14, 18, 16, 22, 'KACAMATA'); shop(F[1], 17, 18, 19, 22, 'SEPEDA');
+  shop(F[1], 20, 8, 23, 11, 'TOKO EMAS'); shop(F[1], 20, 14, 23, 17, 'APOTEK');
+  // ---- second floor
+  const fc = F[2].room(10, 3, 19, 7, 'kantin', { sign: 'PUJASERA', mallSign: true, noLock: true, frontPref: 'N' });
+  for (let x = 10; x <= 19; x++) F[2].arch(x, 7, 'S');
+  shop(F[2], 3, 3, 9, 10, 'BIOSKOP', true, 'cinema');
+  shop(F[2], 3, 14, 9, 21, 'ARENA BERMAIN', false);
+  shop(F[2], 10, 18, 13, 22, 'SALON'); shop(F[2], 14, 18, 16, 22, 'TOKO KUE', false); shop(F[2], 17, 18, 19, 22, 'TOKO KAIN');
+  shop(F[2], 20, 8, 23, 11, 'ELEKTRONIK'); shop(F[2], 20, 14, 23, 17, 'BUSANA');
+  // ---- escalators in the atrium, a lift by the lobby
+  b.stair(0, 13, 15, 'W', 3, { escalator: true, mat: 'mall_floor' });
+  F[1].hall(11, 9, 12, 9); F[2].hall(16, 9, 18, 9);
+  b.stair(1, 13, 9, 'E', 3, { escalator: true, mat: 'mall_floor' });
+  b.lift(4, 12, 'E', [0, 1, 2]);
+  // ---- the estate: a street under the mall roof, houses on both sides
+  const street = F[0].room(25, 3, 33, 22, 'street', { sign: null, noLock: true, noLights: true, mat: { floor: 'asphalt', wall: 'house_wall' } });
+  F[0].arch(25, 12, 'W'); F[0].arch(25, 13, 'W');
+  for (const k of [1, 2]) { F[k].void(25, 3, 33, 22); F[k].hall(24, 3, 24, 22); }
+  F[2].sky(25, 3, 33, 22);
+  const names = ['No. 1', 'No. 3', 'No. 5', 'No. 7', 'No. 2', 'No. 4', 'No. 6', 'No. 8'];
+  let n = 0;
+  for (const z0 of [3, 7, 15, 19]) { const h = F[0].room(26, z0, 28, z0 + 2, 'house', { sign: names[n++], mat: { floor: 'floor_classroom', wall: 'wall_classroom' } }); F[0].door(h, 28, z0 + 1, 'E'); }
+  for (const z0 of [3, 8, 13, 18]) { const h = F[0].room(31, z0, 33, z0 + 2, 'house', { sign: names[n++], mat: { floor: 'floor_classroom', wall: 'wall_classroom' } }); F[0].door(h, 31, z0 + 1, 'W'); }
+  void street;
+  b.start = { k: 2, room: fc };
+  b.exit = { k: 0, x: 1, z: 12, side: 'W' };
+}
+LAYOUTS.mall = mall;

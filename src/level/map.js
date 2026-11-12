@@ -3,7 +3,7 @@
 // above: no floor, railings round it), 0 = hallway, >=1 = room id
 import { CELL, DOOR_W } from '../config.js';
 
-export const EDGE = { NONE: 0, OPEN: 1, WALL: 2, DOOR: 3, RAIL: 4 };
+export const EDGE = { NONE: 0, OPEN: 1, WALL: 2, DOOR: 3, RAIL: 4, GLASS: 5 };
 export const VOID = -2;
 export const DIRS = [
   { dx: 1, dz: 0, name: 'E' },
@@ -22,7 +22,7 @@ export class LevelMap {
     this.exitKey = null;
     this.lit = new Uint8Array(W * H);       // 1 if the cell has a working light
     // hand-made layouts: archways between regions, railings, forced walls
-    this.openKeys = new Set(); this.railKeys = new Set(); this.wallKeys = new Set();
+    this.openKeys = new Set(); this.railKeys = new Set(); this.wallKeys = new Set(); this.glassKeys = new Set();
   }
   inside(x, z) { return x >= 0 && z >= 0 && x < this.W && z < this.H; }
   reg(x, z) { return this.inside(x, z) ? this.region[x + z * this.W] : -1; }
@@ -61,6 +61,7 @@ export class LevelMap {
     if (a === -1 || b === -1) return EDGE.WALL;
     if (this.wallKeys.has(k)) return EDGE.WALL;
     if (this.openKeys.has(k)) return EDGE.OPEN;
+    if (this.glassKeys.has(k)) return EDGE.GLASS;
     if (this.railKeys.has(k)) return EDGE.RAIL;
     if (a === b) return EDGE.OPEN;
     if (a === VOID || b === VOID) return EDGE.RAIL;   // balcony edge over an atrium

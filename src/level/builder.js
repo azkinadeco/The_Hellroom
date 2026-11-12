@@ -132,6 +132,11 @@ export function buildLevel(gen, assets, def, ctx = {}) {
       const tan = cross([0, 1, 0], normal);
       const uvFn = (p) => [(p[0] * Math.abs(tan[0]) + p[2] * Math.abs(tan[2])) / CELL, p[1] / WALL_H];
       const bakeFn = (p) => field.sample(p[0], Math.min(p[1], WALL_H), p[2], normal[0], 0, normal[2], c);
+      if (map.edge(x, z, d) === EDGE.GLASS) {   // shop window: only the header above it is wall
+        const off = CELL / 2 - WALL_T / 2, px = c[0] + d.dx * off, pz = c[1] + d.dz * off;
+        wb.quadGrid([px + tan[0] * -CELL / 2, 2.55, pz + tan[2] * -CELL / 2], tan, [0, 1, 0], CELL, top - 2.55, 4, 1, normal, uvFn, bakeFn);
+        continue;
+      }
       if (!isSolid(x, z, d)) {
         // fascia: the slab edge between this ceiling and an open space next door
         const nx = x + d.dx, nz = z + d.dz, ni = nx + nz * map.W;
@@ -178,8 +183,9 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   // ---------- stairs / escalators ----------
   for (const st of gen.steps || []) buildSteps(st, FH, gb(st.mat || texFor(0, 'floor')), field, root, def);
 
-  // ---------- railings round open space ----------
+  // ---------- railings round open space, shop windows ----------
   buildRails(map, gen, def, root, field, gb, texFor, openAbove);
+  buildGlass(map, root, field);
 
   const tex = (k) => { const t = T[k]; if (!t) console.warn('missing texture', k); return t || T.wall_hall; };
   const mkMat = (map_) => bakeMaterial(new THREE.MeshLambertMaterial({ map: map_ }), 'attr');
@@ -608,6 +614,29 @@ function buildRails(map, gen, def, root, field, gb, texFor, openAbove) {
   if (glass.length) { const gm = new THREE.Mesh(mergeGeometries(glass, false), GLASS); gm.renderOrder = 3; root.add(gm); }
 }
 
+// full-height shop windows with slim mullions
+function buildGlass(map, root, field) {
+  const boxes = new BoxBatch(), glass = [], seen = new Set();
+  for (let z = 0; z < map.H; z++) for (let x = 0; x < map.W; x++) for (const d of DIRS) {
+    if (map.reg(x, z) < 0 || map.edge(x, z, d) !== EDGE.GLASS) continue;
+    const k = map.edgeKey(x, z, d);
+    if (seen.has(k)) continue; seen.add(k);
+    const [cx, cz] = map.center(x, z);
+    const px = cx + d.dx * CELL / 2, pz = cz + d.dz * CELL / 2;
+    const rot = d.dx !== 0 ? Math.PI / 2 : 0, tx = d.dz !== 0 ? 1 : 0, tz = d.dx !== 0 ? 1 : 0;
+    const bk = field.sample(cx, 1.4, cz, null, null, null, null);
+    boxes.add(CELL, 0.12, WALL_T, px, 0.06, pz, rot, 0x3d4245, bk);
+    boxes.add(CELL, 0.08, WALL_T, px, 2.55, pz, rot, 0x3d4245, bk);
+    for (const s of [-1.5, 0, 1.5]) boxes.add(0.07, 2.5, WALL_T, px + tx * s, 1.3, pz + tz * s, 0, 0x3d4245, bk);
+    const g = new THREE.PlaneGeometry(CELL, 2.4);
+    g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(px, 1.32, pz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot), new THREE.Vector3(1, 1, 1)));
+    glass.push(g);
+  }
+  const m = boxes.mesh(); if (m) root.add(m);
+  if (glass.length) { const gm = new THREE.Mesh(mergeGeometries(glass, false), SHOPGLASS); gm.renderOrder = 3; root.add(gm); }
+}
+const SHOPGLASS = new THREE.MeshBasicMaterial({ color: 0x8fa3a6, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide });
+
 // a straight flight of steps (or an escalator) rising FH over the shaft cells
 function buildSteps(st, FH, g, field, root, def) {
   const a = [st.d.dx, 0, st.d.dz], l = [-st.d.dz, 0, st.d.dx];
@@ -689,24 +718,27 @@ function skyMesh(cells) {
 
 // painted room-name plates above doors: one atlas, one draw call
 function signsMesh(signs, field) {
-  const texts = [...new Set(signs.map((s) => s.text))];
+  const keyOf = (s) => (s.style || 'plate') + '|' + s.text;
+  const texts = [...new Set(signs.map(keyOf))];
   const RH = 96, c = document.createElement('canvas'); c.width = 512; c.height = RH * texts.length;
   const g = c.getContext('2d');
-  texts.forEach((t, i) => {
+  const STY = { plate: ['#1f3a2c', '#d8cfb2', '#e8e0c6'], mall: ['#ece6d8', '#a8342c', '#a8342c'], neon: ['#141414', '#3fa7b3', '#7fe3ee'] };
+  texts.forEach((key, i) => {
+    const [st, t] = key.split('|'), [bg, line, fg] = STY[st] || STY.plate;
     const y = i * RH;
-    g.fillStyle = '#1f3a2c'; g.fillRect(0, y, 512, RH);
-    g.strokeStyle = '#d8cfb2'; g.lineWidth = 6; g.strokeRect(8, y + 8, 496, RH - 16);
-    g.fillStyle = '#e8e0c6'; g.font = 'bold 50px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = bg; g.fillRect(0, y, 512, RH);
+    g.strokeStyle = line; g.lineWidth = 6; g.strokeRect(8, y + 8, 496, RH - 16);
+    g.fillStyle = fg; g.font = 'bold 50px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText(t, 256, y + 52, 470);
   });
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = false;
   const geos = signs.map((sg) => {
-    const pg = new THREE.PlaneGeometry(1.15, 0.22);
-    const i = texts.indexOf(sg.text), uv = pg.attributes.uv;
+    const pg = new THREE.PlaneGeometry(sg.w || 1.15, sg.h || 0.22);
+    const i = texts.indexOf(keyOf(sg)), uv = pg.attributes.uv;
     for (let k = 0; k < uv.count; k++) uv.setY(k, (i + (1 - uv.getY(k))) / texts.length);
     pg.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(sg.x, sg.y, sg.z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sg.rot), new THREE.Vector3(1, 1, 1)));
     const b = field.sample(sg.x, 2.3, sg.z, null, null, null, null), n = pg.attributes.position.count, bk = new Float32Array(n * 2);
-    for (let k = 0; k < n; k++) { bk[k * 2] = Math.max(0.12, b[0]); bk[k * 2 + 1] = b[1]; }
+    for (let k = 0; k < n; k++) { bk[k * 2] = Math.max(sg.style === 'mall' ? 0.45 : 0.12, b[0]); bk[k * 2 + 1] = b[1]; }
     pg.setAttribute('bake', new THREE.BufferAttribute(bk, 2));
     return pg;
   });

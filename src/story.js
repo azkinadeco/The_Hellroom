@@ -22,7 +22,7 @@ export const NOTES = {
     { title: 'Memo Direksi — Bangsal Taman', body: 'Bangsal Taman di lantai dasar DITUTUP.\n\nKami tidak menanam pohon-pohon itu. Mereka tumbuh dari ranjang pasien dalam satu malam dan atapnya sekarang menunjukkan langit.\n\nJangan berpaling di antara pepohonan. Di sana ia bisa berdiri di balik batang mana saja.' },
   ],
   4: [
-    { title: 'Denah Mal (Robek)', body: 'Anda berada di sini.\nAnda berada di sini.\nAnda berada di sini.\n\nSetiap lorong di denah ini diberi tanda yang sama. Sudah tiga kali aku melewati toko kosong yang sama dengan bercak yang sama di lantainya.' },
+    { title: 'Denah Mal (Robek)', body: 'Lantai 1 — Plaza, Swalayan, Departemen Store.\nLantai 2 — Game Center, Toko Emas.\nLantai 3 — Pujasera, Bioskop.\n\nDi sayap timur denah ini ada kotak yang ditandai "PERUMAHAN — JANGAN DIKUNJUNGI". Mal tidak punya perumahan. Tapi dari balkon lantai atas aku bisa melihat atap-atap rumah, dan satu jendela yang lampunya menyala.' },
     { title: 'Coretan di Rolling Door', body: 'SOROTKAN SENTERMU KE MATANYA\n\ndia mundur\ndia selalu mundur\ntapi baterainya tidak pernah cukup\n\nJANGAN KELUAR DARI CAHAYA LAMPU' },
     { title: 'Pengumuman Pengelola Gedung', body: 'Kepada pengunjung yang terhormat:\nMal akan ditutup sebentar lagi. Lampu akan dipadamkan secara bergilir.\n\n(Ditambahkan dengan pulpen:) Kalau semua lampu padam, Bayang bisa pergi ke mana saja.' },
   ],

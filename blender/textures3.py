@@ -100,7 +100,35 @@ def lift_wall():
     return _finish("lift_wall", col)
 
 
+def asphalt():
+    """Worn residential road: grey-black asphalt, cracks, a faded centre line
+    along one edge of the tile (the road is two tiles wide)."""
+    rng = np.random.default_rng(131)
+    g = rng.random((N, N))
+    col = hexc("#3a3b3a")[None, None, :] * (0.8 + 0.3 * g)[..., None]
+    col = col * (0.85 + 0.25 * fbm(rng, 4, 5, 0.6))[..., None]
+    crack = smooth(0.018, 0.0, np.abs(fbm(rng, 6, 3, 0.5) - 0.5))
+    col = col * (1 - 0.5 * crack)[..., None]
+    return _finish("asphalt", col)
+
+
+def house_wall():
+    """Painted plaster house wall over a stone plinth (walls: 512 px = 3 m)."""
+    rng = np.random.default_rng(132)
+    ppm = N / 3.0
+    h = (N - Y) / ppm
+    col = hexc("#d9cfae")[None, None, :] * (0.9 + 0.14 * fbm(rng, 5, 6, 0.55))[..., None]
+    plinth = h < 0.5
+    st = hexc("#7d776b")[None, None, :] * (0.8 + 0.3 * rng.random((N, N)))[..., None]
+    col = np.where(plinth[..., None], st, col)
+    mould = smooth(0.62, 0.8, fbm(rng, 6, 3, 0.5)) * (h < 1.2)
+    col = col * (1 - 0.25 * mould)[..., None]
+    return _finish("house_wall", col)
+
+
 ASSETS = {
+    "asphalt": asphalt,
+    "house_wall": house_wall,
     "paving": paving,
     "hosp_floor": hosp_floor,
     "hosp_wall": hosp_wall,

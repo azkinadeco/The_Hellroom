@@ -77,12 +77,10 @@ export const LEVELS = [
   },
   {
     id: 4, code: 'LEVEL 3', name: 'Mal Tanpa Ujung',
-    subtitle: 'Semua toko tutup. Semua lorong terlihat sama.',
-    seed: 2207, blocksX: 4, blocksZ: 4,
-    lightsOff: 0.5, flicker: 0.18, fog: 0.05,
+    subtitle: 'Tiga lantai, satu atrium, dan sebuah perumahan yang seharusnya tidak ada di dalamnya.',
+    seed: 2207, layout: 'mall', size: [34, 26], floors: 3, theme: 'mall', clean: true, rail: 'glass', seeAll: true,
+    lightsOff: 0.45, flicker: 0.18, fog: 0.045, lockerReach: 5,
     fuses: 4, keys: 1, batteries: 7, notes: 3, erasers: 5,
-    theme: 'mall', clean: true, mergeChance: 0, splitChance: 0, lockerReach: 7, regularDoors: true, periodicLights: true,
-    mainRooms: ['shop'], bigRooms: ['shop'], smallRooms: ['shop', 'shop'],
     entities: [{ type: 'shade' }], hallTheme: 'hall',
   },
   {

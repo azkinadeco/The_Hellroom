@@ -13,11 +13,12 @@ export const MODEL_KEYS = [
   'medicine_cabinet', 'canteen_table', 'canteen_counter',
   'hospital_bed', 'iv_stand', 'wheelchair', 'gurney', 'gurney_body', 'reception_desk', 'waiting_chairs', 'ward_curtain',
   'morgue_drawers', 'surgery_table', 'surgery_lamp', 'xray_viewer', 'med_cart', 'tree_pine', 'tree_dead', 'bush', 'lift_panel', 'wall_handrail', 'slide_top', 'diving_board',
+  'store_shelf', 'rolling_shutter', 'plaza_fountain', 'mall_kiosk', 'clothes_rack', 'house_sofa', 'crt_tv', 'family_table', 'house_bed', 'mailbox', 'old_car', 'house_roof',
   'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
   'entity_pale', 'entity_masked', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];
 export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal',
-  'pool_floor', 'pool_wall', 'pool_ceiling', 'pool_water', 'mall_floor', 'mall_wall', 'mall_ceiling', 'bk_wallpaper', 'bk_carpet', 'bk_ceiling', 'paving', 'hosp_floor', 'hosp_wall', 'forest_ground', 'forest_wall', 'lift_wall'];
+  'pool_floor', 'pool_wall', 'pool_ceiling', 'pool_water', 'mall_floor', 'mall_wall', 'mall_ceiling', 'bk_wallpaper', 'bk_carpet', 'bk_ceiling', 'paving', 'hosp_floor', 'hosp_wall', 'forest_ground', 'forest_wall', 'lift_wall', 'asphalt', 'house_wall'];
 
 // Rough sizes used for fallback boxes [w, h, d] and their color
 const FALLBACK = {
