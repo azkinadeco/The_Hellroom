@@ -628,6 +628,7 @@ export class Game {
       }
     }
     this.doorSys.update(dt);
+    this.cullDoors();
     for (const L of this.built.lockers) {
       const tgt = L.target || 0;
       if (Math.abs(L.angle - tgt) > 0.001) L.setDoor(damp(L.angle, tgt, 14, dt));
@@ -871,6 +872,17 @@ export class Game {
       const show = f.built.root.visible;
       for (const d of f.built.doors) if (d.obj) d.obj.visible = show && (d.x - c.x) ** 2 + (d.z - c.z) ** 2 < far * far;
       for (const m of f.built.hideMeshes || []) m.visible = show && m.userData.pts.some(([x, z]) => (x - c.x) ** 2 + (z - c.z) ** 2 < far * far);
+    }
+  }
+  // doors are one batch per model: each frame keep only the ones in fog range and in view
+  cullDoors() {
+    const cam = this.camera, c = cam.position, far = this.player.nightVision ? 40 : 34;
+    cam.updateMatrixWorld();
+    this._frus = this._frus || new THREE.Frustum(); this._pv = this._pv || new THREE.Matrix4();
+    this._frus.setFromProjectionMatrix(this._pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    for (const f of this.floors) {
+      const show = f.built.root.visible;
+      for (const b of f.built.doorBatches || []) { b.cull(c.x, c.z, far, show, this._frus, f.built.root.matrixWorld); b.refresh(); }
     }
   }
   adaptResolution(dt) {

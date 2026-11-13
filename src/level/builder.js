@@ -378,17 +378,16 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   const lockers = [...hideKinds].flatMap(([k, list]) => inst.addLockers(list, HIDE[k].model, HIDE[k], hideMeshes));
 
   // ---------- doors ----------
-  const doors = [];
-  for (const door of map.doors.values()) {
-    const key = door.locked ? 'door_locked' : 'door_classroom';
-    const obj = cloneWithBake(assets.models[key], field.sample(door.x, 1.2, door.z, null, null, null, null));
-    obj.position.set(door.x, 0, door.z);
-    // door model faces +Z; rotate so its local Z axis is along the door normal
-    obj.rotation.y = Math.atan2(door.inX, door.inZ);
-    const leaf = obj.getObjectByName('DoorLeaf');
-    root.add(obj);
-    door.obj = obj; door.leaf = leaf; door.baseRot = leaf ? leaf.rotation.y : 0;
-    doors.push(door);
+  // one dynamic batch per door model (frame parts + leaf parts): only the
+  // doors inside the fog distance are written, so far doors cost nothing and
+  // the whole floor's doors take a handful of draw calls instead of 3 each
+  const doors = [], doorBatches = [];
+  for (const key of ['door_classroom', 'door_locked']) {
+    const list = [...map.doors.values()].filter((d) => (d.locked ? 'door_locked' : 'door_classroom') === key);
+    if (!list.length || !assets.models[key]) continue;
+    const batch = new DoorBatch(assets.models[key], list, field, root);
+    doorBatches.push(batch);
+    for (const d of list) doors.push(d);
   }
 
   // ---------- exit + fuse box ----------
@@ -471,7 +470,8 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     // walls and floors just receive — residents add theirs in game.js
     o.castShadow = !!solid && !o.isInstancedMesh && !o.geometry.attributes.bake;
   });
-  return { lifts, chunked: inst.chunked, root, field, lockers, hideMeshes, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, glowMats: glows.mats, waterMat, poolMats, figures };
+  for (const b of doorBatches) { b.refresh(); for (const m of b.meshes) m.castShadow = true; }   // doors still throw flashlight shadows
+  return { lifts, chunked: inst.chunked, root, field, lockers, hideMeshes, doorBatches, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, glowMats: glows.mats, waterMat, poolMats, figures };
 }
 
 function itemLift(type) {
@@ -512,6 +512,102 @@ export function cloneWithBake(model, bakeVal, minLight = 0, classify = null) {
   return obj;
 }
 
+// Doors of one model as one dynamic batch per material: frame and leaf share a
+// geometry; leaf vertices (attribute hinge = 1) swing about the pivot in the
+// vertex shader by the per-instance angle, so opening a door is one float.
+const HINGE_MATS = new Map();
+function hingeMaterial(src, pivot) {
+  const key = src.uuid + pivot.join(',');
+  if (HINGE_MATS.has(key)) return HINGE_MATS.get(key);
+  const base = bakeMaterial(src, 'attr');
+  const m = base.clone();
+  m.userData = base.userData;
+  m.onBeforeCompile = (sh, r) => {
+    base.onBeforeCompile(sh, r);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>\nattribute float hinge;\nattribute float ang;\nconst vec3 HP = vec3(${pivot.map((v) => v.toFixed(4)).join(', ')});`)
+      .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+        float hc = cos(ang * hinge), hs = sin(ang * hinge);
+        objectNormal = vec3(hc * objectNormal.x + hs * objectNormal.z, objectNormal.y, -hs * objectNormal.x + hc * objectNormal.z);`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        { vec3 q = transformed - HP; transformed = HP + vec3(hc * q.x + hs * q.z, q.y, -hs * q.x + hc * q.z); }`);
+  };
+  const k0 = base.customProgramCacheKey();
+  m.customProgramCacheKey = () => k0 + '-hinge' + pivot.join(',');
+  HINGE_MATS.set(key, m);
+  return m;
+}
+class DoorBatch {
+  constructor(model, doors, field, root) {
+    model.updateMatrixWorld(true);
+    const leafNode = model.getObjectByName('DoorLeaf');
+    const inLeaf = (o) => { let p = o; while (p) { if (p === leafNode) return true; p = p.parent; } return false; };
+    const frame = [], leaf = [];
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      (leafNode && inLeaf(o) ? leaf : frame).push({ mesh: o, matrix: o.matrixWorld.clone() });
+    });
+    const pv = new THREE.Vector3().setFromMatrixPosition(leafNode ? leafNode.matrixWorld : new THREE.Matrix4());
+    const pivot = [pv.x, pv.y, pv.z];
+    // bring every part into model space with a hinge flag, then merge per material
+    const byMat = new Map();
+    for (const [list, h] of [[mergeParts(frame), 0], [mergeParts(leaf), 1]]) for (const p of list) {
+      const g = p.mesh.geometry.clone().applyMatrix4(p.matrix);
+      for (const n of Object.keys(g.attributes)) if (!['position', 'normal', 'color', 'uv'].includes(n)) g.deleteAttribute(n);
+      g.setAttribute('hinge', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(h), 1));
+      const mat = p.mesh.material;
+      if (!byMat.has(mat)) byMat.set(mat, []);
+      byMat.get(mat).push(g.index ? g.toNonIndexed() : g);
+    }
+    this.doors = doors;
+    const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+    this.base = doors.map((d) => new THREE.Matrix4().compose(new THREE.Vector3(d.x, 0, d.z), q.setFromAxisAngle(up, Math.atan2(d.inX, d.inZ)), one));
+    this.bk = doors.map((d) => field.sample(d.x, 1.2, d.z, null, null, null, null));
+    this.angle = new Float32Array(doors.length);
+    this.meshes = [];
+    for (const [mat, geos] of byMat) {
+      let geo = geos.length > 1 ? mergeGeometries(geos, false) : geos[0];
+      if (!geo) geo = geos[0];
+      geo.setAttribute('bake', new THREE.InstancedBufferAttribute(new Float32Array(doors.length * 2), 2));
+      geo.setAttribute('ang', new THREE.InstancedBufferAttribute(new Float32Array(doors.length), 1));
+      for (const n of ['bake', 'ang']) geo.attributes[n].setUsage(THREE.DynamicDrawUsage);
+      const im = new THREE.InstancedMesh(geo, hingeMaterial(mat, pivot), doors.length);
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      im.frustumCulled = false; im.count = 0; im.name = 'doors';
+      root.add(im);
+      this.meshes.push(im);
+    }
+    doors.forEach((d, i) => { d.obj = null; d.leaf = null; d.setLeaf = (a) => { this.angle[i] = a; this.dirty = true; }; });
+    this.vis = doors.map((_, i) => i);   // all, until the game first culls
+    this.dirty = true;
+  }
+  // keep the doors within `far` of (cx, cz) that the camera frustum can see
+  cull(cx, cz, far, show, frustum = null, rootMatrix = null) {
+    const v = [], sp = this._sp || (this._sp = new THREE.Sphere(new THREE.Vector3(), 1.7));
+    if (show) for (let i = 0; i < this.doors.length; i++) {
+      const d = this.doors[i];
+      if ((d.x - cx) ** 2 + (d.z - cz) ** 2 >= far * far) continue;
+      if (frustum) { sp.center.set(d.x, 1.1, d.z); if (rootMatrix) sp.center.applyMatrix4(rootMatrix); if (!frustum.intersectsSphere(sp)) continue; }
+      v.push(i);
+    }
+    if (v.length !== this.vis.length || v.some((x, k) => x !== this.vis[k])) { this.vis = v; this.dirty = true; }
+  }
+  refresh() {
+    if (!this.dirty) return;
+    this.dirty = false;
+    for (const im of this.meshes) {
+      const bake = im.geometry.attributes.bake, ang = im.geometry.attributes.ang;
+      this.vis.forEach((di, k) => {
+        im.setMatrixAt(k, this.base[di]);
+        bake.array[k * 2] = this.bk[di][0]; bake.array[k * 2 + 1] = this.bk[di][1];
+        ang.array[k] = this.angle[di];
+      });
+      im.count = this.vis.length; im.visible = im.count > 0;
+      im.instanceMatrix.needsUpdate = true; bake.needsUpdate = true; ang.needsUpdate = true;
+    }
+  }
+}
+
 class Instancer {
   constructor(assets, field, root) {
     this.assets = assets; this.field = field; this.root = root;
@@ -550,12 +646,13 @@ class Instancer {
       g.bakes.push(b[0], b[1]);
     });
   }
-  addLockers(list, key, h = HIDE.locker, meshesOut = null) {
+  // static body batched per chunk, the moving part (node `nodeName`) one dynamic batch for the whole list
+  addLockers(list, key, h = HIDE.locker, meshesOut = null, nodeName = 'Door') {
     if (!list.length) return [];
     const model = this.assets.models[key];
     if (!model) { console.warn('missing model', key); return []; }
     model.updateMatrixWorld(true);
-    const doorNode = model.getObjectByName('Door');
+    const doorNode = model.getObjectByName(nodeName);
     const inDoor = (o) => { let p = o; while (p) { if (p === doorNode) return true; p = p.parent; } return false; };
     const bodyParts = this.flatten(key, (o) => !inDoor(o));
     let doorParts = [];

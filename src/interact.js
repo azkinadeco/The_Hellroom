@@ -27,7 +27,10 @@ export class DoorSystem {
       const prev = d.openAmount;
       d.openAmount = damp(d.openAmount, d.target, d.target ? 5 : 7, dt);
       if (Math.abs(d.openAmount - d.target) < 0.002) d.openAmount = d.target;
-      if (d.leaf && prev !== d.openAmount) d.leaf.rotation.y = d.baseRot + OPEN_ANGLE * d.openAmount;
+      if (prev !== d.openAmount) {
+        if (d.setLeaf) d.setLeaf(OPEN_ANGLE * d.openAmount);
+        else if (d.leaf) d.leaf.rotation.y = d.baseRot + OPEN_ANGLE * d.openAmount;
+      }
     }
   }
 }
