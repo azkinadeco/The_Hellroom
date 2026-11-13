@@ -14,6 +14,8 @@ export const bakeUniforms = {
 };
 
 const cache = new Map();
+// glazed-tile materials on props get a world-space grout grid (kept out of vertex-colour merging)
+export const TILE_RE = /^(PoolTile|Tile(White|Pillar|Bench)?)(\.|_|$)/;
 
 // fine grain tiled over level surfaces so they stay crisp up close
 let DETAIL = null;
@@ -64,6 +66,9 @@ export function bakeMaterial(src, mode = 'attr') {
   const relief = !!src.normalMap;
   // falling water (water curtains, shower streams): streaks that run down
   const water = /^Fall/.test(src.name || '') && !!src.transparent;
+  // glazed tile on props (tunnels, pillars, benches): grout grid and grime in world space
+  const tile = !water && TILE_RE.test(src.name || '');
+  const wpos = water || tile;
   m.userData.bake = local;
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, bakeUniforms);
@@ -73,13 +78,32 @@ export function bakeMaterial(src, mode = 'attr') {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + decl + 'varying vec2 vBake;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n vBake = ' + (mode === 'attr' ? 'bake' : 'uLocalBake') + ';' +
-        (water ? '\n { vec4 wp = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\n wp = instanceMatrix * wp;\n#endif\n vWPos = (modelMatrix * wp).xyz; }' : ''));
-    if (water) shader.vertexShader = shader.vertexShader.replace('varying vec2 vBake;', 'varying vec2 vBake;\nvarying vec3 vWPos;');
+        (wpos ? '\n { vec4 wp = vec4(transformed, 1.0); vec4 wn = vec4(objectNormal, 0.0);\n#ifdef USE_INSTANCING\n wp = instanceMatrix * wp; wn = instanceMatrix * wn;\n#endif\n vWPos = (modelMatrix * wp).xyz; vWN = normalize((modelMatrix * wn).xyz); }' : ''));
+    if (wpos) shader.vertexShader = shader.vertexShader.replace('varying vec2 vBake;', 'varying vec2 vBake;\nvarying vec3 vWPos;\nvarying vec3 vWN;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vBake;\nuniform float uFlicker;\nuniform float uPower;\nuniform vec3 uBakeTint;\nuniform float uNV;' +
         (relief ? '\nuniform sampler2D uDetail;' : '') +
-        (water ? '\nvarying vec3 vWPos;\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
-      .replace('#include <map_fragment>', '#include <map_fragment>' + (relief ? `
+        (wpos ? '\nvarying vec3 vWPos;\nvarying vec3 vWN;' : '') +
+        (water || tile ? '\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
+      .replace('#include <map_fragment>', '#include <map_fragment>' + (tile ? `
+        { // pick the projection the surface faces most, 15 cm tiles
+          vec3 an = abs(vWN);
+          vec2 tp = an.y > max(an.x, an.z) ? vWPos.xz : an.x > an.z ? vWPos.zy : vWPos.xy;
+          tp /= 0.15;
+          vec2 cellI = floor(tp), f = fract(tp);
+          vec2 fw = max(fwidth(tp), vec2(1e-4));
+          vec2 gl = smoothstep(vec2(0.0), fw * 1.2 + 0.035, f) * smoothstep(vec2(0.0), fw * 1.2 + 0.035, 1.0 - f);
+          float grout = 1.0 - gl.x * gl.y;
+          grout *= 1.0 - smoothstep(0.25, 0.6, max(fw.x, fw.y));      // fade the grid out where it would shimmer
+          float var = wh(cellI) - 0.5;
+          diffuseColor.rgb *= (1.0 + var * 0.09) * (1.0 - grout * 0.38);
+          // grime: rising damp off the floor, rust-brown runs and blotches
+          float damp = smoothstep(0.9, 0.0, vWPos.y) * (0.55 + 0.45 * wn(vWPos.xz * 1.3 + vWPos.y));
+          float runs = smoothstep(0.55, 0.88, wn(vec2((vWPos.x + vWPos.z) * 6.0, vWPos.y * 0.35))) * smoothstep(0.4, 2.4, vWPos.y);
+          float blot = smoothstep(0.5, 0.82, wn(vWPos.xz * 0.9 + vWPos.y * 0.7) * 0.65 + wn(vWPos.xy * 3.1 + vWPos.zz) * 0.35);
+          vec3 dirt = vec3(0.42, 0.36, 0.26);
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * dirt, clamp(damp * 0.75 + runs * 0.7 + blot * 0.55 + grout * damp * 0.4, 0.0, 0.85));
+        }` : '') + (relief ? `
         { float dg = texture2D(uDetail, vMapUv * 7.0).r * 0.6 + texture2D(uDetail, vMapUv * 23.0).r * 0.4;
           float fade = smoothstep(9.0, 2.0, length(vViewPosition));
           diffuseColor.rgb *= 1.0 + (dg - 0.5) * 0.22 * fade; }` : ''))
@@ -104,7 +128,7 @@ export function bakeMaterial(src, mode = 'attr') {
           reflectedLight.indirectDiffuse += uBakeTint * bk * fres * ${gloss.toFixed(2)} * 0.55;
         }` : ''}`);
   };
-  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '') + (water ? '-w' : '');
+  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '') + (water ? '-w' : '') + (tile ? '-t' : '');
   if (mode === 'attr') cache.set(key, m);
   return m;
 }

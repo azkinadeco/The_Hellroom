@@ -648,8 +648,8 @@ def entity_spider():
     # ------------------------------------------------- giant human legs
     for (s, i), (lg, ff, dv) in legs.items():
         sx = 1 if s == "L" else -1
-        giant_leg(rig, lg.names, lg.H, lg.K, lg.A, leg, leg_d, hair, k=1.9, fur_n=(270, 260), fur_len=0.045,
-                  seed=i * 10 + sx, segs=10, fur_w=0.005, hairy=leg_h)
+        giant_leg(rig, lg.names, lg.H, lg.K, lg.A, leg, leg_d, hair, k=1.9, fur_n=(620, 580), fur_len=0.05,
+                  seed=i * 10 + sx, segs=12, fur_w=0.0075, hairy=leg_h)
         # carapace cuff wrapping the thigh root, veined
         mth = rig.mb(lg.names[0])
         u = (lg.K - lg.H).normalized()
@@ -1135,8 +1135,8 @@ def entity_clock():
     # ---------------------------------------------------------- legs
     for s, sx in (("L", 1), ("R", -1)):
         lg = legs[s]
-        giant_leg(rig, lg.names, lg.H, lg.K, lg.A, skin, skin_d, hair, k=1.85, fur_n=(520, 480), fur_len=0.032,
-                  seed=40 + sx, segs=16, fat=True, fur_w=0.006, hairy=skin_h)
+        giant_leg(rig, lg.names, lg.H, lg.K, lg.A, skin, skin_d, hair, k=1.85, fur_n=(900, 820), fur_len=0.036,
+                  seed=40 + sx, segs=16, fat=True, fur_w=0.0075, hairy=skin_h)
         fwd = Vector((sx * 0.22, -1, 0)).normalized()
         bare_foot(rig.mb(lg.names[2]), lg.A, fwd, sx, 0.6, skin, skin_d, nail, hair=hair, seed=50 + sx,
                   segs=12, fur_n=90, nail_len=1.3)

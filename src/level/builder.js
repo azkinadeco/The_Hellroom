@@ -8,7 +8,7 @@ import { skyEye } from '../render/skyeye.js';
 import { normalFromTexture, GLOSS, RELIEF } from '../render/normals.js';
 const NORMALS = new Map();   // texture key -> derived normal map (shared by every level)
 import { DIRS, EDGE, VOID } from './map.js';
-import { bakeMaterial, LightField } from '../render/bake.js';
+import { bakeMaterial, LightField, TILE_RE } from '../render/bake.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildArchitecture } from './architecture.js';
 
@@ -21,22 +21,32 @@ VC_SRC_2S.name = 'MergedVC2S';
 // Merge every opaque, non-emissive, untextured mesh of a model into a single
 // vertex-coloured geometry (1 draw call instead of 1 per material).
 // parts: [{mesh, matrix}] (matrix = mesh transform in model space)
-function mergeParts(parts, key = 'matrix') {
+// classify(material) -> number: residents keep every part in one draw call but
+// tag each vertex with its shading class (attribute lookId, read by entityLook)
+const VC_LOOK = VC_SRC.clone(); VC_LOOK.name = 'MergedVCLook';
+const VC_LOOK_2S = VC_SRC_2S.clone(); VC_LOOK_2S.name = 'MergedVCLook2S';
+function mergeParts(parts, key = 'matrix', classify = null) {
   const keep = [], groups = { front: [], double: [] };
   for (const p of parts) {
     const m = p.mesh.material;
-    if (!m || m.transparent || m.map || (m.userData && m.userData.emissive)) { keep.push(p); continue; }
+    if (!m || m.transparent || m.map || (m.userData && m.userData.emissive) || TILE_RE.test(m.name || '')) { keep.push(p); continue; }
     const geos = m.side === THREE.FrontSide ? groups.front : groups.double;
     const g = p.mesh.geometry.clone().applyMatrix4(p[key]);
+    // vertex colours (residents carry baked AO in them) are kept, tinted by the material colour
+    const vc = m.vertexColors && g.attributes.color ? g.attributes.color : null;
     for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
     const n = g.attributes.position.count, col = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { col[i * 3] = m.color.r; col[i * 3 + 1] = m.color.g; col[i * 3 + 2] = m.color.b; }
+    for (let i = 0; i < n; i++) {
+      const a = vc ? vc.getX(i) : 1, b = vc ? vc.getY(i) : 1, c = vc ? vc.getZ(i) : 1;
+      col[i * 3] = m.color.r * a; col[i * 3 + 1] = m.color.g * b; col[i * 3 + 2] = m.color.b * c;
+    }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    if (classify) g.setAttribute('lookId', new THREE.BufferAttribute(new Float32Array(n).fill(classify(m)), 1));
     geos.push(g.index ? g.toNonIndexed() : g);
   }
   if (groups.front.length + groups.double.length < 2) return parts;
   const out = [];
-  for (const [list, mat] of [[groups.front, VC_SRC], [groups.double, VC_SRC_2S]]) {
+  for (const [list, mat] of [[groups.front, classify ? VC_LOOK : VC_SRC], [groups.double, classify ? VC_LOOK_2S : VC_SRC_2S]]) {
     if (!list.length) continue;
     const merged = list.length > 1 ? mergeGeometries(list, false) : list[0];
     if (!merged) return parts;
@@ -455,7 +465,7 @@ function itemLift(type) {
 }
 
 // clone a model, converting materials to per-object baked uniform materials
-export function cloneWithBake(model, bakeVal, minLight = 0) {
+export function cloneWithBake(model, bakeVal, minLight = 0, classify = null) {
   const obj = model.clone(true);
   // merge sibling meshes under the same parent (keeps animated nodes intact)
   const byParent = new Map();
@@ -463,7 +473,7 @@ export function cloneWithBake(model, bakeVal, minLight = 0) {
   for (const [parent, meshes] of byParent) {
     if (meshes.length < 2) continue;
     for (const m of meshes) m.updateMatrix();
-    const parts = mergeParts(meshes.map((m) => ({ mesh: m, matrix: m.matrix.clone() })));
+    const parts = mergeParts(meshes.map((m) => ({ mesh: m, matrix: m.matrix.clone() })), 'matrix', classify);
     if (parts.length >= meshes.length) continue;
     for (const m of meshes) parent.remove(m);
     for (const p of parts) {

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CELL, hideOf } from '../config.js';
 import { findPath, randomReachableCell } from './path.js';
 import { cloneWithBake } from '../level/builder.js';
-import { applyEntityLook } from '../render/entityLook.js';
+import { applyEntityLook, lookIndex } from '../render/entityLook.js';
 import { angleDiff, clamp } from '../util/rng.js';
 
 const TMP = new THREE.Vector3();
@@ -16,7 +16,7 @@ export class Entity {
     this.kind = kind;
     const assets = game.assets;
     const key = 'entity_' + kind;
-    this.obj = applyEntityLook(cloneWithBake(assets.models[key], [0.5, 0]));
+    this.obj = applyEntityLook(cloneWithBake(assets.models[key], [0.5, 0], 0, lookIndex));
     this.obj.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
     game.scene.add(this.obj);
     this.mixer = new THREE.AnimationMixer(this.obj);
