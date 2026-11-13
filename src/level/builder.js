@@ -437,6 +437,16 @@ export function buildLevel(gen, assets, def, ctx = {}) {
 
   inst.finish();
   root.updateMatrixWorld(true);
+  // flashlight shadows: solid level geometry and props cast and receive
+  const NOSH = new Set(['ao', 'contact', 'skyeye']);
+  root.traverse((o) => {
+    if (!o.isMesh || NOSH.has(o.name)) return;
+    const m = o.material, solid = m && !m.transparent && !(m.blending && m.blending !== THREE.NormalBlending) && !m.isShaderMaterial && !m.isMeshBasicMaterial;
+    o.receiveShadow = !!solid;
+    // only separate objects (doors, items, exit) throw shadows; batched props,
+    // walls and floors just receive — residents add theirs in game.js
+    o.castShadow = !!solid && !o.isInstancedMesh && !o.geometry.attributes.bake;
+  });
   return { lifts, chunked: inst.chunked, root, field, lockers, hideMeshes, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, glowMats: glows.mats, waterMat, poolMats, figures };
 }
 

@@ -28,8 +28,11 @@ export class Player {
 
     // flashlight
     this.light = new THREE.SpotLight(0xfff2d8, 0, 22, 0.5, 0.55, 1.6);
-    this.light.position.set(0.18, -0.15, 0);
+    // held low and to the right, so the shadows it throws are visible from the eye
+    this.light.position.set(0.32, -0.28, -0.05);
     this.light.target.position.set(0.1, -0.2, -5);
+    this.light.shadow.camera.near = 0.25; this.light.shadow.camera.far = 12;
+    this.light.shadow.bias = -0.0008; this.light.shadow.normalBias = 0.03;
     camera.add(this.light); camera.add(this.light.target);
     scene.add(camera);
   }

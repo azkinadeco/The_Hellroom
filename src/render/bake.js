@@ -15,6 +15,25 @@ export const bakeUniforms = {
 
 const cache = new Map();
 
+// fine grain tiled over level surfaces so they stay crisp up close
+let DETAIL = null;
+function detailTex() {
+  if (DETAIL) return DETAIL;
+  const N = 128, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N);
+  let sd = 1234567; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+  const v = new Float32Array(N * N);
+  for (let i = 0; i < N * N; i++) v[i] = rnd();
+  for (let pass = 0; pass < 2; pass++) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {   // soften into grain
+    const i = y * N + x; v[i] = (v[i] * 2 + v[((y + 1) % N) * N + x] + v[y * N + (x + 1) % N]) / 4;
+  }
+  for (let i = 0; i < N * N; i++) { const k = Math.round(Math.min(255, Math.max(0, (v[i] - 0.5) * 2.2 * 128 + 128))); img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = k; img.data[i * 4 + 3] = 255; }
+  g.putImageData(img, 0, 0);
+  DETAIL = new THREE.CanvasTexture(c);
+  DETAIL.wrapS = DETAIL.wrapT = THREE.RepeatWrapping; DETAIL.colorSpace = THREE.NoColorSpace; DETAIL.anisotropy = 4;
+  return DETAIL;
+}
+
 // Convert any material to a Lambert material with baked-light injection.
 // mode 'attr' -> per-vertex/per-instance attribute `bake` (vec2)
 // mode 'uniform' -> material.userData.bake.value (vec2), for moving objects
@@ -49,6 +68,7 @@ export function bakeMaterial(src, mode = 'attr') {
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, bakeUniforms);
     shader.uniforms.uLocalBake = local;
+    if (relief) shader.uniforms.uDetail = { value: detailTex() };
     const decl = mode === 'attr' ? 'attribute vec2 bake;\n' : 'uniform vec2 uLocalBake;\n';
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + decl + 'varying vec2 vBake;')
@@ -57,7 +77,12 @@ export function bakeMaterial(src, mode = 'attr') {
     if (water) shader.vertexShader = shader.vertexShader.replace('varying vec2 vBake;', 'varying vec2 vBake;\nvarying vec3 vWPos;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vBake;\nuniform float uFlicker;\nuniform float uPower;\nuniform vec3 uBakeTint;\nuniform float uNV;' +
+        (relief ? '\nuniform sampler2D uDetail;' : '') +
         (water ? '\nvarying vec3 vWPos;\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
+      .replace('#include <map_fragment>', '#include <map_fragment>' + (relief ? `
+        { float dg = texture2D(uDetail, vMapUv * 7.0).r * 0.6 + texture2D(uDetail, vMapUv * 23.0).r * 0.4;
+          float fade = smoothstep(9.0, 2.0, length(vViewPosition));
+          diffuseColor.rgb *= 1.0 + (dg - 0.5) * 0.22 * fade; }` : ''))
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         float bk = (vBake.x + vBake.y * uFlicker) * uPower;
         bk = bk < 0.6 ? bk : 0.6 + (1.0 - exp(-(bk - 0.6) * 1.2)) * 0.75;   // soft knee: hot spots keep a gradient

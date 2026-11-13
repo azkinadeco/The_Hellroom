@@ -16,6 +16,9 @@ import { Anomalies } from './anomalies.js';
 import { NOTES, TAPES, PA_LINES } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
+// residents throw shadows in the flashlight beam
+function shadowCaster(obj) { if (obj) obj.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; }); }
+
 const CUES = {
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
@@ -62,6 +65,18 @@ export class Game {
     // clear HD: sharper image (full resolution) and none of the broken-tape effects
     this.baseScale = this.clear ? (q ? 1 : 0.9) : (q ? 1 : 0.8) * (this.input.touch && !q ? 0.9 : 1);
     this.vhs.setSamples(q ? 4 : 0);
+    // the flashlight casts real shadows on the higher presets
+    const sh = q > 0;
+    if (this.renderer.shadowMap.enabled !== sh || this.shadowQ !== q) {
+      this.renderer.shadowMap.enabled = sh;
+      this.renderer.shadowMap.type = q > 1 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+      const L = this.player.light;
+      L.castShadow = sh;
+      L.shadow.mapSize.set(q > 1 ? 2048 : 1024, q > 1 ? 2048 : 1024);
+      if (L.shadow.map) { L.shadow.map.dispose(); L.shadow.map = null; }
+      this.shadowQ = q;
+      this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+    }
     this.vhs.scale = this.baseScale;
     this.vhs.enabled = true;
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
@@ -185,6 +200,7 @@ export class Game {
       if (pool.length) pick = pool[Math.floor(Math.random() * pool.length)];
       used.push(pick);
       this.entities.push(spawnEntity(this, e.type, [pick[0], pick[1]]));
+      shadowCaster(this.entities[this.entities.length - 1].obj);
     }
     this.audio.setAmbience(true);
     // warm up shaders now instead of stuttering during play
@@ -261,6 +277,7 @@ export class Game {
         this.schedule(2.2 + Math.random() * 1.5, () => {
           if (this.floorK !== k || token !== this.floorToken || !this.player.alive) { this.spawnFar(kind); return; }
           const e = spawnEntity(this, kind, via.cell);
+          shadowCaster(e.obj);
           this.entities.push(e);
           e.onNoise(this.player.pos.x, this.player.pos.z, 1, 'alert');
           this.audio.stinger();
@@ -358,7 +375,7 @@ export class Game {
   spawnFar(kind) {
     const [px, pz] = this.map.cellOf(this.player.pos.x, this.player.pos.z);
     const c = randomReachableCell(this.map, Math.random, px, pz, 9, 40) || randomReachableCell(this.map, Math.random, px, pz, 4, 60);
-    if (c) this.entities.push(spawnEntity(this, kind, c));
+    if (c) { this.entities.push(spawnEntity(this, kind, c)); shadowCaster(this.entities[this.entities.length - 1].obj); }
   }
 
   // ------------------------------------------------------------------ events
@@ -645,6 +662,7 @@ export class Game {
     }
     bakeUniforms.uNV.value = p.nightVision ? 0.55 : 0;
     bakeUniforms.uTime.value = this.time;
+    { const L = p.light; L.shadow.autoUpdate = false; this.shadowTick = !this.shadowTick; if (L.castShadow && L.intensity > 0.5 && this.shadowTick) L.shadow.needsUpdate = true; }   // 30 Hz is plenty
     this.themeT -= dt;
     if (this.themeT <= 0) {
       if (this.def.theme === 'pool') { this.themeT = 0.8 + Math.random() * 3; this.audio.drip(); }
