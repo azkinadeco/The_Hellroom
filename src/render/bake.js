@@ -10,6 +10,7 @@ export const bakeUniforms = {
   uPower: { value: 1 },       // global power (blackouts / entity interference)
   uBakeTint: { value: new THREE.Color(1.0, 0.98, 0.9) },
   uNV: { value: 0 },          // night-vision boost
+  uTime: { value: 0 },        // seconds, for moving water
 };
 
 const cache = new Map();
@@ -42,6 +43,8 @@ export function bakeMaterial(src, mode = 'attr') {
   const local = { value: new THREE.Vector2(0.6, 0) };
   const gloss = (src.userData && src.userData.gloss) || 0;
   const relief = !!src.normalMap;
+  // falling water (water curtains, shower streams): streaks that run down
+  const water = /^Fall/.test(src.name || '') && !!src.transparent;
   m.userData.bake = local;
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, bakeUniforms);
@@ -49,9 +52,12 @@ export function bakeMaterial(src, mode = 'attr') {
     const decl = mode === 'attr' ? 'attribute vec2 bake;\n' : 'uniform vec2 uLocalBake;\n';
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + decl + 'varying vec2 vBake;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\n vBake = ' + (mode === 'attr' ? 'bake' : 'uLocalBake') + ';');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n vBake = ' + (mode === 'attr' ? 'bake' : 'uLocalBake') + ';' +
+        (water ? '\n { vec4 wp = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\n wp = instanceMatrix * wp;\n#endif\n vWPos = (modelMatrix * wp).xyz; }' : ''));
+    if (water) shader.vertexShader = shader.vertexShader.replace('varying vec2 vBake;', 'varying vec2 vBake;\nvarying vec3 vWPos;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vBake;\nuniform float uFlicker;\nuniform float uPower;\nuniform vec3 uBakeTint;\nuniform float uNV;')
+      .replace('#include <common>', '#include <common>\nvarying vec2 vBake;\nuniform float uFlicker;\nuniform float uPower;\nuniform vec3 uBakeTint;\nuniform float uNV;' +
+        (water ? '\nvarying vec3 vWPos;\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         float bk = (vBake.x + vBake.y * uFlicker) * uPower;
         bk = bk < 0.6 ? bk : 0.6 + (1.0 - exp(-(bk - 0.6) * 1.2)) * 0.75;   // soft knee: hot spots keep a gradient
@@ -60,13 +66,20 @@ export function bakeMaterial(src, mode = 'attr') {
           bk *= clamp(1.0 + (dot(normal, upV) - dot(nonPerturbedNormal, upV)) * 1.6, 0.55, 1.45);
         }` : ''}
         reflectedLight.indirectDiffuse += diffuseColor.rgb * uBakeTint * bk + diffuseColor.rgb * uNV;
+        ${water ? `{ // streaks sliding down the sheet, foam where it lands
+          float along = vWPos.x + vWPos.z;
+          float st = wn(vec2(along * 9.0, vWPos.y * 1.6 + uTime * 3.2)) * 0.6 + wn(vec2(along * 23.0, vWPos.y * 3.0 + uTime * 5.5)) * 0.4;
+          float foam = smoothstep(0.45, 0.05, vWPos.y);
+          diffuseColor.a *= 0.45 + 0.9 * st + foam * 0.6;
+          reflectedLight.indirectDiffuse += uBakeTint * bk * (smoothstep(0.62, 0.95, st) * 0.6 + foam * 0.35);
+        }` : ''}
         ${gloss > 0 ? `{ // polished sheen: the lit room mirrored at grazing angles
           vec3 V = normalize(vViewPosition);
           float fres = pow(1.0 - clamp(dot(normal, V), 0.0, 1.0), 4.0);
           reflectedLight.indirectDiffuse += uBakeTint * bk * fres * ${gloss.toFixed(2)} * 0.55;
         }` : ''}`);
   };
-  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '');
+  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '') + (water ? '-w' : '');
   if (mode === 'attr') cache.set(key, m);
   return m;
 }

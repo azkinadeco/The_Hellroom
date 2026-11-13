@@ -790,7 +790,10 @@ function signsMesh(signs, field) {
     for (let k = 0; k < uv.count; k++) uv.setY(k, (i + (1 - uv.getY(k))) / texts.length);
     pg.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(sg.x, sg.y, sg.z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sg.rot), new THREE.Vector3(1, 1, 1)));
     const b = field.sample(sg.x, 2.3, sg.z, null, null, null, null), n = pg.attributes.position.count, bk = new Float32Array(n * 2);
-    for (let k = 0; k < n; k++) { bk[k * 2] = Math.max(sg.style === 'mall' || sg.glow ? 0.45 : 0.12, b[0]); bk[k * 2 + 1] = b[1]; }
+    const lit = sg.style === 'mall' || sg.glow;
+    // about one lit sign in four has a failing tube: its glow rides the flicker signal
+    const bad = lit && ((Math.floor(sg.x * 7.3 + sg.z * 3.1) % 4 + 4) % 4) === 0;
+    for (let k = 0; k < n; k++) { bk[k * 2] = bad ? Math.max(0.1, b[0]) : Math.max(lit ? 0.45 : 0.12, b[0]); bk[k * 2 + 1] = bad ? b[1] + 0.4 : b[1]; }
     pg.setAttribute('bake', new THREE.BufferAttribute(bk, 2));
     return pg;
   });

@@ -644,6 +644,7 @@ export class Game {
       for (const g of f.built.glowMats) g.m.opacity = g.base * bakeUniforms.uPower.value * (g.flick ? this.flickerVal : 1) * (p.nightVision ? 0.4 : 1);
     }
     bakeUniforms.uNV.value = p.nightVision ? 0.55 : 0;
+    bakeUniforms.uTime.value = this.time;
     this.themeT -= dt;
     if (this.themeT <= 0) {
       if (this.def.theme === 'pool') { this.themeT = 0.8 + Math.random() * 3; this.audio.drip(); }
