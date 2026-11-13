@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y, HIDE, hideOf } from '../config.js';
 import { AOBuilder, contactShadows, lightGlows } from '../render/dressing.js';
+import { storyDecals } from '../render/storyDecals.js';
 import { skyEye } from '../render/skyeye.js';
 import { normalFromTexture, GLOSS, RELIEF } from '../render/normals.js';
 const NORMALS = new Map();   // texture key -> derived normal map (shared by every level)
@@ -137,6 +138,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   const perp = (d) => DIRS.filter((t) => t.dx !== d.dx && t.dz !== d.dz && !(t.dx === -d.dx && t.dz === -d.dz) && (t.dx * d.dx + t.dz * d.dz === 0));
   const wallTop = (i) => (openAbove[i] ? FH : WALL_H);
   const ao = new AOBuilder(), UP = [0, 1, 0], DOWN = [0, -1, 0];
+  const storyWalls = [], storyCells = [];
   for (let z = 0; z < map.H; z++) for (let x = 0; x < map.W; x++) {
     const r = map.reg(x, z), i = x + z * map.W;
     if (!isSpace(r)) continue;
@@ -198,6 +200,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
         for (const [s0, s1] of spans) {
           if (s1 - s0 < 0.01) continue;
           if (flat) { ao.quad(P(s0, 0.01, 0), tan, normal, s1 - s0, 0.75); ao.quad(P(s0, 0, 0.004), tan, UP, s1 - s0, 0.65); }
+          if (flat && top === WALL_H) { const mid = (s0 + s1) / 2; const ox = x + d.dx, oz = z + d.dz; storyWalls.push({ p: [px + tan[0] * mid, pz + tan[2] * mid], tan: [tan[0], tan[2]], n: [normal[0], normal[2]], len: s1 - s0, outside: !map.inside(ox, oz) || !isSpace(map.reg(ox, oz)) }); }
         }
         if (ceil) { ao.quad(P(a, WALL_H - 0.01, 0), tan, normal, b - a, 0.55); ao.quad(P(a, WALL_H, 0.004), tan, DOWN, b - a, 0.45); }
         for (const t of tz) {
@@ -333,6 +336,17 @@ export function buildLevel(gen, assets, def, ctx = {}) {
       fig.set(f.rot);
       figures.push(fig);
     });
+  }
+  // blood, scratches, warnings and footprints: one instanced batch per floor
+  if (def.story !== 0) {
+    for (let z = 0; z < map.H; z++) for (let x = 0; x < map.W; x++) {
+      const r = map.reg(x, z), rr = roomById.get(r), i = x + z * map.W;
+      if (isSpace(r) && r >= 0 && !noFloor[i] && !(rr && rr.type === 'stairs')) storyCells.push(map.center(x, z));
+    }
+    const busy = [...gen.props, ...gen.lockers, ...(gen.signs || []), ...(gen.fusebox ? [gen.fusebox] : [])];
+    const sm = storyDecals({ walls: storyWalls, hides: gen.lockers, cells: storyCells, field, busy,
+      seed: (map.W * 31 + map.H * 17 + storyCells.length * 7 + (ctx.k || 0) * 101) | 0, density: def.story ?? 1, wallH: WALL_H });
+    if (sm) root.add(sm);
   }
   // soft contact shadows under everything that stands on the floor
   const shadowList = gen.props.slice();
