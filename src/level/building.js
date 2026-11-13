@@ -9,6 +9,8 @@ import { LevelMap, DIRS, EDGE, VOID } from './map.js';
 import { furnishRoom, dressHalls, yawFor } from './generator.js';
 import { furnishExtra, dressExtra } from './furnish2.js';
 import { LAYOUTS } from './layouts.js';
+import './mall.js';   // registers LAYOUTS.mall + its furnishing
+import './pool.js';   // registers LAYOUTS.poolrooms + its furnishing
 
 export const SLAB = 0.6;
 export const FH = WALL_H + SLAB;          // floor-to-floor height
@@ -260,7 +262,9 @@ function finish(b, rng, def) {
       if (m.reg(x, z) !== 0 || !ceilAt(i)) continue;
       const horiz = m.reg(x + 1, z) === 0 || m.reg(x - 1, z) === 0;
       const [cx, cz] = m.center(x, z);
-      o.lights.push({ x: cx, z: cz, rot: horiz ? Math.PI / 2 : 0, state: roll(), cell: [x, z] });
+      const L = { x: cx, z: cz, rot: horiz ? Math.PI / 2 : 0, state: roll(), cell: [x, z] };
+      if (def.sparseFixtures && (x + z) % 2) L.fixture = 'none';   // light stays, every other fitting dropped
+      o.lights.push(L);
     }
     for (const r of o.rooms) {
       if (r.noLights) continue;

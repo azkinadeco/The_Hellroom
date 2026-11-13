@@ -143,4 +143,5 @@ def entity_principal():
                           view=(0.9, -1.8, 0.45))
 
 
-ASSETS = {"entity_principal": entity_principal}
+# Kepala Sekolah was retired in batch 18 (kept for reference, not built).
+ASSETS = {}

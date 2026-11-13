@@ -13,7 +13,7 @@ import random
 from mathutils import Vector, Matrix
 import bpy
 import hr_lib as L
-from hr_lib import MB, mat
+from hr_lib import MB, mat, look_matrix
 
 JOINTS = ["Hips", "Spine", "Chest", "Neck", "Head",
           "ShoulderL", "ElbowL", "HandL", "ShoulderR", "ElbowR", "HandR",
@@ -37,9 +37,9 @@ class Rig:
             self.parts[joint] = MB()
         return self.parts[joint]
 
-    def build(self):
+    def build(self, auto_smooth=40):
         for jn, mb in self.parts.items():
-            mb.obj(jn + "_geo", origin=self.pos[jn], parent=self.j[jn])
+            mb.obj(jn + "_geo", origin=self.pos[jn], parent=self.j[jn], auto_smooth=auto_smooth)
 
     def skeleton(self, p):
         """p: dict of joint world positions (all 17)."""
@@ -181,6 +181,286 @@ def finger_set(mb, wrist, side, length, material, spread=0.012, r=0.0065, curl=0
               Vector((w.x - sx * 0.012, w.y - pl[1] * 1.25, w.z - pl[2] * 1.5)),
               Vector((w.x - sx * 0.02, w.y - pl[1] * 1.3, w.z - pl[2] * 1.5 - length * 0.35))]
         mb.tube(tb, lambda t: r * 1.05 * (1 - 0.3 * t), material, segs=5)
+
+
+# ------------------------------------------------------- anatomy helpers ---
+# Shared by every resident: sculpted limbs, jointed hands with nails, wet
+# eyes, ribs, cloth folds. All geometry is written in world space.
+def basis(o, x, y, z):
+    """Matrix with columns x, y, z (local axes) and origin o. Always right
+    handed (x is flipped if needed) so normals never get mirrored inside out."""
+    x, y, z = Vector(x), Vector(y), Vector(z)
+    if x.cross(y).dot(z) < 0:
+        x = -x
+    return Matrix(((x[0], y[0], z[0], o[0]), (x[1], y[1], z[1], o[1]),
+                   (x[2], y[2], z[2], o[2]), (0, 0, 0, 1)))
+
+
+def ortho(d, n):
+    """(side, n', d) orthonormal frame: d main axis, n' = n made normal to d."""
+    d = Vector(d).normalized()
+    n = Vector(n)
+    n = n - d * n.dot(d)
+    if n.length < 1e-6:
+        n = d.orthogonal()
+    n.normalize()
+    return n.cross(d).normalized(), n, d
+
+
+def mlimb(mb, p0, p1, prof, material, segs=12, sx=1.0, sy=1.0, caps=True, up=None):
+    """Limb from p0 to p1 with a sculpted radius profile prof=[(t, r), ...]
+    (t = 0..1 along the bone). `up` orients the sx/sy cross-section (local Y)."""
+    p0, p1 = Vector(p0), Vector(p1)
+    ln = (p1 - p0).length
+    r0, r1 = prof[0][1], prof[-1][1]
+    out = []
+    if caps:
+        for k in range(3):
+            a = math.pi / 2 * (1 - k / 3)
+            out.append((r0 * math.cos(a), -r0 * math.sin(a) * 0.7))
+    out += [(r, ln * t) for t, r in prof]
+    if caps:
+        for k in range(1, 4):
+            a = math.pi / 2 * k / 3
+            out.append((r1 * math.cos(a), ln + r1 * math.sin(a) * 0.7))
+    if up is None:
+        M = look_matrix(p0, p1)
+    else:
+        s, n, d = ortho(p1 - p0, up)
+        M = basis(p0, s, n, d)
+    return mb.lathe(out, material, M=M, segs=segs, sx=sx, sy=sy)
+
+
+def bulk(mb, p0, p1, t, toward, off, r, ln, material, flat=0.85, segs=12, rings=8):
+    """Muscle mass: an ellipsoid along the bone p0->p1 at fraction t, pushed
+    `off` metres toward `toward`; r = thickness, ln = half length."""
+    p0, p1 = Vector(p0), Vector(p1)
+    sv, nv, dv = ortho(p1 - p0, toward)
+    c = p0 + (p1 - p0) * t + nv * off
+    return mb.sphere((r * flat, r, ln), (0, 0, 0), material, segs=segs, rings=rings, M=basis(c, sv, nv, dv))
+
+
+def arm_sculpt(mb_up, mb_fore, sh, el, wr, sx, skin, scale=1.0, lean=0.0, tendon=None):
+    """Sinewy arm: thin bone cores with deltoid, biceps, triceps and forearm
+    masses so the silhouette bulges and pinches like real anatomy."""
+    sh, el, wr = Vector(sh), Vector(el), Vector(wr)
+    k = scale
+    out = Vector((sx, 0, 0))
+    fwd = Vector((0, -1, 0))
+    mlimb(mb_up, sh + Vector((0, 0, 0.02)), el, [(0, 0.034 * k), (0.5, 0.027 * k), (1, 0.024 * k)], skin, segs=12, up=fwd)
+    bulk(mb_up, sh, el, 0.08, out, 0.012 * k, 0.042 * k, 0.07 * k, skin)                 # deltoid
+    bulk(mb_up, sh, el, 0.45, fwd, 0.012 * k, 0.029 * k, 0.1 * k, skin)                  # biceps
+    bulk(mb_up, sh, el, 0.38, -fwd, 0.011 * k, 0.031 * k, 0.12 * k, skin)                # triceps
+    a = el + (el - wr).normalized() * 0.025 * k
+    mlimb(mb_fore, a, wr, [(0, 0.026 * k), (0.6, 0.019 * k), (1, 0.017 * k)], skin, segs=12, sx=1.2, up=fwd)
+    bulk(mb_fore, el, wr, 0.27, (out + fwd).normalized(), 0.01 * k, 0.03 * k, 0.11 * k, skin)   # brachioradialis
+    bulk(mb_fore, el, wr, 0.3, (-out + fwd * 0.3).normalized(), 0.008 * k, 0.025 * k, 0.1 * k, skin)  # flexors
+    mb_fore.sphere((0.018 * k,) * 3, el - fwd * 0.012 * k, skin, segs=8, rings=6)            # olecranon
+    if tendon is not None:
+        for o in (-0.5, 0.5):
+            mb_fore.tube([lerp3(el, wr, 0.55) + Vector((o * 0.012 * sx, -0.016 * k, 0)),
+                          wr + Vector((o * 0.01 * sx, -0.014 * k, 0.01))], 0.0035 * k, tendon, segs=5)
+
+
+def leg_sculpt(mb_th, mb_sh, hp, kn, an, sx, skin, scale=1.0, kneecap=None):
+    hp, kn, an = Vector(hp), Vector(kn), Vector(an)
+    k = scale
+    out = Vector((sx, 0, 0))
+    fwd = Vector((0, -1, 0))
+    mlimb(mb_th, hp + Vector((0, 0, 0.03)), kn, [(0, 0.055 * k), (0.6, 0.04 * k), (1, 0.034 * k)], skin, segs=12,
+          up=fwd)
+    bulk(mb_th, hp, kn, 0.45, fwd, 0.014 * k, 0.05 * k, 0.17 * k, skin)                  # quadriceps
+    bulk(mb_th, hp, kn, 0.4, -fwd, 0.012 * k, 0.045 * k, 0.17 * k, skin)                 # hamstrings
+    bulk(mb_th, hp, kn, 0.3, -out, 0.012 * k, 0.04 * k, 0.12 * k, skin)                  # adductors
+    bulk(mb_th, hp, kn, 0.8, (fwd - out * 0.4).normalized(), 0.012 * k, 0.032 * k, 0.06 * k, skin)   # vastus medialis
+    a = kn + (kn - an).normalized() * 0.03 * k
+    mlimb(mb_sh, a, an, [(0, 0.036 * k), (0.5, 0.024 * k), (1, 0.019 * k)], skin, segs=12, up=fwd)
+    bulk(mb_sh, kn, an, 0.28, -fwd, 0.016 * k, 0.04 * k, 0.12 * k, skin)                 # calf
+    bulk(mb_sh, kn, an, 0.3, (fwd + out).normalized(), 0.008 * k, 0.024 * k, 0.12 * k, skin)  # tibialis
+    mb_sh.sphere((0.028 * k, 0.02 * k, 0.03 * k), kn + fwd * 0.03 * k, kneecap or skin, segs=10, rings=6)
+
+
+def muscle(t0, r0, t1, r1, belly=0.0, at=0.45, knob=0.0):
+    """Profile helper: taper r0->r1 with a muscle belly and joint knobs."""
+    pts = []
+    for k in range(9):
+        t = k / 8
+        r = r0 + (r1 - r0) * t
+        r += belly * math.exp(-((t - at) / 0.22) ** 2)
+        r += knob * (math.exp(-(t / 0.08) ** 2) + math.exp(-((1 - t) / 0.08) ** 2))
+        pts.append((t0 + (t1 - t0) * t, r))
+    return pts
+
+
+def chain(base, d, n, lens, bends, r_fn, sub=(0.5, 1.0)):
+    """Points of a jointed digit: segment lengths `lens`, each joint bending
+    the direction toward n by bends[i] radians. Returns (pts, radii, dir, n)."""
+    d, n = Vector(d).normalized(), Vector(n).normalized()
+    p = Vector(base)
+    pts, rad = [p.copy()], [r_fn(0.0, True)]
+    tot = sum(lens)
+    acc = 0.0
+    for i, (ln, b) in enumerate(zip(lens, bends)):
+        if b:
+            d, n = (d * math.cos(b) + n * math.sin(b)).normalized(), (n * math.cos(b) - d * math.sin(b)).normalized()
+        for h in sub:
+            pts.append(p + d * ln * h)
+            acc_h = (acc + ln * h) / tot
+            rad.append(r_fn(acc_h, h == 1.0 and i < len(lens) - 1))
+        p = p + d * ln
+        acc += ln
+    return pts, rad, d, n
+
+
+def hand(mb, wrist, d, n, t, length, skin, nail=None, curl=0.35, r=0.0065, spread=1.0, splay=0.1,
+         thumb=True, thumb_curl=0.25, palm_len=None, nfing=4, knuckles=True, segs=6, bony=1.0, seed=0,
+         claw=0.0, tip_mat=None, palm_scale=(1.0, 1.0, 1.0), rel=None, lite=False):
+    """Anatomical hand. d: finger direction, n: palm normal (fingers curl
+    toward it), t: across the palm toward the thumb. length = middle finger.
+    claw > 0 turns the nails into hooked claws of that length."""
+    rnd = random.Random(seed)
+    sv, n, d = ortho(d, n)
+    t = Vector(t)
+    t = (t - d * t.dot(d) - n * t.dot(n)).normalized()
+    w = Vector(wrist)
+    pl = palm_len or length * 0.85
+    pw = r * 1.15 * nfing * spread
+    th = r * 1.35
+    Mp = basis(w + d * pl * 0.5, t, n, d)
+    ps = palm_scale
+    mb.sphere((pw * 1.08 * ps[0], th * ps[1], pl * 0.58 * ps[2]), (0, 0, 0), skin, segs=8 if lite else 12,
+              rings=6 if lite else 8, M=Mp)
+    if not lite:
+        mb.sphere((pw * 0.75 * ps[0], th * 1.1 * ps[1], pl * 0.25 * ps[2]), (0, 0, -pl * 0.32), skin, segs=10, rings=6,
+                  M=Mp)   # heel
+    rel = rel or [0.9, 1.0, 0.94, 0.74, 0.7]
+    for i in range(nfing):
+        u = 1 - 2 * i / max(1, nfing - 1)                       # +1 index (thumb side) .. -1 pinky
+        fl = length * rel[min(i, 4)] * rnd.uniform(0.96, 1.04)
+        dv = (d + t * u * splay).normalized()
+        base = w + d * pl * 0.96 + t * u * pw * 0.8 - n * th * 0.15
+        cl = curl * rnd.uniform(0.85, 1.15)
+
+        def rf(q, joint, fl=fl):
+            return r * (1.0 - 0.32 * q) * (1.0 + (0.16 * bony if joint else 0.0))
+        pts, rad, de, ne = chain(base, dv, n, [fl * 0.45, fl * 0.31, fl * 0.24], [cl * 0.5, cl, cl * 0.8], rf,
+                                 sub=(1.0,) if lite else (0.5, 1.0))
+        mb.tube(pts, lambda q, rad=rad: rad[min(len(rad) - 1, int(round(q * (len(rad) - 1))))], skin, segs=segs)
+        tip = pts[-1]
+        if not lite:
+            mb.sphere((rad[-1],) * 3, tip, skin, segs=segs, rings=4)
+        if knuckles and bony > 0:
+            mb.sphere((r * 1.05, r * 0.7 * bony, r * 1.0), (0, 0, 0), skin, segs=6, rings=4,
+                      M=basis(base - n * th * 0.55, t, n, d))
+        if nail is not None:
+            s2 = de.cross(ne).normalized()
+            if claw > 0:
+                c0 = tip - ne * rad[-1] * 0.3
+                c1 = c0 + de * claw * 0.6 + ne * claw * 0.25
+                c2 = c1 + de * claw * 0.25 + ne * claw * 0.55
+                mb.tube([c0, c1, c2], lambda q: rad[-1] * 0.85 * (1 - 0.9 * q), nail, segs=5)
+            else:
+                Mn = basis(tip - de * fl * 0.07 - ne * rad[-1] * 0.62, s2, ne, de)
+                mb.sphere((rad[-1] * 0.85, rad[-1] * 0.3, fl * 0.1), (0, 0, 0), tip_mat or nail, segs=6, rings=3, M=Mn)
+    if thumb:
+        base = w + d * pl * 0.22 + t * pw * 0.95 + n * th * 0.35
+        dv = (d * 0.55 + t * 0.62 + n * 0.3).normalized()
+        tl = length * 0.62
+
+        def rft(q, joint):
+            return r * 1.15 * (1.0 - 0.3 * q) * (1.0 + (0.14 * bony if joint else 0.0))
+        pts, rad, de, ne = chain(base, dv, n, [tl * 0.42, tl * 0.33, tl * 0.25], [0.0, thumb_curl, thumb_curl], rft,
+                                 sub=(1.0,) if lite else (0.5, 1.0))
+        mb.tube(pts, lambda q, rad=rad: rad[min(len(rad) - 1, int(round(q * (len(rad) - 1))))], skin, segs=segs)
+        if not lite:
+            mb.sphere((rad[-1],) * 3, pts[-1], skin, segs=segs, rings=4)
+        if nail is not None and claw <= 0:
+            s2 = de.cross(ne).normalized()
+            Mn = basis(pts[-1] - de * tl * 0.07 - ne * rad[-1] * 0.62, s2, ne, de)
+            mb.sphere((rad[-1] * 0.85, rad[-1] * 0.3, tl * 0.1), (0, 0, 0), tip_mat or nail, segs=6, rings=3, M=Mn)
+
+
+def hanging_hand(mb, wrist, side, length, skin, nail=None, **kw):
+    """Hand hanging at the side, palm toward the body, thumb forward (-Y)."""
+    sx = 1 if side == "L" else -1
+    return hand(mb, wrist, (0, 0, -1), (-sx, 0, 0), (0, -1, 0), length, skin, nail, **kw)
+
+
+def eye(mb, c, look, r, sclera, iris, pupil, glint=None, iris_r=0.52, up=(0, 0, 1), segs=14, lid=None,
+        lid_open=0.75, lid_r=0.16):
+    """Wet eyeball: sclera, domed iris, pupil, a pin-point glint, optional lid rim."""
+    c = Vector(c)
+    x, y, z = ortho(look, up)          # z = look, y = up
+    M = basis(c, x, y, z)
+    mb.sphere((r, r, r), (0, 0, 0), sclera, segs=segs, rings=max(6, segs * 2 // 3), M=M)
+    ir = r * iris_r
+    zc = math.sqrt(max(r * r - ir * ir, 0.0))
+    mb.sphere((ir, ir, r * 0.15), (0, 0, zc), iris, segs=segs, rings=5, M=M)
+    mb.sphere((ir * 0.48, ir * 0.48, r * 0.1), (0, 0, r * 0.94), pupil, segs=max(8, segs - 4), rings=4, M=M)
+    if glint is not None:
+        g = (Vector((-0.28, 0.32, 0.9))).normalized() * r * 1.035
+        mb.sphere((r * 0.11, r * 0.11, r * 0.05), tuple(g), glint, segs=6, rings=4, M=M)
+    if lid is not None:
+        # puffy lid ring round the visible part of the eye (ellipse, wider than tall)
+        pts = []
+        a0 = math.acos(max(-1.0, min(1.0, lid_open)))
+        for k in range(17):
+            ph = 2 * math.pi * k / 16
+            v = Vector((math.cos(ph) * math.sin(a0) * 1.15, math.sin(ph) * math.sin(a0) * 0.8, math.cos(a0)))
+            pts.append(tuple(M @ (v * r * 1.02)))
+        mb.tube(pts, lambda q: r * lid_r * (1.25 if 0.1 < q < 0.4 else 1.0), lid, segs=6, caps=False)
+
+
+def displace(faces, fn):
+    """Move every vertex of `faces` by fn(co) -> offset vector."""
+    for v in {v for f in faces for v in f.verts}:
+        v.co += Vector(fn(v.co.copy()))
+
+
+def cloth_folds(faces, cx, cy, amp, freq, z0, z1, seed=0, bottom=True, sway=0.0):
+    """Radial vertical folds on a lathed garment (stronger toward the hem)."""
+    rnd = random.Random(seed)
+    ph = [rnd.uniform(0, 6.28) for _ in range(3)]
+
+    def fn(co):
+        if not (z0 <= co.z <= z1):
+            return (0, 0, 0)
+        k = (z1 - co.z) / (z1 - z0) if bottom else (co.z - z0) / (z1 - z0)
+        a = math.atan2(co.y - cy, co.x - cx)
+        w = amp * (0.25 + 0.75 * k) * (math.sin(a * freq + ph[0] + sway * co.z) +
+                                      0.45 * math.sin(a * freq * 2.3 + ph[1]) + 0.25 * math.sin(a * 3 + ph[2]))
+        return (math.cos(a) * w, math.sin(a) * w, 0)
+    displace(faces, fn)
+
+
+def ribs(mb, cx, cy, z_top, n, dz, rx, ry, material, r=0.008, sweep=(0.3, 2.4), droop=0.05, shrink=0.0,
+         segs=5, lift=0.0):
+    """Rib arcs (both sides) round an elliptic torso; front ends droop lower."""
+    for k in range(n):
+        z = z_top - k * dz
+        sc = 1 - shrink * k / max(1, n - 1)
+        for s in (-1, 1):
+            pts = []
+            for i in range(8):
+                q = i / 7
+                a = sweep[0] + (sweep[1] - sweep[0]) * q
+                pts.append((cx + s * (rx * sc + lift) * math.sin(a), cy - (ry * sc + lift) * math.cos(a),
+                            z - droop * (1 - q)))
+            mb.tube(pts, lambda q: r * (0.65 + 0.35 * math.sin(q * math.pi)), material, segs=segs)
+
+
+def teeth_arc(mb, pts, out, ln, r, material, seed=0, jitter=0.25, segs=5, every=1):
+    """One tooth per point, pointing along out(p) (callable or vector)."""
+    rnd = random.Random(seed)
+    for i, p in enumerate(pts[::every]):
+        p = Vector(p)
+        o = Vector(out(p) if callable(out) else out).normalized()
+        L = ln * rnd.uniform(1 - jitter, 1 + jitter)
+        mb.limb(p, p + o * L, r * rnd.uniform(0.85, 1.1), r * 0.15, material, segs=segs)
+
+
+def lerp3(a, b, t):
+    return Vector(a) + (Vector(b) - Vector(a)) * t
 
 
 # ======================================================== HALL MONITOR ====
@@ -784,17 +1064,124 @@ def entity_pupil():
 
 
 # ----------------------------------------------------------------- finish --
-def _finish_entity(name, rig, clips, shots, view=(0.9, -1.7, 0.35), humanoid=True, budget=12000):
-    objs = rig.objs()
-    old = L.DO_PREVIEW
-    L.DO_PREVIEW = False
-    info = L.finish(name, budget=budget, max_meshes=40)
-    L.DO_PREVIEW = old
+AO_SKIP = ("Emit", "Shade", "Glass")
+
+
+def _vertex_ao(distance=0.08, samples=32, strength=0.7, gamma=1.4):
+    """Bake Cycles ambient occlusion into a per-vertex colour (COLOR_0).
+    The game multiplies it into the diffuse colour, so creases between
+    fingers, ribs, folds and lips get contact shading under the flat baked
+    level light. Emissive / translucent materials are left at white."""
+    scn = bpy.context.scene
+    meshes = [o for o in scn.objects if o.type == "MESH"]
+    if not meshes:
+        return
+    scn.render.engine = "CYCLES"
+    scn.cycles.device = "CPU"
+    scn.cycles.samples = samples
+    scn.world.light_settings.distance = distance
+    for o in meshes:
+        me = o.data
+        a = me.color_attributes.get("AO") or me.color_attributes.new("AO", "FLOAT_COLOR", "POINT")
+        me.color_attributes.active_color = a
+        try:
+            me.color_attributes.render_color_index = me.color_attributes.active_color_index
+        except Exception:
+            pass
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in meshes:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    bpy.ops.object.bake(type="AO", target="VERTEX_COLORS")
+    for o in meshes:
+        me = o.data
+        a = me.color_attributes["AO"]
+        skip = set()
+        for poly in me.polygons:
+            m = me.materials[poly.material_index] if me.materials else None
+            if m is not None and m.name.startswith(AO_SKIP):
+                skip.update(poly.vertices)
+        for i, d in enumerate(a.data):
+            v = 1.0 if i in skip else (1 - strength) + strength * max(0.0, min(1.0, d.color[0])) ** gamma
+            d.color = (v, v, v, 1.0)
+
+
+def _export_entity(name):
+    path = L.os.path.join(L.MODELS, name + ".glb")
+    bpy.context.scene.frame_set(0)
+    bpy.ops.export_scene.gltf(
+        filepath=path, export_format="GLB", export_apply=True, export_animations=False,
+        export_cameras=False, export_lights=False, export_yup=True, export_texcoords=False,
+        export_normals=True, export_materials="EXPORT", export_extras=False, use_selection=False,
+        export_colors=True, export_frame_range=False, export_def_bones=False)
+    if L.ANIMS:
+        L.add_animations(path, L.ANIMS)
+    return path
+
+
+def _pack_colors(path):
+    """Re-encode float COLOR_0 as normalized unsigned bytes (4 B per vertex
+    instead of 16) and repack the binary chunk."""
+    import struct
+    js, rest = L._read_glb(path)
+    bin_len = struct.unpack("<I", rest[0:4])[0]
+    binb = rest[8:8 + bin_len]
+    tail = rest[8 + bin_len:]
+    repl = {}
+    for m in js["meshes"]:
+        for prim in m["primitives"]:
+            a = prim["attributes"].get("COLOR_0")
+            if a is None:
+                continue
+            acc = js["accessors"][a]
+            if acc["componentType"] != 5126:
+                continue
+            bv = js["bufferViews"][acc["bufferView"]]
+            off = bv.get("byteOffset", 0) + acc.get("byteOffset", 0)
+            n = acc["count"] * 4
+            vals = struct.unpack("<%df" % n, binb[off:off + n * 4])
+            repl[acc["bufferView"]] = bytes(max(0, min(255, int(round(v * 255)))) for v in vals)
+            acc["componentType"] = 5121
+            acc["normalized"] = True
+            acc.pop("byteOffset", None)
+    if not repl:
+        return
+    out = bytearray()
+    for i, bv in enumerate(js["bufferViews"]):
+        while len(out) % 4:
+            out.append(0)
+        data = repl.get(i)
+        if data is None:
+            o = bv.get("byteOffset", 0)
+            data = binb[o:o + bv["byteLength"]]
+        bv["byteOffset"] = len(out)
+        bv["byteLength"] = len(data)
+        bv.pop("byteStride", None) if i in repl else None
+        out += data
+    while len(out) % 4:
+        out.append(0)
+    js["buffers"][0]["byteLength"] = len(out)
+    L._write_glb(path, js, struct.pack("<II", len(out), 0x004E4942) + bytes(out) + tail)
+
+
+def _finish_entity(name, rig, clips, shots, view=(0.9, -1.7, 0.35), humanoid=True, budget=25000, ao=True,
+                   ao_dist=0.08, ao_strength=0.7):
+    bpy.context.view_layer.update()
+    tris, meshes = L.tri_count(), L.mesh_count()
+    if ao and not L.os.environ.get("HR_NOAO"):
+        _vertex_ao(distance=ao_dist, strength=ao_strength)
+    path = _export_entity(name)
+    _pack_colors(path)
+    kb = L.os.path.getsize(path) / 1024.0
+    info = dict(tris=tris, meshes=meshes, kb=round(kb, 1))
+    if tris > budget:
+        info["WARN"] = f"TRIS>{budget}"
     nodes, anims = L.glb_info(name)
     missing = [j for j in (JOINTS if humanoid else ["Hips", "Head"]) if j not in nodes]
     if missing:
         info["WARN"] = "missing joints " + ",".join(missing)
     info["clips"] = " ".join(f"{n}:{d}s" for n, d in sorted(anims.items()))
+    print(f"   -> {path}  {info}")
     if L.DO_PREVIEW:
         # previews are rendered from the re-imported GLB (the real deliverable)
         L.preview_glb(name, [(None, 0)] + shots, view=view, size=300)
@@ -802,7 +1189,4 @@ def _finish_entity(name, rig, clips, shots, view=(0.9, -1.7, 0.35), humanoid=Tru
 
 
 ASSETS = {
-    "entity_monitor": entity_monitor,
-    "entity_substitute": entity_substitute,
-    "entity_pupil": entity_pupil,
 }

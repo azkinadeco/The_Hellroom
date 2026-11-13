@@ -1,11 +1,11 @@
 // Entity AI. Three original anomalies:
 //  - Monitor:    patrols, sees & hears, chases with a whistle, checks lockers.
 //  - Substitute: only moves while nobody is looking at it.
-//  - Pupil:      harmless wanderer that screams and summons the others.
 import * as THREE from 'three';
 import { CELL, HIDE } from '../config.js';
 import { findPath, randomReachableCell } from './path.js';
 import { cloneWithBake } from '../level/builder.js';
+import { applyEntityLook } from '../render/entityLook.js';
 import { angleDiff, clamp } from '../util/rng.js';
 
 const TMP = new THREE.Vector3();
@@ -16,7 +16,7 @@ export class Entity {
     this.kind = kind;
     const assets = game.assets;
     const key = 'entity_' + kind;
-    this.obj = cloneWithBake(assets.models[key], [0.5, 0]);
+    this.obj = applyEntityLook(cloneWithBake(assets.models[key], [0.5, 0]));
     this.obj.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
     game.scene.add(this.obj);
     this.mixer = new THREE.AnimationMixer(this.obj);
@@ -156,7 +156,7 @@ export class Monitor extends Entity {
     this.lostT = 0;
     this.searchPts = [];
     this.walk = o.walk ?? 1.55; this.run = o.run ?? 4.35;
-    this.sight = o.sight ?? [15, 115, 22, 200];   // range, fov, chase range, chase fov
+    this.sight = o.sight ?? [16, 120, 30, 360];   // range, fov, chase range, chase fov (360: once it has you it tracks you all round)
     this.lockers = o.lockers ?? true;
     this.stepEvery = o.stepEvery ?? 1.1;
     this.stepVol = o.stepVol ?? [0.35, 0.6];
@@ -201,10 +201,11 @@ export class Monitor extends Entity {
       this.lostT = 0;
     } else this.suspicion = Math.max(0, this.suspicion - dt * (this.state === 'chase' ? 0 : 0.12));
 
-    if (this.state !== 'chase' && this.state !== 'attack' && this.state !== 'locker' && this.suspicion >= 1) this.setState('chase');
-    else if (see > 0 && this.state === 'patrol' && this.suspicion > 0.35) {
-      this.setState('investigate'); this.goToWorld(p.pos.x, p.pos.z);
-    }
+    // seen = hunted: no slow suspicion build-up, it comes straight for you and
+    // keeps coming for as long as it can see you (or until you hide)
+    if (see > 0 && this.state !== 'chase' && this.state !== 'attack' && (this.state !== 'locker' || !this.lockerSure)) {
+      this.suspicion = 1.2; this.path = null; this.setState('chase');
+    } else if (this.state !== 'chase' && this.state !== 'attack' && this.state !== 'locker' && this.suspicion >= 1) this.setState('chase');
 
     let speed = 0;
     switch (this.state) {
@@ -251,7 +252,7 @@ export class Monitor extends Entity {
         } else {
           this.lostT += dt;
           if (!this.path && this.lastSeen) this.goToWorld(this.lastSeen.x, this.lastSeen.z);
-          if (this.followPath(dt, speed) || this.lostT > 6) {
+          if (this.followPath(dt, speed) || this.lostT > 5) {
             this.setState('search');
             this.suspicion = 0.6;
             const [cx, cz] = this.cell();
@@ -405,133 +406,4 @@ export class Substitute extends Entity {
   }
 }
 
-// ---------------------------------------------------------------------------
-export class Pupil extends Entity {
-  constructor(game, cell) {
-    super(game, 'pupil', cell);
-    this.walk = 1.2;
-    this.cooldown = 4;
-    this.play('Idle');
-    this.radius = 0.25;
-  }
-  update(dt) {
-    const g = this.game, p = g.player;
-    this.cooldown -= dt;
-    this.stateT += dt;
-    if (this.state === 'scream') {
-      this.velocity = 0;
-      this.faceToward(p.pos.x, p.pos.z, dt, 8);
-      if (this.stateT > 1.6) {
-        this.state = 'flee'; this.stateT = 0;
-        const [cx, cz] = this.cell();
-        const t = randomReachableCell(g.map, Math.random, cx, cz, 6, 14);
-        if (t) this.goTo(...t);
-      }
-    } else {
-      if (this.cooldown <= 0 && this.sees(13, 120) > 0.15) {
-        this.state = 'scream'; this.stateT = 0; this.cooldown = 22;
-        this.play('Scream', 0.1, true);
-        g.audio.scream(this.pos);
-        g.alert(p.pos.x, p.pos.z, this);
-      } else {
-        const speed = this.state === 'flee' ? this.walk * 2.3 : this.walk;
-        if (!this.path || this.pathIdx >= this.path.length) {
-          this.waitT -= dt; this.velocity = 0;
-          if (this.waitT <= 0) {
-            this.state = 'wander';
-            const [cx, cz] = this.cell();
-            const t = randomReachableCell(g.map, Math.random, cx, cz, 2, 9);
-            if (t) this.goTo(...t);
-            this.waitT = 2 + Math.random() * 4;
-          }
-        } else this.followPath(dt, speed);
-        const v = this.velocity || 0;
-        this.play(v > 0.15 ? 'Walk' : 'Idle');
-        if (this.current) this.current.timeScale = v > 0.15 ? clamp(v / this.walk, 0.7, 2.2) : 1;
-      }
-    }
-    this.updateCommon(dt);
-  }
-}
-
-// ---------------------------------------------------------------------------
-const PRINCIPAL_LINES = [
-  'KAMU. SISWA DENGAN KAMERA. TETAP DI TEMPAT.',
-  'SEMUA PETUGAS: ADA SISWA BERKELIARAN DI SINI.',
-  'KEMBALI KE KELAS. SEKARANG.',
-  'KAMI MELIHATMU. KAMI SELALU MELIHATMU.',
-];
-export class Principal extends Entity {
-  constructor(game, cell) {
-    super(game, 'principal', cell);
-    this.walk = 1.25;
-    this.cd = 4;
-    this.radius = 0.4;
-    this.lastSeen = null;
-    this.play('Idle');
-  }
-  onNoise(x, z) {
-    if (this.state === 'announce' || this.state === 'locker') return;
-    this.state = 'seek'; this.goToWorld(x, z);
-  }
-  update(dt) {
-    const g = this.game, p = g.player;
-    this.cd -= dt; this.stateT += dt;
-    const see = this.sees(20, 150);
-    if (see > 0.15) this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time };
-    const d = this.distTo(p.pos);
-    if (this.state === 'announce') {
-      this.velocity = 0;
-      this.faceToward(p.pos.x, p.pos.z, dt, 4);
-      if (this.stateT > 2.0) { this.state = 'seek'; this.stateT = 0; if (this.lastSeen) this.goToWorld(this.lastSeen.x, this.lastSeen.z); }
-    } else if (this.state === 'locker') {
-      const L = this.lockerTarget;
-      const fd = HIDE[L.kind || 'locker'].inspect;
-      const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
-      const done = this.path && this.pathIdx < this.path.length ? this.followPath(dt, this.walk * 1.3) : this.moveToward(fx, fz, dt, this.walk * 1.3, 0.3, true);
-      if ((done || this.distTo({ x: fx, z: fz }) < 0.4) && p.hidden === L) { this.state = 'attack'; g.lockerReason = 'seen'; g.killPlayer(this, L); }
-      else if (p.hidden !== L) { this.state = 'seek'; }
-    } else if (this.state !== 'attack') {
-      if (see > 0.15 && this.cd <= 0) {
-        // stop and broadcast the player's position to every entity
-        this.state = 'announce'; this.stateT = 0; this.cd = 9;
-        this.play('Announce', 0.15, true);
-        g.audio.paChime(this.pos);
-        g.schedule(0.9, () => g.audio.paVoice(1.8, this.pos));
-        g.hud.toast('📢 "' + PRINCIPAL_LINES[Math.floor(Math.random() * PRINCIPAL_LINES.length)] + '"', 3.5);
-        for (const e of g.entities) if (e !== this) e.onNoise(p.pos.x, p.pos.z, 1, 'alert');
-        g.onChaseStart(this);
-      } else if (p.hidden && this.lastSeen && g.time - this.lastSeen.t < 1.2) {
-        this.lockerTarget = p.hidden; this.state = 'locker';
-        const fd = HIDE[p.hidden.kind || 'locker'].inspect;
-        this.goToWorld(p.hidden.x + Math.sin(p.hidden.rot) * fd, p.hidden.z + Math.cos(p.hidden.rot) * fd);
-      } else if (see > 0.15) {
-        this.moveToward(p.pos.x, p.pos.z, dt, this.walk * 1.1 * this.speedMul, 0.1, true);
-        this.path = null;
-      } else if (!this.path || this.pathIdx >= this.path.length) {
-        this.velocity = 0;
-        this.waitT -= dt;
-        if (this.waitT <= 0) {
-          this.waitT = 2 + Math.random() * 3;
-          if (this.state === 'seek') g.onChaseEnd(this);
-          this.state = 'patrol';
-          const [cx, cz] = this.cell();
-          const t = randomReachableCell(g.map, Math.random, cx, cz, 4, 14);
-          if (t) this.goTo(...t);
-        }
-      } else this.followPath(dt, this.walk * this.speedMul);
-      if (!p.hidden && p.alive && d < 1.15) { this.state = 'attack'; g.killPlayer(this); }
-    }
-    if (this.state !== 'announce' && this.state !== 'attack') {
-      const v = this.velocity || 0;
-      this.play(v > 0.15 ? 'Walk' : 'Idle');
-      if (this.current) this.current.timeScale = v > 0.15 ? clamp(v / this.walk, 0.7, 1.4) : 1;
-    }
-    if ((this.velocity || 0) > 0.3) {
-      this.stepAcc += this.velocity * dt;
-      if (this.stepAcc > 0.9) { this.stepAcc = 0; g.audio.heavyStep(this.pos, 0.3); }
-    }
-    this.updateCommon(dt);
-  }
-}
 

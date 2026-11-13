@@ -15,8 +15,11 @@ export const MODEL_KEYS = [
   'morgue_drawers', 'surgery_table', 'surgery_lamp', 'xray_viewer', 'med_cart', 'tree_pine', 'tree_dead', 'bush', 'lift_panel', 'wall_handrail', 'slide_top', 'diving_board',
   'plinth', 'painting_a', 'painting_b', 'rope_barrier', 'display_case', 'cell_bunk', 'lines_board',
   'store_shelf', 'rolling_shutter', 'plaza_fountain', 'mall_kiosk', 'clothes_rack', 'house_sofa', 'crt_tv', 'family_table', 'house_bed', 'mailbox', 'old_car', 'house_roof',
-  'entity_monitor', 'entity_substitute', 'entity_pupil', 'entity_principal',
-  'entity_pale', 'entity_masked', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
+  'mannequin', 'mannequin_bust', 'kiddie_ride', 'shopping_trolley', 'checkout_lane', 'food_stall', 'cafe_table', 'cinema_screen', 'cinema_seats', 'popcorn_cart',
+  'arcade_cabinet', 'shutter_half', 'info_totem', 'planter_bench', 'stroller', 'wet_floor_sign', 'info_desk', 'atrium_stage', 'atrium_chandelier', 'fountain_basin', 'sale_banner',
+  'lifeguard_chair', 'tile_pillar', 'shower_column', 'water_curtain', 'pool_steps', 'drain_grate', 'tile_bench', 'float_ring', 'beach_ball', 'tile_tunnel', 'low_portal', 'wall_ladder', 'lane_rope_lo',
+  'entity_spider', 'entity_clock', 'entity_weaver', 'entity_echo', 'entity_squid',
+  'entity_pale', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];
 export const TEXTURE_KEYS = ['floor_tile', 'floor_classroom', 'wall_hall', 'wall_classroom', 'ceiling_tile', 'stain_decal',
   'pool_floor', 'pool_wall', 'pool_ceiling', 'pool_water', 'mall_floor', 'mall_wall', 'mall_ceiling', 'bk_wallpaper', 'bk_carpet', 'bk_ceiling', 'paving', 'hosp_floor', 'hosp_wall', 'forest_ground', 'forest_wall', 'lift_wall', 'asphalt', 'house_wall', 'marble', 'gallery_wall', 'cell_wall'];
@@ -38,9 +41,9 @@ const FALLBACK = {
   figure_stand: [0.5, 1.8, 0.3, 0xd6d2c8], figure_reach: [0.5, 1.8, 0.6, 0xd6d2c8], figure_kneel: [0.5, 1.3, 0.6, 0xd6d2c8],
   item_eraser: [0.14, 0.03, 0.055, 0x8a5a32, -0.015],
   item_note: [0.21, 0.005, 0.28, 0xf0eedc, 0], item_tape: [0.19, 0.025, 0.1, 0x111111, -0.012],
-  entity_monitor: [0.6, 2.5, 0.4, 0x8a8f99], entity_substitute: [0.5, 1.8, 0.35, 0xe8e4dc],
-  entity_pupil: [0.45, 1.15, 0.35, 0xd8b420], entity_principal: [0.55, 1.8, 0.35, 0x3d2b1f],
-  entity_pale: [0.5, 1.0, 1.4, 0xcdc4bd], entity_masked: [0.5, 2.0, 0.35, 0x4d4b35], entity_gaper: [0.5, 1.7, 0.5, 0xb59287],
+  entity_spider: [1.8, 2.3, 1.8, 0x5a4a52], entity_clock: [0.9, 2.2, 0.7, 0x6b4a2e], entity_weaver: [1.2, 2.0, 1.2, 0x8a3a30],
+  entity_echo: [1.6, 2.0, 1.2, 0x8a3a30], entity_squid: [1.6, 2.0, 1.6, 0x6a5a78],
+  entity_pale: [0.5, 1.0, 1.4, 0xcdc4bd], entity_gaper: [0.5, 1.7, 0.5, 0xb59287],
   entity_shade: [1.0, 2.2, 0.8, 0x050505], entity_eyes: [1.2, 1.2, 0.2, 0x5b3739, 0.9], entity_centipede: [0.9, 1.9, 2.4, 0xad8a7e],
 };
 
@@ -81,7 +84,7 @@ export class Assets {
       t.colorSpace = THREE.SRGBColorSpace;
       t.wrapS = THREE.RepeatWrapping;
       t.wrapT = k.startsWith('wall') ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
-      t.anisotropy = 4;
+      t.anisotropy = 8;
       t.needsUpdate = true;
     }
     for (const k of MODEL_KEYS) prepareModel(this.models[k]);

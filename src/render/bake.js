@@ -29,7 +29,9 @@ export function bakeMaterial(src, mode = 'attr') {
     side: src.side ?? THREE.FrontSide,
     alphaTest: src.alphaTest || 0,
     vertexColors: !!src.vertexColors,
+    normalMap: src.normalMap || null,
   });
+  if (src.normalMap) m.normalScale = new THREE.Vector2(1, 1);
   m.name = src.name;
   if (emissive) {
     m.emissive = (src.emissive && src.emissive.getHex()) ? src.emissive.clone() : (src.color ? src.color.clone() : new THREE.Color(1, 1, 1));
@@ -38,6 +40,8 @@ export function bakeMaterial(src, mode = 'attr') {
     m.userData.baseEmissive = m.emissive.clone();
   }
   const local = { value: new THREE.Vector2(0.6, 0) };
+  const gloss = (src.userData && src.userData.gloss) || 0;
+  const relief = !!src.normalMap;
   m.userData.bake = local;
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, bakeUniforms);
@@ -51,9 +55,18 @@ export function bakeMaterial(src, mode = 'attr') {
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         float bk = (vBake.x + vBake.y * uFlicker) * uPower;
         bk = bk < 0.6 ? bk : 0.6 + (1.0 - exp(-(bk - 0.6) * 1.2)) * 0.75;   // soft knee: hot spots keep a gradient
-        reflectedLight.indirectDiffuse += diffuseColor.rgb * uBakeTint * bk + diffuseColor.rgb * uNV;`);
+        ${relief ? `{ // relief: the baked light comes mostly from above, so bumps facing up catch it
+          vec3 upV = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+          bk *= clamp(1.0 + (dot(normal, upV) - dot(nonPerturbedNormal, upV)) * 1.6, 0.55, 1.45);
+        }` : ''}
+        reflectedLight.indirectDiffuse += diffuseColor.rgb * uBakeTint * bk + diffuseColor.rgb * uNV;
+        ${gloss > 0 ? `{ // polished sheen: the lit room mirrored at grazing angles
+          vec3 V = normalize(vViewPosition);
+          float fres = pow(1.0 - clamp(dot(normal, V), 0.0, 1.0), 4.0);
+          reflectedLight.indirectDiffuse += uBakeTint * bk * fres * ${gloss.toFixed(2)} * 0.55;
+        }` : ''}`);
   };
-  m.customProgramCacheKey = () => 'bake-' + mode;
+  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '');
   if (mode === 'attr') cache.set(key, m);
   return m;
 }

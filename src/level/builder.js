@@ -4,6 +4,9 @@
 import * as THREE from 'three';
 import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y } from '../config.js';
 import { AOBuilder, contactShadows, lightGlows } from '../render/dressing.js';
+import { skyEye } from '../render/skyeye.js';
+import { normalFromTexture, GLOSS, RELIEF } from '../render/normals.js';
+const NORMALS = new Map();   // texture key -> derived normal map (shared by every level)
 import { DIRS, EDGE, VOID } from './map.js';
 import { bakeMaterial, LightField } from '../render/bake.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -77,7 +80,7 @@ const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a
 
 export function buildLevel(gen, assets, def, ctx = {}) {
   const { map } = gen;
-  CHUNK = def.layout ? 54 : 24;   // big hand-made buildings: fewer, larger prop batches
+  CHUNK = def.chunk || (def.layout ? 54 : 24);   // big hand-made buildings: fewer, larger prop batches
   const root = new THREE.Group();
   const field = new LightField(map, gen.lights);
   const T = assets.textures;
@@ -110,11 +113,11 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     const r = map.reg(x, z), i = x + z * map.W;
     if (!isSpace(r)) continue;
     const c = map.center(x, z);
-    if (r >= 0 && !noFloor[i]) gb(texFor(r, 'floor')).quadGrid([x * CELL, 0, (z + 1) * CELL], [1, 0, 0], [0, 0, -1], CELL, CELL, 2, 2, [0, 1, 0],
+    if (r >= 0 && !noFloor[i]) gb(texFor(r, 'floor')).quadGrid([x * CELL, 0, (z + 1) * CELL], [1, 0, 0], [0, 0, -1], CELL, CELL, 3, 3, [0, 1, 0],
       (p) => [p[0] / CELL, -p[2] / CELL], (p) => field.sample(p[0], 0, p[2], 0, 1, 0, c));
     if (openAbove[i]) continue;
     if (noCeil[i]) { sky.push([x, z]); continue; }
-    gb(texFor(r, 'ceil')).quadGrid([x * CELL, WALL_H, z * CELL], [1, 0, 0], [0, 0, 1], CELL, CELL, 2, 2, [0, -1, 0],
+    gb(texFor(r, 'ceil')).quadGrid([x * CELL, WALL_H, z * CELL], [1, 0, 0], [0, 0, 1], CELL, CELL, 3, 3, [0, -1, 0],
       (p) => [p[0] / ceilTile, p[2] / ceilTile], (p) => { const s = field.sample(p[0], WALL_H, p[2], null, null, null, c); return [s[0] * 0.42, s[1] * 0.42]; });
   }
 
@@ -170,8 +173,8 @@ export function buildLevel(gen, assets, def, ctx = {}) {
       const seg = (s0, s1, y0, y1) => {
         if (s1 - s0 < 0.001 || y1 - y0 < 0.001) return;
         const o = [px + tan[0] * s0, y0, pz + tan[2] * s0];
-        const steps = Math.max(1, Math.round((s1 - s0) / 0.75));
-        const vs = Math.max(1, Math.round((y1 - y0) / 1.0));
+        const steps = Math.max(1, Math.round((s1 - s0) / 0.5));
+        const vs = Math.max(1, Math.round((y1 - y0) / 0.6));
         wb.quadGrid(o, tan, [0, 1, 0], s1 - s0, y1 - y0, steps, vs, normal, uvFn, bakeFn);
       };
       // fake ambient occlusion along the creases of this wall
@@ -183,14 +186,14 @@ export function buildLevel(gen, assets, def, ctx = {}) {
         const spans = hole ? [[a, -hole[0]], [hole[0], b]] : [[a, b]];
         for (const [s0, s1] of spans) {
           if (s1 - s0 < 0.01) continue;
-          if (flat) { ao.quad(P(s0, 0.01, 0), tan, normal, s1 - s0, 1.0); ao.quad(P(s0, 0, 0.004), tan, UP, s1 - s0, 0.85); }
+          if (flat) { ao.quad(P(s0, 0.01, 0), tan, normal, s1 - s0, 0.75); ao.quad(P(s0, 0, 0.004), tan, UP, s1 - s0, 0.65); }
         }
-        if (ceil) { ao.quad(P(a, WALL_H - 0.01, 0), tan, normal, b - a, 0.8); ao.quad(P(a, WALL_H, 0.004), tan, DOWN, b - a, 0.6); }
+        if (ceil) { ao.quad(P(a, WALL_H - 0.01, 0), tan, normal, b - a, 0.55); ao.quad(P(a, WALL_H, 0.004), tan, DOWN, b - a, 0.45); }
         for (const t of tz) {
           if (!isSolid(x, z, t)) continue;
           const sign = t.dx * tan[0] + t.dz * tan[2];
           const neg = [-tan[0], 0, -tan[2]];
-          if (sign > 0) ao.quad(P(b, 0, 0.004), UP, neg, top, 0.6); else ao.quad(P(a, 0, 0.004), UP, tan, top, 0.6);
+          if (sign > 0) ao.quad(P(b, 0, 0.004), UP, neg, top, 0.4); else ao.quad(P(a, 0, 0.004), UP, tan, top, 0.4);
         }
       }
       if (hole) {
@@ -209,14 +212,20 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   buildGlass(map, root, field);
 
   const tex = (k) => { const t = T[k]; if (!t) console.warn('missing texture', k); return t || T.wall_hall; };
-  const mkMat = (map_) => bakeMaterial(new THREE.MeshLambertMaterial({ map: map_ }), 'attr');
+  const mkMat = (map_, key) => {
+    const src = new THREE.MeshLambertMaterial({ map: map_ });
+    if (!NORMALS.has(key)) NORMALS.set(key, key === 'pool_water' ? null : normalFromTexture(map_, RELIEF[key] ?? 1.6));
+    src.normalMap = NORMALS.get(key);
+    src.userData.gloss = GLOSS[key] || 0;
+    return bakeMaterial(src, 'attr');
+  };
   for (const [k, g] of gbs) {
     if (!g.pos.length) continue;
-    const m = new THREE.Mesh(g.build(), mkMat(tex(k)));
+    const m = new THREE.Mesh(g.build(), mkMat(tex(k), k));
     m.matrixAutoUpdate = false;
     root.add(m);
   }
-  const aoMesh = ao.mesh(def.aoStrength ?? 0.7);
+  const aoMesh = ao.mesh(def.aoStrength ?? 0.55);
   if (aoMesh) root.add(aoMesh);
   if (sky.length) root.add(skyMesh(sky));
   if ((gen.signs || []).length) root.add(signsMesh(gen.signs, field));
@@ -231,31 +240,34 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     waterMat.userData.base = waterMat.color.clone(); poolMats.push(waterMat);
     const lm = new THREE.MeshBasicMaterial({ color: 0x24507a }); lm.userData.base = lm.color.clone(); poolMats.push(lm);
     const cm = new THREE.MeshBasicMaterial({ color: 0xdfe5e4 }); cm.userData.base = cm.color.clone(); poolMats.push(cm);
+    // every surface, lane line and coping strip of the floor merged per material
+    const wg = [], lg = [], cg = [];
     for (const w of gen.water) {
       const sx = w.maxX - w.minX, sz = w.maxZ - w.minZ;
       const g = new THREE.PlaneGeometry(sx, sz).rotateX(-Math.PI / 2);
       const uv = g.getAttribute('uv');
       for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * sx / 3, uv.getY(i) * sz / 3);
-      const m = new THREE.Mesh(g, waterMat);
-      m.position.set((w.minX + w.maxX) / 2, POOL_Y, (w.minZ + w.maxZ) / 2);
-      m.renderOrder = 2;
-      root.add(m);
+      wg.push(g.translate((w.minX + w.maxX) / 2, POOL_Y, (w.minZ + w.maxZ) / 2));
+      if (w.plain) continue;   // flooded rooms and halls: no pool markings
       // dark navy lane lines on the pool floor, seen through the water
       const alongX = sx >= sz;
       for (let k = 1.5; k < (alongX ? sz : sx) - 0.5; k += 3) {
-        const lg = new THREE.PlaneGeometry(alongX ? sx - 2 : 0.25, alongX ? 0.25 : sz - 2).rotateX(-Math.PI / 2);
-        const l = new THREE.Mesh(lg, lm);
-        l.position.set(alongX ? (w.minX + w.maxX) / 2 : w.minX + k, 0.008, alongX ? w.minZ + k : (w.minZ + w.maxZ) / 2);
-        root.add(l);
+        lg.push(new THREE.PlaneGeometry(alongX ? sx - 2 : 0.25, alongX ? 0.25 : sz - 2).rotateX(-Math.PI / 2)
+          .translate(alongX ? (w.minX + w.maxX) / 2 : w.minX + k, 0.008, alongX ? w.minZ + k : (w.minZ + w.maxZ) / 2));
       }
       // white coping strip around the edge
       for (const [cx, cz, ex, ez] of [[(w.minX + w.maxX) / 2, w.minZ - 0.15, sx + 0.6, 0.3], [(w.minX + w.maxX) / 2, w.maxZ + 0.15, sx + 0.6, 0.3],
         [w.minX - 0.15, (w.minZ + w.maxZ) / 2, 0.3, sz], [w.maxX + 0.15, (w.minZ + w.maxZ) / 2, 0.3, sz]]) {
-        const c = new THREE.Mesh(new THREE.BoxGeometry(ex, 0.06, ez), cm);
-        c.position.set(cx, 0.03, cz);
-        root.add(c);
+        cg.push(new THREE.BoxGeometry(ex, 0.06, ez).translate(cx, 0.03, cz));
       }
     }
+    const add = (list, mat, order) => {
+      if (!list.length) return;
+      const m = new THREE.Mesh(list.length > 1 ? mergeGeometries(list, false) : list[0], mat);
+      if (order) m.renderOrder = order;
+      root.add(m);
+    };
+    add(wg, waterMat, 2); add(lg, lm); add(cg, cm);
   }
 
   // ---------- floor decals ----------
@@ -279,7 +291,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   // ---------- instanced static props ----------
   const inst = new Instancer(assets, field, root);
   // figure statues get their own dynamic instances so they can turn when unobserved
-  const FIG = ['figure_stand', 'figure_reach', 'figure_kneel'];
+  const FIG = ['figure_stand', 'figure_reach', 'figure_kneel', 'mannequin'];
   const figures = [];
   for (const p of gen.props) if (!FIG.includes(p.type)) inst.add(p.type, p.x, p.y || 0, p.z, p.rot, '', null, p.scale);
   for (const kind of FIG) {
@@ -728,55 +740,12 @@ function buildSteps(st, FH, g, field, root, def) {
   if (glass.length) { const gm = new THREE.Mesh(mergeGeometries(glass, false), GLASS); gm.renderOrder = 3; root.add(gm); }
 }
 
-// starry night over open-air cells
-let SKY_TEX = null;
+// wherever a level opens to the sky, the sky is one enormous eye
 function skyMesh(cells) {
   let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
   for (const [x, z] of cells) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); }
-  if (!SKY_TEX) {
-    const S = 1024, c = document.createElement('canvas'); c.width = c.height = S;
-    const g = c.getContext('2d');
-    let seed = 77; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const gr = g.createRadialGradient(S * 0.68, S * 0.3, 20, S / 2, S / 2, S * 0.75);
-    gr.addColorStop(0, '#16213a'); gr.addColorStop(0.45, '#0a1020'); gr.addColorStop(1, '#020309');
-    g.fillStyle = gr; g.fillRect(0, 0, S, S);
-    // faint milky band across the sky
-    g.save(); g.translate(S / 2, S / 2); g.rotate(-0.6);
-    for (let i = 0; i < 900; i++) {
-      const x = (rnd() - 0.5) * S * 1.4, y = (rnd() + rnd() + rnd() - 1.5) * S * 0.09, r = 6 + rnd() * 26;
-      g.fillStyle = `rgba(120,135,180,${0.012 + rnd() * 0.02})`; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-    }
-    g.restore();
-    // stars: mostly faint, a few bright with a soft cross
-    for (let i = 0; i < 1100; i++) {
-      const a = rnd(), x = rnd() * S, y = rnd() * S;
-      const tint = rnd() < 0.15 ? '255,214,180' : rnd() < 0.3 ? '190,210,255' : '228,232,255';
-      g.fillStyle = `rgba(${tint},${0.15 + a * a * 0.8})`;
-      const sz = a > 0.97 ? 2.5 : a > 0.85 ? 1.6 : 1;
-      g.fillRect(x, y, sz, sz);
-      if (a > 0.985) { g.fillStyle = `rgba(${tint},0.25)`; g.fillRect(x - 4, y + sz / 2 - 0.5, 8 + sz, 1); g.fillRect(x + sz / 2 - 0.5, y - 4, 1, 8 + sz); }
-    }
-    // moon: halo, pale disc with maria, then the shadow that makes it a crescent
-    const mx = S * 0.74, my = S * 0.27, mr = 30;
-    const halo = g.createRadialGradient(mx, my, mr, mx, my, mr * 7);
-    halo.addColorStop(0, 'rgba(190,200,190,0.28)'); halo.addColorStop(0.3, 'rgba(120,130,140,0.1)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = halo; g.fillRect(mx - mr * 7, my - mr * 7, mr * 14, mr * 14);
-    g.fillStyle = '#dcdcc8'; g.beginPath(); g.arc(mx, my, mr, 0, Math.PI * 2); g.fill();
-    for (let i = 0; i < 9; i++) { g.fillStyle = `rgba(150,150,135,${0.25 + rnd() * 0.3})`; g.beginPath(); g.arc(mx + (rnd() - 0.5) * mr * 1.2, my + (rnd() - 0.5) * mr * 1.2, 3 + rnd() * 8, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = 'rgba(5,8,16,0.93)'; g.beginPath(); g.arc(mx + 12, my - 9, mr - 1, 0, Math.PI * 2); g.fill();
-    // thin clouds, lit from the moon side
-    for (let i = 0; i < 70; i++) {
-      const cx = rnd() * S, cy = rnd() * S, w = 60 + rnd() * 180, h = 8 + rnd() * 18;
-      const near = Math.max(0, 1 - Math.hypot(cx - mx, cy - my) / (S * 0.5));
-      const cg = g.createRadialGradient(cx, cy, 0, cx, cy, w / 2);
-      cg.addColorStop(0, `rgba(${60 + near * 70},${66 + near * 70},${84 + near * 60},${0.18 + near * 0.12})`); cg.addColorStop(1, 'rgba(20,24,34,0)');
-      g.save(); g.translate(cx, cy); g.scale(1, h / w); g.translate(-cx, -cy);
-      g.fillStyle = cg; g.beginPath(); g.arc(cx, cy, w / 2, 0, Math.PI * 2); g.fill(); g.restore();
-    }
-    SKY_TEX = new THREE.CanvasTexture(c); SKY_TEX.colorSpace = THREE.SRGBColorSpace;
-  }
-  const w = (x1 - x0 + 1) * CELL + 40, d = (z1 - z0 + 1) * CELL + 40;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ map: SKY_TEX, fog: false }));
+  const w = (x1 - x0 + 1) * CELL + 24, d = (z1 - z0 + 1) * CELL + 24;
+  const m = skyEye(w, d);
   m.position.set((x0 + x1 + 1) / 2 * CELL, WALL_H + 9, (z0 + z1 + 1) / 2 * CELL);
   return m;
 }
@@ -789,11 +758,12 @@ function signsMesh(signs, field) {
   const g = c.getContext('2d');
   const STY = { plate: ['#1f3a2c', '#d8cfb2', '#e8e0c6'], mall: ['#ece6d8', '#a8342c', '#a8342c'], neon: ['#141414', '#3fa7b3', '#7fe3ee'] };
   texts.forEach((key, i) => {
-    const [st, t] = key.split('|'), [bg, line, fg] = STY[st] || STY.plate;
+    // style may also be a custom palette 'bg,frame,letters[,font]' (mall brand plates)
+    const [st, t] = key.split('|'), [bg, line, fg, font] = STY[st] || (st[0] === '#' ? st.split(',') : STY.plate);
     const y = i * RH;
     g.fillStyle = bg; g.fillRect(0, y, 512, RH);
     g.strokeStyle = line; g.lineWidth = 6; g.strokeRect(8, y + 8, 496, RH - 16);
-    g.fillStyle = fg; g.font = 'bold 50px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = fg; g.font = `bold 50px ${font || 'Arial, sans-serif'}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText(t, 256, y + 52, 470);
   });
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = false;
@@ -803,7 +773,7 @@ function signsMesh(signs, field) {
     for (let k = 0; k < uv.count; k++) uv.setY(k, (i + (1 - uv.getY(k))) / texts.length);
     pg.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(sg.x, sg.y, sg.z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sg.rot), new THREE.Vector3(1, 1, 1)));
     const b = field.sample(sg.x, 2.3, sg.z, null, null, null, null), n = pg.attributes.position.count, bk = new Float32Array(n * 2);
-    for (let k = 0; k < n; k++) { bk[k * 2] = Math.max(sg.style === 'mall' ? 0.45 : 0.12, b[0]); bk[k * 2 + 1] = b[1]; }
+    for (let k = 0; k < n; k++) { bk[k * 2] = Math.max(sg.style === 'mall' || sg.glow ? 0.45 : 0.12, b[0]); bk[k * 2 + 1] = b[1]; }
     pg.setAttribute('bake', new THREE.BufferAttribute(bk, 2));
     return pg;
   });

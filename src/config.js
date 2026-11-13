@@ -60,12 +60,12 @@ export const LEVELS = [
   },
   {
     id: 2, code: 'LEVEL 1', name: 'Sayap Detensi',
-    subtitle: 'Tiga lantai sel mengelilingi satu menara. Penggarisnya berbunyi sebelum ia datang.',
+    subtitle: 'Tiga lantai sel mengelilingi satu menara. Jeritannya terdengar sebelum langkahnya.',
     tint: [0.82, 0.92, 1.04], fogColor: 0x05070a, grade: [0.94, 0.99, 1.06], seed: 451, layout: 'detention', size: [28, 24], floors: 3, rail: 'bars', seeAll: true,
     textures: ['floor_tile', 'floor_tile', 'ceiling_tile', 'cell_wall', 'cell_wall'],
     lightsOff: 0.3, flicker: 0.2, fog: 0.065,
     fuses: 3, keys: 1, batteries: 4, notes: 3, erasers: 5,
-    entities: [{ type: 'masked' }], hallTheme: 'hall',
+    entities: [{ type: 'spider' }], hallTheme: 'hall',
   },
   {
     id: 3, code: 'LEVEL 2', name: 'Rumah Sakit',
@@ -78,16 +78,16 @@ export const LEVELS = [
   },
   {
     id: 4, code: 'LEVEL 3', name: 'Mal Tanpa Ujung',
-    subtitle: 'Tiga lantai, satu atrium, dan sebuah perumahan yang seharusnya tidak ada di dalamnya.',
-    tint: [1.02, 0.97, 0.9], fogColor: 0x0a0807, grade: [1.03, 0.99, 0.96], seed: 2207, layout: 'mall', size: [34, 26], floors: 3, theme: 'mall', clean: true, rail: 'glass', seeAll: true,
-    lightsOff: 0.45, flicker: 0.18, fog: 0.045, lockerReach: 5,
+    subtitle: 'Satu bulevar panjang, tiga lantai, dan manekin yang selalu menghadap ke arahmu. Mal sudah tutup sejak tadi.',
+    tint: [1.02, 0.97, 0.9], fogColor: 0x0a0807, grade: [1.03, 0.99, 0.96], seed: 2207, layout: 'mall', dress: 'pakuwon', size: [36, 18], floors: 3, theme: 'mall', clean: true, rail: 'glass', seeAll: true,
+    lightsOff: 0.5, flicker: 0.25, fog: 0.05, lockerReach: 7, chunk: 108,
     fuses: 4, keys: 1, batteries: 7, notes: 3, erasers: 5,
     entities: [{ type: 'shade' }], hallTheme: 'hall',
   },
   {
     id: 5, code: 'LEVEL 4', name: 'Kolam Renang',
-    subtitle: 'Lima lantai keramik putih. Satu-satunya jalan cepat ke bawah adalah meluncur.',
-    tint: [0.92, 1.0, 1.04], fogColor: 0x0c1416, grade: [0.96, 1.02, 1.05], seed: 3112, layout: 'poolrooms', size: [26, 24], floors: 5, theme: 'pool', clean: true, rail: 'parapet', railColor: 0xe9eef0, railCap: 0x5aa6b8, seeAll: true,
+    subtitle: 'Lima lantai keramik putih di sekeliling kolam yang sudah dikuras. Airnya masih ada. Hanya saja di tempat yang salah.',
+    tint: [0.92, 1.0, 1.04], fogColor: 0x0c1416, grade: [0.96, 1.02, 1.05], seed: 3112, layout: 'poolrooms', size: [28, 26], floors: 5, theme: 'pool', clean: true, rail: 'parapet', railColor: 0xe9eef0, railCap: 0x5aa6b8, seeAll: true, seeNear: 1, sparseFixtures: true,
     lightsOff: 0.04, flicker: 0.04, fog: 0.028,
     fuses: 4, keys: 1, batteries: 4, notes: 3, erasers: 7,
     entities: [{ type: 'centipede' }], hallTheme: 'hall',
@@ -104,7 +104,7 @@ export const LEVELS = [
 ];
 
 // Every resident that can appear (Room menu + endless mode).
-export const RESIDENTS = ['pale', 'masked', 'gaper', 'shade', 'eyes', 'centipede', 'monitor', 'substitute', 'principal'];
+export const RESIDENTS = ['pale', 'spider', 'gaper', 'shade', 'centipede', 'eyes', 'clock', 'weaver', 'echo', 'squid'];
 
 // Endless mode: every floor is a fresh random multi-storey building
 // (src/level/layouts.js `endless`) that grows bigger, taller and harder.

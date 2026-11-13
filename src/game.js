@@ -6,6 +6,7 @@ import { buildLevel, cloneWithBake, buildSlides } from './level/builder.js';
 import { bakeUniforms } from './render/bake.js';
 import { VHS } from './render/vhs.js';
 import { Dust } from './render/dressing.js';
+import { updateSkyEyes, resetSkyEyes } from './render/skyeye.js';
 import { World } from './world.js';
 import { Player } from './player.js';
 import { DoorSystem, Interactor } from './interact.js';
@@ -18,7 +19,7 @@ import { clamp, damp, angleDiff } from './util/rng.js';
 const CUES = {
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
-  hiss: 'Desisan panjang', ruler: 'Penggaris besi diketuk', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
+  hiss: 'Desisan panjang', tick: 'Detak jam kakek', chime: 'Dentang lonceng jam', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
   whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah',
 };
 
@@ -55,11 +56,12 @@ export class Game {
 
   applySettings() {
     const s = this.settings;
-    const high = s.quality === 'high';
-    this.pixelRatio = Math.min(devicePixelRatio || 1, high ? 1.5 : 1);
+    const q = s.quality === 'ultra' ? 2 : s.quality === 'high' ? 1 : 0;
+    this.pixelRatio = Math.min(devicePixelRatio || 1, [1, 1.5, 2][q]);
     this.clear = s.screen === 'clear';
     // clear HD: sharper image (full resolution) and none of the broken-tape effects
-    this.baseScale = this.clear ? (high ? 1 : 0.9) : (high ? 1 : 0.7) * (this.input.touch ? 0.8 : 1);
+    this.baseScale = this.clear ? (q ? 1 : 0.9) : (q ? 1 : 0.8) * (this.input.touch && !q ? 0.9 : 1);
+    this.vhs.setSamples(q ? 4 : 0);
     this.vhs.scale = this.baseScale;
     this.vhs.enabled = true;
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
@@ -81,6 +83,7 @@ export class Game {
   // ------------------------------------------------------------------ level
   loadLevel(index, difficulty, defOverride = null) {
     this.unload();
+    resetSkyEyes();
     const def = this.def = defOverride || LEVELS[index];
     this.levelIndex = index;
     this.diffKey = difficulty;
@@ -432,7 +435,7 @@ export class Game {
       if (t && entity.kind !== 'eyes') { const [x, z] = this.map.center(...t); entity.pos.set(x, 0, z); }
       entity.state = entity.kind === 'eyes' ? 'watch' : entity.kind === 'shade' ? 'lurk' : 'patrol';
       entity.path = null; entity.gaze = 0; entity.calmT = 5; entity.suspicion = 0; entity.waitT = 3;
-      if (entity.kind === 'substitute' || entity.kind === 'gaper') { entity.aware = false; entity.target = null; }
+      if (entity.kind === 'echo' || entity.kind === 'gaper') { entity.aware = false; entity.target = null; }
       if (locker) this.toggleLocker(locker);
       this.onChaseEnd(entity);
       return;
@@ -511,7 +514,7 @@ export class Game {
     else if (it.type === 'eraser') {
       p.inventory.erasers++;
       if (this.hintsSeen.has('eraser')) this.hud.toast('Penghapus papan diambil');
-      this.hint('eraser', this.input.touch ? 'Tekan LEMPAR untuk melempar penghapus — bunyinya memancing Petugas ke sana.' : 'Tekan G / klik kanan untuk melempar penghapus — bunyinya memancing Petugas ke sana.', 5);
+      this.hint('eraser', this.input.touch ? 'Tekan LEMPAR untuk melempar penghapus — bunyinya memancing penghuni ke sana.' : 'Tekan G / klik kanan untuk melempar penghapus — bunyinya memancing penghuni ke sana.', 5);
     }
     else if (it.type === 'battery') { p.battery = Math.min(100, p.battery + 45); this.hud.toast('Baterai kamera +45%'); }
   }
@@ -619,7 +622,6 @@ export class Game {
     if (this.flickerT <= 0) { this.flickerT = 0.04 + Math.random() * (Math.random() < 0.2 ? 0.5 : 0.12); this.flickerVal = Math.random() < 0.3 ? Math.random() * 0.25 : 0.75 + Math.random() * 0.25; }
     let danger = 0, near = Infinity;
     for (const e of this.entities) {
-      if (e.kind === 'pupil') continue;
       const d = Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z);
       near = Math.min(near, d);
       const los = d < 18 && this.world.los(e.pos.x, e.pos.z, p.pos.x, p.pos.z);
@@ -663,7 +665,7 @@ export class Game {
       const dx = k.pos.x - p.camera.position.x, dz = k.pos.z - p.camera.position.z;
       const dist = Math.hypot(dx, dz);
       // pull it right up to the lens and make it face us
-      const want = k.kind === 'centipede' ? 1.0 : k.kind === 'eyes' ? 0.9 : 0.62;
+      const want = { centipede: 1.0, eyes: 0.9, spider: 1.3, clock: 0.8, weaver: 0.9, echo: 1.0, squid: 0.9 }[k.kind] ?? 0.62;
       if (dist > want) { const step = Math.min(dist - want, dt * (T < 0.25 ? 14 : 5)); k.pos.x -= (dx / dist) * step; k.pos.z -= (dz / dist) * step; }
       k.yaw = Math.atan2(-dx, -dz);
       const hx = head.x - p.camera.position.x, hz = head.z - p.camera.position.z;
@@ -717,6 +719,7 @@ export class Game {
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
     this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);
+    updateSkyEyes(t, Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t))), bakeUniforms.uPower.value); this.lastRenderT = t;
     this.vhs.render(this.scene, this.camera, t);
   }
 
@@ -875,7 +878,7 @@ export class Game {
     const why = this.lockerReason; this.lockerReason = null;
     if (why === 'seen') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihatmu masuk ke ${k.lockerTarget && k.lockerTarget.kind === 'stall' ? 'bilik' : 'loker'}. Bersembunyilah saat tidak sedang terlihat.`;
     if (why === 'breath') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} mendengar napasmu. Saat ada yang mendekati tempat persembunyianmu, tahan napas (${this.input.touch ? 'tombol NAPAS' : 'SPASI'}) sampai langkahnya pergi.`;
-    if (this.blackoutT > 0 && (k.kind === 'substitute' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
+    if (this.blackoutT > 0 && (k.kind === 'echo' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
     return (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';
   }
 }

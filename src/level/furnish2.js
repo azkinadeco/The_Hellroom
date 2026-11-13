@@ -18,6 +18,10 @@ function frameFor(r, rng) {
   return roomFrame(r, side);
 }
 
+// plug-in furnishing / dressing from per-level modules (mall.js, pool.js)
+export const FURNISH = {};   // room type -> (r, f, rng, P, def)
+export const DRESS = {};     // dress name -> (f, rng, reserved, def)
+
 export function furnishExtra(r, f, rng, def) {
   const out = f.out;
   const P = (type, x, z, rot, size, o) => f.prop(type, x, z, rot, size, o);
@@ -50,7 +54,9 @@ export function furnishExtra(r, f, rng, def) {
       if (!r.spots.length) r.spots.push([r.cx, 0.03, r.cz]);
       return true;
     }
-    default: return false;
+    default:
+      if (FURNISH[r.type]) { FURNISH[r.type](r, f, rng, P, def); return true; }
+      return false;
   }
 }
 
@@ -513,6 +519,7 @@ function street(r, f, rng, P) {
 // ---------------------------------------------------------------- halls
 export function dressExtra(f, rng, def, reserved) {
   const dress = def.dress || def.layout;
+  if (DRESS[dress]) DRESS[dress](f, rng, reserved, def);
   if (dress === 'mall') dressMall(f, rng, reserved);
   if (dress === 'school') dressSchool(f, rng, reserved);
   if (dress === 'hospital') dressHospital(f, rng, reserved);

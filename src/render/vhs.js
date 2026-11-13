@@ -8,6 +8,15 @@ uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery, uClean;
 uniform vec2 uRes, uTexel;
 uniform vec3 uGrade;
 varying vec2 vUv;
+// filmic grade: gentle S-curve, a little extra saturation, cool lifted shadows
+vec3 grade(vec3 c){
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(l), c, 1.12);
+  c += vec3(0.006, 0.008, 0.016) * (1.0 - smoothstep(0.0, 0.3, l));
+  vec3 s = c * c * (3.0 - 2.0 * c);
+  c = mix(c, s, 0.35);
+  return clamp(c, 0.0, 1.0) * uGrade;
+}
 // cheap single-pass glow: two rings of taps, only the bright part counts
 vec3 bloom(vec2 uv){
   vec3 b = vec3(0.0);
@@ -25,7 +34,7 @@ float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453)
 void main(){
   // "Layar jernih": no lens, jitter, tracking, aberration, grain, scanlines or static
   if (uClean > 0.5) {
-    vec3 c = pow(max(texture2D(tDiffuse, vUv).rgb + bloom(vUv), 0.0), vec3(1.0 / 2.2)) * uGrade;
+    vec3 c = grade(pow(max(texture2D(tDiffuse, vUv).rgb + bloom(vUv), 0.0), vec3(1.0 / 2.2)));
     if (uNV > 0.5) { float n = pow(dot(c, vec3(0.3, 0.6, 0.1)) * 2.6, 0.75); c = vec3(0.25, 1.0, 0.35) * n; }
     vec2 q = vUv - 0.5;
     c *= mix(0.82, 1.0, smoothstep(0.9, 0.3, length(q * vec2(1.1, 1.25))));
@@ -56,7 +65,7 @@ void main(){
   col.b = texture2D(tDiffuse, uv - vec2(ca, 0.0)).b;
   // render target is sRGB-encoded storage, sampled back as linear -> encode for display
   col += bloom(uv);
-  col = pow(max(col, 0.0), vec3(1.0 / 2.2)) * uGrade;
+  col = grade(pow(max(col, 0.0), vec3(1.0 / 2.2)));
 
   // camcorder colour grade: lifted blacks, yellow-green cast, mild desaturation
   float l = dot(col, vec3(0.299, 0.587, 0.114));
@@ -114,6 +123,13 @@ export class VHS {
     this.scene = new THREE.Scene(); this.scene.add(this.quad);
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.enabled = true;
+  }
+  // multisampled scene target (MSAA) on the higher presets
+  setSamples(n) {
+    if (this.target.samples === n) return;
+    const t = new THREE.WebGLRenderTarget(this.target.width, this.target.height, { depthBuffer: true, samples: n, type: THREE.UnsignedByteType });
+    t.texture.colorSpace = THREE.SRGBColorSpace;
+    this.target.dispose(); this.target = t; this.uniforms.tDiffuse.value = t.texture;
   }
   setSize(w, h, pr) {
     const s = this.scale * pr;

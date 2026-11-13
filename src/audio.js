@@ -418,6 +418,27 @@ export class Audio {
       o.connect(og); this._env(og, t, 0.002, 0.06 * vol, 0.35); o.start(t); o.stop(t + 0.4);
     }
   }
+  // grandfather clock: dry wooden tick-tock
+  tick(pos, vol = 0.6) {
+    if (!this.ready) return;
+    this._cue('tick', pos);
+    const t = this.t;
+    for (const [dt, fr] of [[0, 2300], [0.5, 1700]]) {
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+      const f = this._filter('bandpass', fr, 6), g = this._out(pos, 0.5);
+      src.connect(f).connect(g); this._env(g, t + dt * (vol > 0.8 ? 0.5 : 1), 0.001, 0.45 * vol, 0.04); src.start(t + dt * (vol > 0.8 ? 0.5 : 1), Math.random()); src.stop(t + dt + 0.08);
+    }
+  }
+  // its bell: a low, out-of-tune chime
+  chime(pos) {
+    if (!this.ready) return;
+    this._cue('chime', pos);
+    const t = this.t;
+    for (const [fr, a] of [[196, 0.22], [394, 0.12], [587, 0.07], [1013, 0.04]]) {
+      const o = this._osc('sine', fr * (0.985 + Math.random() * 0.03)), g = this._out(pos, 0.9);
+      o.connect(g); this._env(g, t, 0.004, a, 2.6); o.start(t); o.stop(t + 2.8);
+    }
+  }
   chorus(pos) {
     if (!this.ready) return;
     this._cue('chorus', pos);
@@ -555,9 +576,9 @@ export class Audio {
   sting(kind, pos) {
     if (!this.ready) return;
     const p = pos ? { x: pos.x, y: 1.5, z: pos.z } : null;
-    const map = { pale: () => this.hiss(p), masked: () => { this.rulerTap(p, 1.4); setTimeout(() => this.rulerTap(p, 1.4), 90); }, gaper: () => { this.bones(p); this.scream(p); },
+    const map = { pale: () => this.hiss(p), spider: () => { this.scream(p); this.bones(p); }, clock: () => { this.chime(p); this.tick(p, 1.2); }, gaper: () => { this.bones(p); this.scream(p); },
       shade: () => this.whisper(p, 1.6), eyes: () => { this.squelch(p, 1.5); this.squelch(p, 1.2); }, centipede: () => this.chorus(p),
-      monitor: () => this.whistle(p), principal: () => this.paVoice(1, p) };
+      weaver: () => { this.chorus(p); this.squelch(p, 1.4); }, echo: () => this.chorus(p), squid: () => { this.hiss(p); this.squelch(p, 1.3); } };
     (map[kind] || (() => this.scream(p)))();
     // deep sub drop
     const t = this.t, o = this._osc('sine', 90), g = this._out(null, 0);

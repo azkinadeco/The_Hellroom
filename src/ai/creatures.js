@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { CELL } from '../config.js';
 import { DIRS, EDGE } from '../level/map.js';
-import { Entity, Monitor, Substitute, Pupil, Principal } from './entities.js';
+import { Entity, Monitor, Substitute } from './entities.js';
 import { findPath } from './path.js';
 
 // Names, death screens and first-encounter tips for every resident.
@@ -14,12 +14,6 @@ export const ENTITY_INFO = {
     name: 'Si Pucat',
     death: 'Si Pucat menemukanmu. Ia tidak punya mata. Ia mendengar setiap langkahmu. Jongkok dan berjalanlah pelan, jangan berlari di dekatnya.',
     hint: 'Si Pucat buta, tapi telinganya sangat tajam. Jongkok untuk lewat, dan lempar penghapus untuk mengalihkannya.',
-  },
-  masked: {
-    lore: 'Guru piket sekolah ini. Tidak ada yang tahu wajah di balik topeng putihnya. Ia berpatroli dengan penggaris besi di tangan, dan ketukannya ke telapak tangan terdengar sampai ke ujung lorong.',
-    name: 'Guru Bertopeng',
-    death: 'Guru Bertopeng memergokimu. Kalau terdengar bunyi penggaris diketuk, ia sedang berjaga. Jauhi pandangannya dan bersembunyilah sebelum terlihat.',
-    hint: 'Bunyi penggaris diketuk berarti Guru Bertopeng sedang berjaga di dekatmu. Ia bisa melihat dan mendengar.',
   },
   gaper: {
     lore: 'Spesimen nomor tiga dari lab biologi. Rahangnya terus melebar sejak toplesnya pecah. Ia membeku seperti patung selama ada yang menatapnya, tapi tidak pernah benar-benar diam.',
@@ -45,14 +39,36 @@ export const ENTITY_INFO = {
     death: 'Kelabang menangkapmu. Wajah-wajahnya melihat ke segala arah. Kamu tidak bisa menyelinap di belakangnya, jadi putuskan garis pandangnya dengan pintu dan dinding.',
     hint: 'Kelabang melihat ke segala arah, tapi jarak pandangnya pendek. Gunakan dinding dan loker untuk memutus pandangannya.',
   },
-  monitor: {
-    lore: 'Petugas ketertiban yang tinggi kurus dan tanpa mata. Peluitnya menandakan kamu sudah ketahuan.', name: 'Petugas Ketertiban', death: 'Petugas Ketertiban menemukanmu. Ia mendengar dan melihat. Berjalanlah, jangan berlari, dan tahan napas di loker.' },
-  substitute: {
-    lore: 'Guru pengganti dari kapur dan kayu. Ia hanya bergerak saat tidak ada yang melihatnya.', name: 'Guru Pengganti', death: 'Kamu berpaling dari Guru Pengganti. Jaga pandanganmu padanya, dan jangan biarkan ia berada dalam gelap.' },
-  principal: {
-    lore: 'Kepala sekolah dengan corong pengeras suara sebagai kepala. Setiap kali melihatmu, seluruh sekolah ikut mendengarnya.', name: 'Kepala Sekolah', death: 'Kepala Sekolah menangkapmu. Ia lambat, tapi setiap kali melihatmu, seluruh sekolah tahu di mana kamu.' },
-  pupil: {
-    lore: 'Anak berjas hujan kuning dengan kantong kertas di kepala. Ia tidak menyerang, tapi jeritannya memanggil penghuni lain.', name: 'Si Murid', death: 'Sesuatu menemukanmu.' },
+  spider: {
+    lore: 'Tubuh laba-laba sebesar lemari, berjalan dengan empat kaki manusia yang lututnya menekuk ke atas. Di bawah perutnya tergantung seorang perempuan, terbalik, mulutnya selalu terbuka. Jeritannya terdengar sebelum langkahnya.',
+    name: 'Laba-Laba Kaki',
+    death: 'Laba-Laba Kaki menangkapmu. Ia sangat cepat begitu melihatmu. Jangan biarkan ia punya garis pandang: putus dengan dinding dan pintu, lalu sembunyi.',
+    hint: 'Laba-Laba Kaki lebih cepat darimu saat berlari. Begitu ia melihatmu, ia mengejar sampai pandangannya terputus. Belok, tutup pintu, sembunyi di loker.',
+  },
+  clock: {
+    lore: 'Jam kakek tua dari ruang kepala sekolah yang suatu malam berdiri di atas dua kaki. Detaknya terdengar dari ujung lorong. Di dalam pintunya, di samping bandul, menggantung sebuah lidah.',
+    name: 'Jam Kakek',
+    death: 'Jam Kakek menangkapmu. Dengarkan detaknya: makin keras, makin dekat. Saat lonceng berdentang, ia sudah melihatmu.',
+    hint: 'Detak jam = Jam Kakek di dekatmu. Ia lambat berjalan tapi tidak pernah berhenti mengejar selama masih melihatmu.',
+  },
+  weaver: {
+    lore: 'Seorang perempuan tanpa kulit yang dililit tulang punggungnya sendiri. Di sepanjang tulang itu tumbuh mata-mata biru dan tangan-tangan kecil. Ia menyeret tumpukan tulang di bawah tubuhnya ke mana pun ia pergi.',
+    name: 'Penenun Tulang',
+    death: 'Penenun Tulang menangkapmu. Mata di tulang punggungnya melihat ke segala arah, tapi tidak jauh. Jaga jarak dan putuskan pandangannya dengan dinding.',
+    hint: 'Penenun Tulang melihat ke segala arah dalam jarak dekat. Ia lambat. Jangan biarkan ia mendekat tanpa kamu sadari: dengarkan bunyi basahnya.',
+  },
+  echo: {
+    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.',
+    name: 'Gema Retak',
+    death: 'Kamu berpaling dari Gema Retak. Selama kamu menatapnya ia membeku, tapi begitu kamu berkedip atau lampu padam, ia sudah di depanmu.',
+    hint: 'Gema Retak hanya bergerak saat tidak kamu lihat. Mundurlah sambil terus menatapnya, dan nyalakan senter saat gelap.',
+  },
+  squid: {
+    lore: 'Seorang perempuan berambut basah yang pinggangnya berubah menjadi tentakel gurita. Ia berbisik dari ujung lorong supaya kamu mendekat. Organ-organnya terlihat di balik kain yang robek.',
+    name: 'Perempuan Gurita',
+    death: 'Perempuan Gurita menangkapmu. Bisikannya memancingmu mendekat. Begitu ia melihatmu, larilah dan putuskan pandangannya.',
+    hint: 'Kalau terdengar bisikan, Perempuan Gurita ada di dekat sana. Pendengarannya tajam: jalan pelan dan jongkok.',
+  },
 };
 
 // ------------------------------------------------------------ Si Pucat ----
@@ -84,50 +100,80 @@ class Pale extends Monitor {
   }
 }
 
-// ------------------------------------------------------- Guru Bertopeng ----
-class Masked extends Monitor {
+// ------------------------------------------------------------- Kelabang ----
+class Centipede extends Monitor {
   constructor(game, cell) {
-    super(game, cell, 'masked', { walk: 1.45, run: 4.2, stepEvery: 1.0, stepVol: [0.3, 0.5] });
-    this.tapCd = 1.5 + Math.random() * 2;
-    this.walkTapT = 6 + Math.random() * 6;
-    this.busyAnim = 0;
+    super(game, cell, 'centipede', { walk: 1.15, run: 3.8, sight: [12, 360, 28, 360], stepEvery: 0.45, stepVol: [0.1, 0.2], radius: 0.6 });
   }
-  chaseSound() {
-    const a = this.game.audio;
-    a.rulerTap(this.pos, 1); this.game.schedule(0.18, () => a.rulerTap(this.pos, 1)); this.game.schedule(0.36, () => a.rulerTap(this.pos, 1));
+  chaseSound() { this.game.audio.chorus(this.pos); }
+}
+
+// -------------------------------------------------------- Laba-Laba Kaki ----
+// Fast and far-sighted; the hanging woman screams when it starts a chase.
+class Spider extends Monitor {
+  constructor(game, cell) {
+    super(game, cell, 'spider', { walk: 1.7, run: 4.9, sight: [17, 140, 32, 360], stepEvery: 0.42, stepVol: [0.15, 0.3], radius: 0.7 });
+    this.skitterT = 1;
   }
-  onIdle(dt) {
-    this.tapCd -= dt;
-    if (this.tapCd > 0 || this.busyAnim) return;
-    this.tapCd = 8 + Math.random() * 8;
-    this.busyAnim = 1.2;
-    this.play('Tap', 0.2, true);
-    const g = this.game;
-    g.schedule(0.42, () => g.audio.rulerTap(this.pos, 0.6));
-    g.schedule(0.75, () => g.audio.rulerTap(this.pos, 0.6));
-  }
+  chaseSound() { this.game.audio.scream(this.pos); }
   update(dt) {
-    if (this.busyAnim) {
-      this.busyAnim = Math.max(0, this.busyAnim - dt);
-      if (this.state !== 'patrol') this.busyAnim = 0;
-    }
-    // taps the ruler while walking too, so the player can hear it coming
-    this.walkTapT -= dt;
-    if (this.walkTapT <= 0 && (this.velocity || 0) > 0.2 && this.state !== 'chase' && this.state !== 'attack') {
-      this.walkTapT = 9 + Math.random() * 7;
-      const g = this.game;
-      g.audio.rulerTap(this.pos, 0.55); g.schedule(0.35, () => g.audio.rulerTap(this.pos, 0.55));
-    }
+    this.skitterT -= dt;
+    if (this.skitterT <= 0 && (this.velocity || 0) > 0.3) { this.skitterT = this.state === 'chase' ? 0.35 : 0.9; if (this.distTo(this.game.player.pos) < 22) this.game.audio.bones(this.pos); }
     super.update(dt);
   }
 }
 
-// ------------------------------------------------------------- Kelabang ----
-class Centipede extends Monitor {
+// ------------------------------------------------------------ Jam Kakek ----
+// Ticks all the time (faster when hunting), chimes when it sees you.
+class Clock extends Monitor {
   constructor(game, cell) {
-    super(game, cell, 'centipede', { walk: 1.15, run: 3.8, sight: [12, 360, 17, 360], stepEvery: 0.45, stepVol: [0.1, 0.2], radius: 0.6 });
+    super(game, cell, 'clock', { walk: 1.25, run: 4.0, sight: [15, 110, 28, 360], stepEvery: 0.8, stepVol: [0.5, 0.8], radius: 0.55 });
+    this.tickT = 1;
+  }
+  chaseSound() { const a = this.game.audio; a.chime(this.pos); this.game.schedule(0.9, () => a.chime(this.pos)); }
+  update(dt) {
+    this.tickT -= dt;
+    if (this.tickT <= 0) { this.tickT = this.state === 'chase' ? 0.5 : 1.0; if (this.distTo(this.game.player.pos) < 26) this.game.audio.tick(this.pos, this.state === 'chase' ? 0.9 : 0.6); }
+    super.update(dt);
+  }
+}
+
+// ------------------------------------------------------- Penenun Tulang ----
+// Eyes all along its spine: sees all round but not far; slow, wet.
+class Weaver extends Monitor {
+  constructor(game, cell) {
+    super(game, cell, 'weaver', { walk: 1.0, run: 3.7, sight: [11, 360, 26, 360], stepEvery: 0.9, stepVol: [0.1, 0.2], radius: 0.6 });
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
+  update(dt) {
+    this.wetT = (this.wetT || 1) - dt;
+    if (this.wetT <= 0 && (this.velocity || 0) > 0.2) { this.wetT = 1.1; if (this.distTo(this.game.player.pos) < 18) this.game.audio.squelch(this.pos, 0.45); }
+    super.update(dt);
+  }
+}
+
+// ----------------------------------------------------- Perempuan Gurita ----
+// Whispers to lure you closer; keen ears.
+class Squid extends Monitor {
+  constructor(game, cell) {
+    super(game, cell, 'squid', { walk: 1.35, run: 4.4, sight: [14, 120, 30, 360], stepEvery: 0.7, stepVol: [0.12, 0.25], radius: 0.6 });
+    this.lureT = 4;
+  }
+  chaseSound() { this.game.audio.hiss(this.pos); }
+  onNoise(x, z, strength, type) { super.onNoise(x, z, Math.min(1, strength * 1.5), type); }
+  update(dt) {
+    this.lureT -= dt;
+    if (this.lureT <= 0) { this.lureT = 5 + Math.random() * 5; const d = this.distTo(this.game.player.pos); if (d < 24 && this.state !== 'chase') this.game.audio.whisper(this.pos, 0.6); }
+    if ((this.velocity || 0) > 0.2) { this.wetT = (this.wetT || 1) - dt; if (this.wetT <= 0) { this.wetT = 0.9; this.game.audio.squelch(this.pos, 0.3); } }
+    super.update(dt);
+  }
+}
+
+// ------------------------------------------------------------ Gema Retak ----
+// Freezes while watched (the old substitute rules), comes for you unseen.
+class Echo extends Substitute {
+  constructor(game, cell) { super(game, cell, 'echo'); this.speed = 4.7; this.radius = 0.5; }
+  moveSound() { this.game.audio.whisper(this.pos, 0.35); }
 }
 
 // ----------------------------------------------------------- Si Penganga ----
@@ -380,14 +426,15 @@ class Eyes extends Entity {
 export function spawnEntity(game, type, cell) {
   switch (type) {
     case 'pale': return new Pale(game, cell);
-    case 'masked': return new Masked(game, cell);
     case 'gaper': return new Gaper(game, cell);
     case 'shade': return new Shade(game, cell);
     case 'eyes': return new Eyes(game, cell);
     case 'centipede': return new Centipede(game, cell);
-    case 'principal': return new Principal(game, cell);
-    case 'monitor': return new Monitor(game, cell);
-    case 'substitute': return new Substitute(game, cell);
-    default: return new Pupil(game, cell);
+    case 'spider': return new Spider(game, cell);
+    case 'clock': return new Clock(game, cell);
+    case 'weaver': return new Weaver(game, cell);
+    case 'echo': return new Echo(game, cell);
+    case 'squid': return new Squid(game, cell);
+    default: return new Spider(game, cell);
   }
 }

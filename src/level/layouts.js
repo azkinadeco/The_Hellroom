@@ -3,7 +3,7 @@
 import { CELL } from '../config.js';
 
 // ---------------------------------------------------------------------------
-// LEVEL 0 — a real two-storey school round an open-air courtyard (lapangan).
+// LEVEL 0 — a real two-storey school round a roofed-over courtyard (lapangan).
 // Ring corridors face the yard through a colonnade on the ground floor and a
 // balcony upstairs; classrooms, offices, toilets, canteen, library, UKS and the
 // hall sit round the outside. Two stairwells link the floors.
@@ -17,10 +17,12 @@ function school(b, rng) {
   const named = (f, x0, z0, x1, z1, type, sign, o = {}) => { const r = f.room(x0, z0, x1, z1, type, { sign, ...o }); f.autoDoor(r, null, rng); return r; };
   for (const f of [F0, F1]) { f.hall(6, 5, 19, 5); f.hall(6, 16, 19, 16); f.hall(6, 5, 6, 16); f.hall(19, 5, 19, 16); }
 
-  // courtyard: open to the night sky, colonnade on every side
+  // the yard has been roofed over: a two-storey covered court, colonnade on
+  // every side, the flagpole and the old trees still standing indoors
   F0.room(7, 6, 18, 15, 'lapangan', { noLock: true, noLights: true, mat: { floor: 'paving' } });
   for (const s of ['N', 'S', 'W', 'E']) F0.edges(7, 6, 18, 15, s, (x, z, side) => F0.arch(x, z, side));
-  F1.void(7, 6, 18, 15); F1.sky(7, 6, 18, 15);
+  F1.void(7, 6, 18, 15);
+  for (const [x, z] of [[9.5, 8.5], [16.5, 8.5], [9.5, 13.5], [16.5, 13.5], [13, 11]]) b.tallLight(1, x * CELL, z * CELL, 3.6 + 2.95, { fall: 0.035, reach2: 380, fixture: 'lamp', state: rng.chance(0.35) ? 'flicker' : 'on' });
 
   // north wing + stairwell (12) + store under the stairs (13)
   kelas(F0, 6, 1, 8, 4, 'KELAS 1-A'); kelas(F0, 9, 1, 11, 4, 'KELAS 1-B');

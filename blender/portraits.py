@@ -15,15 +15,10 @@ os.makedirs(OUT, exist_ok=True)
 # kind: (objects to frame, view direction, framing margin)
 SHOTS = {
     "pale": (["Head_geo", "Neck_geo"], (-0.15, -1.0, 0.1), 1.05),
-    "masked": (["Head_geo", "Neck_geo", "Chest_geo"], (0.25, -1.0, 0.05), 1.0),
     "gaper": (["Head_geo", "Neck_geo"], (0.35, -1.0, -0.05), 1.15),
     "shade": (["Head_geo", "Chest_geo"], (0.2, -1.0, 0.0), 1.05),
     "eyes": (["Head_geo"], (0.0, -1.0, 0.0), 0.95),
     "centipede": (["Head_geo"], (0.3, -1.0, 0.0), 1.05),
-    "monitor": (["Head_geo", "Neck_geo"], (0.3, -1.0, 0.0), 1.3),
-    "substitute": (["Head_geo", "Neck_geo"], (0.3, -1.0, 0.0), 1.3),
-    "principal": (["Head_geo", "Neck_geo"], (0.3, -1.0, 0.0), 1.2),
-    "pupil": (["Head_geo", "Neck_geo"], (0.3, -1.0, 0.0), 1.3),
 }
 
 

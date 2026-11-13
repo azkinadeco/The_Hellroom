@@ -16,7 +16,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'low', screen: 'vhs', invertY: false, subs: true } };
+const defaults = { hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -24,6 +24,7 @@ function loadSave() {
       const st = { ...defaults.settings, ...s.settings };
       if (s.settings && s.settings.vhs === false && !s.settings.screen) st.screen = 'clear'; // old toggle
       delete st.vhs;
+      if ((st.gfx || 0) < 2) { st.quality = 'high'; st.gfx = 2; }   // batch 18: new graphics default
       return { ...defaults, ...s, settings: st };
     }
   } catch (_) { /* private mode */ }
@@ -233,7 +234,7 @@ function buildArchive() {
   const hb = document.createElement('h3'); hb.textContent = 'Penghuni'; list.appendChild(hb);
   const grid = document.createElement('div'); grid.className = 'beast-grid'; list.appendChild(grid);
   const met = new Set(save.met);
-  for (const k of [...LEVELS.flatMap((l) => l.entities.map((e) => e.type)), ...RESIDENTS, 'pupil'].filter((k, i, a) => a.indexOf(k) === i)) {
+  for (const k of [...LEVELS.flatMap((l) => l.entities.map((e) => e.type)), ...RESIDENTS].filter((k, i, a) => a.indexOf(k) === i)) {
     total++; const ok = met.has(k); if (ok) have++;
     const b = document.createElement('button');
     b.className = 'archive-item' + (ok ? '' : ' locked');
@@ -288,7 +289,7 @@ function buildRooms() {
     clips.forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { viewer.playClip(n); for (const x of cl.children) x.classList.toggle('on', x === b); }; cl.appendChild(b); });
     $('viewer-desc').textContent = ENTITY_INFO[k].hint || ENTITY_INFO[k].death;
   };
-  [...RESIDENTS, 'pupil'].forEach((k) => {
+  RESIDENTS.forEach((k) => {
     const b = document.createElement('button'); b.textContent = ENTITY_INFO[k].name; b.dataset.k = k;
     b.onclick = () => showModel(k); pick.appendChild(b);
   });

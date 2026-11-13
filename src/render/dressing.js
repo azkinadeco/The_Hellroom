@@ -83,7 +83,7 @@ const NO_SHADOW = new Set(['ceiling_light', 'slide_top', 'stain_decal', 'puddle'
 export function contactShadows(assets, list) {
   const items = [];
   for (const p of list) {
-    if (NO_SHADOW.has(p.type)) continue;
+    if (NO_SHADOW.has(p.type) || (p.y || 0) > 0.05) continue;   // hung on a wall or standing on furniture
     const fp = footprint(assets, p.type);
     if (!fp) continue;
     items.push([p, fp]);
@@ -136,7 +136,7 @@ export function lightGlows(lights, wallH, tint, isFloor) {
   };
   for (const [state, list] of Object.entries(groups)) {
     const flick = state === 'flicker';
-    mk(list.filter((l) => (l.y ?? wallH) <= wallH + 0.05 && isFloor(l.x, l.z)), 3.0, 0, 0.2, flick, true);
+    mk(list.filter((l) => (l.y ?? wallH) <= wallH + 0.05 && isFloor(l.x, l.z)), 3.0, 0, 0.13, flick, true);
     mk(list, 2.6, 0, 0.32, flick, false);
   }
   return { meshes, mats };

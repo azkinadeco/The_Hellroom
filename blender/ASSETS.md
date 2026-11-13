@@ -236,12 +236,14 @@ Chalkboard eraser lying felt-side down, 0.14 x 0.03 x 0.055 m (three.js X/Y/Z). 
 
 ## Batch 6 (blender/entities3.py) — one resident per story level
 All face three.js +Z, `<Joint>_geo` meshes under joint empties, clips baked per frame. Build: `npm run assets -- creatures`.
-- `entity_pale.glb` — Si Pucat, quadruped crawler (~1.0 m high, 1.5 m long) on the 17-joint rig. Clips `Idle` 2.4, `Walk` 1.0, `Run` 0.55, `Attack` 0.95.
+- `entity_pale.glb` — Si Pucat, quadruped crawler (~1.0 m high, 1.5 m long) on the 17-joint rig plus whip tails `Tail0-2` (children of `Hips`). Clips `Idle` 2.4, `Walk` 1.0, `Run` 0.55, `Attack` 0.95. ~26k tris.
 - `entity_masked.glb` — Guru Bertopeng, 2.0 m, blank white mask, steel ruler in `HandR`. Clips `Idle`, `Walk`, `Run`, `Attack` (ruler strike), `Tap` (ruler tapped on palm).
-- `entity_gaper.glb` — Si Penganga, crouched skinless ghoul with an unhinged jaw. Clips `Idle`, `Pose1`–`Pose4` (static, swapped while unseen), `Attack`.
-- `entity_shade.glb` — Bayang Kelas, translucent smoke (`ShadeCore`/`ShadeSmoke` alpha blend) with emissive eye pairs `EmitShadeEye`. Joints `Hips, Chest, Head, ArmL/R, Wisp0-6`. Clips `Idle`, `Move`, `Attack`.
-- `entity_eyes.glb` — Mata Papan, wall growth whose back plane is at local z=0 (mounted flat on a wall/chalkboard), centre of mass ~1.5 m. Joints `Hips, Head, Tendril0-11`. Clips `Idle`, `Stare`, `Attack`.
-- `entity_centipede.glb` — Kelabang, ~2.2 m long. Joints `Hips, Chest, Head, Arm{L,R}{0-2}, Seg1-4, Leg{L,R}{0-4}`. Clips `Idle`, `Walk`, `Run`, `Attack`. ~18.5k tris (budget 20k).
+- `entity_gaper.glb` — Si Penganga, crouched starved ghoul with a skull head and an unhinged grin; extra joint `Tail` (child of `Hips`). Clips `Idle`, `Pose1`–`Pose4` (static, swapped while unseen), `Attack`. ~23k tris.
+- `entity_shade.glb` — Bayang Kelas, translucent smoke (`ShadeCore`/`ShadeSmoke` alpha blend) with emissive eye pairs `EmitShadeEye` + faint translucent glow shells `EmitShadeHalo`, extra thin smoke `ShadeSmokeThin`. ~13k tris. Joints `Hips, Chest, Head, ArmL/R, Wisp0-6`. Clips `Idle`, `Move`, `Attack`.
+- `entity_eyes.glb` — Mata Papan, wall growth whose back plane is at local z=0 (mounted flat on a wall/chalkboard), centre of mass ~1.5 m. Joints `Hips, Head, Tendril0-11`. Clips `Idle`, `Stare`, `Attack`. ~27k tris.
+- `entity_centipede.glb` — Kelabang, ~2.2 m long. Joints `Hips, Chest, Head, Arm{L,R}{0-2}, Seg1-4, Leg{L,R}{0-4}`. Clips `Idle`, `Walk`, `Run`, `Attack`. ~30k tris (seven screaming heads, 22 hands).
+
+**Detail pass (entities.py helpers, used by Batch 6).** Anatomy helpers `hand()` (jointed fingers, knuckles, nails/claws), `eye()` (sclera/iris/pupil/glint/lid), `mlimb()`/`bulk()`/`arm_sculpt()`/`leg_sculpt()` (muscle masses), `ribs()`, `cloth_folds()`. `_finish_entity()` now bakes Cycles ambient occlusion into a per-vertex `COLOR_0` (unsigned-byte, multiplied into the diffuse in three.js; `Emit*`/`Shade*` materials stay white; disable with env `HR_NOAO=1`). In game every entity also goes through `src/render/entityLook.js` (rim, sheen, skin scatter, overhead form shading), which picks a preset from the material name (Skin/Flesh, Wet/Gum/Teeth/Tear, Metal, Gloss/Plaster/Mask, Cloth, Paper, Smoke, Hole/Socket); name new materials accordingly.
 
 ## Batch 7 (blender/props3.py) — biology lab
 - `lab_bench.glb` — 1.8 x 0.75 x 0.92 black-topped bench with gas taps, microscope, glassware (alpha `Glass`/`Formalin`), dissection tray. Origin floor centre, front +Z.
@@ -265,3 +267,64 @@ Used by the new `lab` room type (`def.labChance`).
 | `cell_bunk` | steel wall bunk 2.0 × 0.8, back on the wall plane |
 | `lines_board` | wall blackboard 1.6 × 1.0 (bottom at 0.95 m) with "SAYA TIDAK AKAN / LARI DI LORONG" written over and over |
 | textures `marble`, `gallery_wall`, `cell_wall` | museum floor slabs, oxblood gallery paint, painted block wall with tally marks |
+
+## Batch 18 (props11.py, group `mall3`) — LEVEL 3 mall rebuild (Pakuwon-style)
+
+Build: `Blender -b --factory-startup -P blender/build_assets.py -- mall3 --no-preview`. Materials named `Emit…` stay bright in game.
+
+| asset | notes |
+|---|---|
+| `mannequin` | glossy white faceless shop mannequin on a chrome stand, 1.85 m (~1.4k tris). Listed in builder `FIG`, so like the plaster figures it turns to face the player when unobserved; `scale: 0.6` makes the child ones |
+| `mannequin_bust` | headless torso on a pole for window displays (static) |
+| `kiddie_ride` | coin-op pink elephant ride on a yellow platform, 1.4 × 0.9 |
+| `shopping_trolley`, `checkout_lane` | supermarket wire trolley; checkout counter 2.0 × 0.7 with belt, register and red lane lamp |
+| `food_stall` | wall piece, food-court counter 2.8 wide with steel hood and lit menu board (blank, faded photos) |
+| `cafe_table` | round café table with two chairs, 1.5 across |
+| `cinema_screen` | wall piece, 6.0 × 2.3 screen glowing faint grey (shows nothing) |
+| `cinema_seats` | row of four red seats 2.4 wide facing +Z |
+| `popcorn_cart`, `arcade_cabinet` | XXI popcorn machine; upright arcade cabinet with faintly lit screen |
+| `shutter_half` | wall piece, rolling shutter stuck halfway (slats 1.3–2.55 m) |
+| `info_totem` | mall directory totem 0.7 × 2.1 with a lit plan and a red YOU-ARE-HERE dot |
+| `planter_bench` | granite planter 1.9 × 1.9 with a seat ledge and a dying palm |
+| `stroller`, `wet_floor_sign` | abandoned pram; yellow A-frame wet-floor sign |
+| `info_desk` | customer-service desk 2.6 × 0.9 with paging microphone and lost-child forms |
+| `atrium_stage` | event stage 6 × 2.4(3) with truss gate, blank banner, speakers |
+| `atrium_chandelier` | 4 m ring chandelier, origin at its lowest point, cables 3 m up; some bulbs dead |
+| `fountain_basin` | flat 9 × 6 m dry fountain basin (6 cm lip, grime, dead jets, coins) — walkable, no collider |
+| `sale_banner` | red "SALE 70%" banner hung below its origin from gallery fascias |
+
+## Batch 18 (props12.py, group `pool3`) — LEVEL 4 poolrooms rebuild
+
+Build: `Blender -b --factory-startup -P blender/build_assets.py -- pool3 --no-preview`. Plain white/teal/navy tile colours, no textures. `lifeguard_chair` (props4) is now also in `MODEL_KEYS`.
+
+| asset | notes |
+|---|---|
+| `tile_pillar` | square tiled column 0.6 × 0.6 × 3.0 m, navy skirt, teal band (112 tris). Placed on cell corners so aisles stay clear |
+| `shower_column` | free-standing tiled shower post, four chrome heads at 2.15 m with translucent streams |
+| `water_curtain` | wall piece, 3 m translucent sheet of water falling from a chrome trough into a gutter; origin at the wall face |
+| `pool_steps` | three tiled treads 2.4 wide climbing towards +Y (back) to 0.6 m — set against a wall, they go nowhere |
+| `drain_grate`, `tile_bench` | 0.6 m steel floor drain; built-in tiled bench 1.8 × 0.45 |
+| `float_ring`, `beach_ball` | toys; origin at their centre, game floats them at `POOL_Y` |
+| `tile_tunnel` | 3 m length of low tiled vault filling a corridor cell along X (1.8 m wide, crown 2.3 m); runs of them make a tunnel |
+| `low_portal` | tiled infill for an open cell edge leaving a tiny doorway 0.95 × 1.75 m; spans X, centred on the edge |
+| `wall_ladder` | 3.75 m steel ladder fixed to a pool wall (+Y = wall) |
+| `lane_rope_lo` | cheap 3 m lane rope (248 tris vs 1.6k) for long pools |
+
+## Batch 18 (blender/entities4.py) — residents from the concept art (group `newcreatures`)
+
+Concepts: `Image Aset/SCP-345 Arachnid Spire.jpg`, `Image Aset/SCP-313 Grandfather Spire.jpg`. Same rig conventions as Batch 6 (faces three.js +Z, origin on the floor at the body centre, joint empties + `<Joint>_geo`, rest rotations identity, clips baked per frame, AO in `COLOR_0`). Legs are driven by a two-bone IK (`Leg.solve`) so feet plant and step. Hair is single-triangle fur cards (`*Hair` materials, double-sided) plus a darker `*Hairy` skin tint on the back of the legs. Build: `Blender -b --factory-startup -P blender/build_assets.py -- entity_spider entity_clock`.
+
+| asset | notes |
+|---|---|
+| `entity_spider` | Laba-Laba Kaki. Dark spider body (cephalothorax + abdomen) with glowing violet cracked veins `EmitSpiderVein`, glowing eyes `EmitSpiderEye`, bristles, fanged face; walks on four huge hairy human legs (knees ~2.3 m, thighs ~0.25 m radius, footprint ~2.2 × 1.9 m) + four thin black spider legs; a pale long-haired woman hangs upside down from the maw, screaming, arms dangling to the floor. Joints `Hips` (body root), `Abdomen`, `FangL/R`, woman `Spine → Chest → Head`, `ShoulderL/R → ElbowL/R → HandL/R`; human legs `Hip{L,R}{0,1} → Knee… → Foot…` (0 = front pair, 1 = rear); spider legs `SLeg{L,R}{0,1} → STib…`. `Head` = the woman's head (death camera). Clips `Idle` 2.4 (loop), `Walk` 1.2 (loop, diagonal pairs), `Run` 0.6 (loop), `Attack` 1.13 (crouch, lunge 0.5 m forward, the woman's arms reach out and grab, fangs bite). ~25.7k tris (the generic 25k WARN in the build log is expected; agreed cap 28k) |
+| `entity_clock` | Jam Kakek, ~2.6 m to the finial (case 0.7 wide, legs span ~1.8 m). Weathered grandfather clock (swan-neck pediment, brass dial with Roman numerals and moon arch, cracked hood glass door hanging open — `GlassClock` alpha) on two massive hairy legs with big bare feet and yellow toenails; open trunk shows a pink tongue on fleshy strings and a brass pendulum. Joints `Hips` (case root), `Head` (hood/dial, death camera), `ClockHour`, `ClockMin` (hands, spin about the dial axis), `HoodDoor`, `TrunkDoor`, `Pendulum`, `Tongue0 → Tongue1 → Tongue2`, `HipL/R → KneeL/R → FootL/R`. Clips `Idle` 2.0 (hands tick, pendulum swings), `Walk` 1.2 (waddle), `Run` 0.6 (hopping), `Attack` 1.13 (rears back, bends 28° forward, tongue whips out of the trunk, hands spin). ~16.4k tris |
+
+## Batch 18 (blender/entities5.py) — flayed residents from the concept art (group `newcreatures`)
+
+Concepts: `Image Aset/SCP-852 Spine Weaver Maiden.jpg`, `SCP-9205  Fractured Echo.jpg`, `SCP-537  Cephalopod Seductress.jpg`. Same rig conventions as Batch 6 (faces three.js +Z, origin on the floor at the body centre, joint empties + `<Joint>_geo`, identity rest rotations, clips baked per frame, AO in `COLOR_0`). Faces are sculpted procedurally (`head_fn` + `surf_mesh`: a sphere grid dense at the face, displaced into brow, sockets, nose, cheekbones and a mouth pit carved straight back), with overlay muscle-fibre bundles, wet eyes, lip ring and teeth. Hair = tapered double-sided ribbon clumps + a few tubes (`*Hair` materials). Only emissive material: `EmitEyeWet` (pin-point glint in the main eyes). Build: `Blender -b --factory-startup -P blender/build_assets.py -- entity_weaver entity_echo entity_squid`. All ~25k tris (the generic 25k WARN is expected; same 28k cap as entities4).
+
+| asset | notes |
+|---|---|
+| `entity_weaver` | Penenun Tulang, ~1.95 m. Flayed armless woman (striated pecs, ribcage over a dark cavity, coiled gut, fat, sinew bands), three-eyed screaming head with a forked tongue, long black hair swept back into a huge spine of eyes and small hands that coils from her neck round her belly into a mound of bones, sinew and skeletal hands (~1.2 m footprint). Joints `Hips` (mound root) → `Spine` → `Chest` → `Neck` → `Head` (death camera) → `Tongue`, `Hair`; spine `CoilA0-2` (from Chest), `CoilB0-2` (from Spine); spine hands `SHand0-3`; floor hands `Drag0-3` (from Hips). Clips `Idle` 3.0 (loop), `Walk` 1.2 (loop, drags herself on the bone hands), `Run` 0.6 (loop), `Attack` 1.0 (rears, lunges 0.38 m, tongue lashes, spine hands reach). 25.8k tris |
+| `entity_echo` | Gema Retak, ~2.0 m tall, ~1.9 m wide. Flayed core on the same bone mound; main head split vertically (two halves, four eyes, raw flesh between, tongue), a cracked porcelain mask face (`EchoPorcelain`) on the left chest, a third screaming face low right, spine of eyes coiled once round, eight twisted-sinew arms ending in pale human hands. Joints `Hips → Spine → Chest → Neck → Head` (split face, death camera) → `Tongue`, `Hair`; `FaceB` (mask), `FaceC` (scream face); `CoilA0-1`, `CoilB0-1`; arms `Arm{L,R}{0-3}` → `…b` → `…c` (hand on c; 0 = top, 3 = lowest). Clips `Idle` 3.0 (loop), `Pose1`-`Pose4` 0.5 each (near-static: arms raised / reaching at the viewer / spread & twisted / clutching itself, faces turned — swap while unseen), `Walk` 1.4 (loop, low arms pull it along), `Attack` 1.0 (rears, all arms sweep forward and close, 0.34 m lunge). 25.4k tris |
+| `entity_squid` | Perempuan Gurita, ~1.95 m. Gaunt grey-violet woman hunched forward in black rags and grey gauze, white face with sunken black eye hollows and a screaming mouth, long wet black hair, long bony arms with clawed hands; below the waist an exposed spine, glossy coloured organs and wrapped tentacles; eight violet floor tentacles (~1 m) with pale suckers and bone spikes, tips curled. Joints `Hips` (hub) → `Spine` → `Chest` → `Neck` → `Head` (death camera) → `HairL`, `HairR`, `HairB`; `Shoulder{L,R} → Elbow… → Hand…`; `BodyTent0-1` (from Spine); floor tentacles `Tent0-7 → Tent{i}b → Tent{i}c`. Clips `Idle` 2.6 (loop), `Walk` 1.2 (loop, tentacle waves), `Run` 0.6 (loop, leaning), `Attack` 1.0 (rears, lunges 0.42 m, arms grab). 23.6k tris |

@@ -28,11 +28,15 @@ import props7  # noqa: E402
 import props8  # noqa: E402
 import props9  # noqa: E402
 import props10  # noqa: E402
+import props11  # noqa: E402
+import props12  # noqa: E402
 import textures3  # noqa: E402
 import items  # noqa: E402
 import entities  # noqa: E402
 import entities2  # noqa: E402
 import entities3  # noqa: E402
+import entities4  # noqa: E402
+import entities5  # noqa: E402
 import textures  # noqa: E402
 import textures2  # noqa: E402
 import title  # noqa: E402
@@ -46,13 +50,16 @@ GROUPS = {
     "pool2": props8.ASSETS,
     "mall2": props9.ASSETS,
     "museum": props10.ASSETS,
+    "mall3": props11.ASSETS,
+    "pool3": props12.ASSETS,
     "pool": textures2.ASSETS,
-    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS, **props6.ASSETS, **props7.ASSETS, **props8.ASSETS, **props9.ASSETS, **props10.ASSETS},
+    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS, **props6.ASSETS, **props7.ASSETS, **props8.ASSETS, **props9.ASSETS, **props10.ASSETS, **props11.ASSETS, **props12.ASSETS},
     "figures": props5.ASSETS,
     "poolprops": props4.ASSETS,
     "lab": props3.ASSETS,
     "items": items.ASSETS,
-    "entities": {**entities.ASSETS, **entities2.ASSETS, **entities3.ASSETS},
+    "entities": {**entities.ASSETS, **entities2.ASSETS, **entities3.ASSETS, **entities4.ASSETS, **entities5.ASSETS},
+    "newcreatures": {**entities4.ASSETS, **entities5.ASSETS},
     "creatures": entities3.ASSETS,
     "ui": title.ASSETS,
     "portraits": portraits.ASSETS,

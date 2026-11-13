@@ -12,9 +12,9 @@ export const NOTES = {
     { title: 'Surat Teguran', body: 'Kepada siswa yang berkeliaran di lorong:\n\nSi Pucat tidak punya mata. Ia mendengar.\nJONGKOK. Berjalan pelan. Jangan berlari.\nKalau ia sudah dekat, lempar sesuatu ke arah lain.\n\n— Tata Tertib, Pasal 0' },
   ],
   2: [
-    { title: 'Pengumuman Guru Piket', body: 'Kelas detensi malam ini diawasi oleh guru piket.\n\nIa memakai topeng putih. Tidak ada yang pernah melihat wajahnya.\nKalau terdengar penggaris besi diketuk ke telapak tangan, artinya ia sedang berjaga di dekatmu.' },
+    { title: 'Laporan Penjaga Sel', body: 'Ada sesuatu yang bersarang di langit-langit sayap detensi.\n\nKakinya kaki manusia. Empat. Lututnya menekuk ke atas seperti laba-laba.\nDi bawah perutnya tergantung seorang perempuan, terbalik. Kalau kamu dengar ia menjerit, lari. Jangan menoleh.' },
     { title: 'Catatan di Buku Hukuman', body: 'Tulis 100 kali: "Saya tidak akan berkeliaran setelah bel."\n\nSaya tidak akan berkeliaran setelah bel.\nSaya tidak akan berkeliaran setelah bel.\nSaya tidak akan bersuara di loker.\nSaya tidak akan bernapas di loker.' },
-    { title: 'Kertas Terlipat', body: 'Dia melihat dan mendengar, tapi dia tidak sabar. Kalau dia kehilangan jejakmu, dia akan memeriksa loker-loker terdekat.\n\nTahan napas. Hitung sampai langkahnya pergi.\n\nDari menara pengawas ia bisa melihat semua lantai sekaligus. Tangga-tangga di aula timur saling bersilangan — ada yang naik ke utara, ada yang naik ke selatan. Hafalkan mana yang turun ke lobi.' },
+    { title: 'Kertas Terlipat', body: 'Begitu ia melihatmu, ia tidak berhenti mengejar sampai kamu hilang dari pandangannya. Kalau ia kehilangan jejakmu, ia akan memeriksa loker-loker terdekat.\n\nTahan napas. Hitung sampai langkahnya pergi.\n\nDari menara pengawas ia bisa melihat semua lantai sekaligus. Tangga-tangga di aula timur saling bersilangan — ada yang naik ke utara, ada yang naik ke selatan. Hafalkan mana yang turun ke lobi.' },
   ],
   3: [
     { title: 'Rekam Medis — Pasien Tanpa Nama', body: 'Diagnosis: tidak bergerak selama diamati.\nTindakan: pasien dijaga bergiliran, 24 jam, tanpa berkedip.\n\nCatatan perawat malam: rahangnya terus melebar. Ranjangnya kosong pagi ini. Ranjang perawat jaga juga.' },
@@ -22,12 +22,12 @@ export const NOTES = {
     { title: 'Memo Direksi — Bangsal Taman', body: 'Bangsal Taman di lantai dasar DITUTUP.\n\nKami tidak menanam pohon-pohon itu. Mereka tumbuh dari ranjang pasien dalam satu malam dan atapnya sekarang menunjukkan langit.\n\nJangan berpaling di antara pepohonan. Di sana ia bisa berdiri di balik batang mana saja.' },
   ],
   4: [
-    { title: 'Denah Mal (Robek)', body: 'Lantai 1 — Plaza, Swalayan, Departemen Store.\nLantai 2 — Game Center, Toko Emas.\nLantai 3 — Pujasera, Bioskop.\n\nDi sayap timur denah ini ada kotak yang ditandai "PERUMAHAN — JANGAN DIKUNJUNGI". Mal tidak punya perumahan. Tapi dari balkon lantai atas aku bisa melihat atap-atap rumah, dan satu jendela yang lampunya menyala.' },
+    { title: 'Denah Mal (Robek)', body: 'LG — SOGO, Lotte Mart, Grand Atrium, Lobi Selatan (PINTU KELUAR).\nGF — Matahari, Uniqlo, H&M, Zara, Miniso.\nUG — Cinema XXI, Gramedia, Timezone, Food Court.\n\nEskalator di Fashion Atrium dan East Atrium naik bersilangan. Lift di Grand Atrium berhenti di semua lantai.\n\nDi lantai GF ada deretan toko yang sama, berulang-ulang. Aku sudah menghitungnya tiga kali dan jumlahnya tidak pernah sama. Dan jangan naik eskalator di dalam Matahari. Di atasnya tidak ada lantai.' },
     { title: 'Coretan di Rolling Door', body: 'SOROTKAN SENTERMU KE MATANYA\n\ndia mundur\ndia selalu mundur\ntapi baterainya tidak pernah cukup\n\nJANGAN KELUAR DARI CAHAYA LAMPU' },
     { title: 'Pengumuman Pengelola Gedung', body: 'Kepada pengunjung yang terhormat:\nMal akan ditutup sebentar lagi. Lampu akan dipadamkan secara bergilir.\n\n(Ditambahkan dengan pulpen:) Kalau semua lampu padam, Bayang bisa pergi ke mana saja.' },
   ],
   5: [
-    { title: 'Papan Peraturan Kolam', body: '1. Dilarang berlari di tepi kolam.\n2. Dilarang berteriak.\n3. Dilarang berenang sendirian.\n4. Dilarang menatap ke ujung kolam terlalu lama.\n\nAirnya hanya setinggi lutut, tapi setiap langkah di dalam air terdengar sampai ke ujung gedung.' },
+    { title: 'Papan Peraturan Kolam', body: '1. Dilarang berlari di tepi kolam.\n2. Dilarang berteriak.\n3. Dilarang berenang sendirian.\n4. Dilarang menatap ke ujung kolam terlalu lama.\n5. Kolam 7 hanya ada satu. Kalau kamu melewatinya lebih dari sekali, berbaliklah.\n6. Pengawas tidak boleh diajak bicara. Mereka sedang mengawasi dinding.\n\nAirnya hanya setinggi lutut, tapi setiap langkah di dalam air terdengar sampai ke ujung gedung.' },
     { title: 'Kertas Basah di Loker', body: 'Dia punya banyak wajah, dan semuanya melihat ke arah yang berbeda.\nKamu tidak bisa menyelinap di belakangnya. Matanya rabun, jadi jaga jarak dan pakai dinding.\n\nDan JANGAN masuk ke air kalau dia dekat.' },
     { title: 'Daftar Absen Renang', body: 'Hadir: 14\nPulang: —\n\nCatatan pelatih: "Mereka tidak tenggelam. Mereka hanya… bergabung."' },
   ],
@@ -43,7 +43,7 @@ export const ENDING = 'Pintu darurat terbuka. Di baliknya tidak ada lorong, ruma
 // Secret tapes: one per story level. Shown as transcripts.
 export const TAPES = {
   1: { title: 'KASET #1 — "Hari Pertama"', body: '[Rekaman goyang. Suara anak laki-laki berbisik.]\n\n"Ini hari pertama kelas tambahan. Bu Guru bilang kami cuma belajar sampai jam sembilan. Sekarang jam… jamnya tidak bergerak.\n\nTadi Dimas lari di lorong. Ada yang merangkak keluar dari kelas, putih, cepat sekali. Dimas belum kembali."\n\n[Desisan panjang. Rekaman terputus.]' },
-  2: { title: 'KASET #2 — "Guru Piket"', body: '[Gambar meja guru. Sebuah topeng putih tergeletak di atasnya.]\n\n"Topengnya ada di sini. Jadi siapa yang berjalan di lorong itu?"\n\n[Tok. Tok. Tok. Bunyi penggaris besi dari balik pintu.]' },
+  2: { title: 'KASET #2 — "Sel Nomor Tujuh"', body: '[Kamera menyorot ke atas. Langit-langit sel penuh jaring putih.]\n\n"Ada kaki di atas sana. Kaki manusia, berbulu, empat. Dan ada rambut panjang yang menjuntai…"\n\n[Jeritan perempuan, terbalik dan dekat. Rekaman terputus.]' },
   3: { title: 'KASET #3 — "Jam Besuk"', body: '[Lorong rumah sakit, lampu berkedip. Kamera masuk ke sebuah bangsal: ranjang-ranjang kosong, tirai bergoyang.]\n\n"Kami disuruh menjaga pasien itu bergiliran. Yang giliran jaga tidak boleh menoleh.\n\nRina menoleh. Sekarang ada pohon tumbuh dari ranjangnya."\n\n[Gemeretak tulang. Lama. Lalu angin, seperti di tengah hutan.]' },
   4: { title: 'KASET #4 — "Jam Tutup"', body: '[Lorong mal yang terang. Kamera berputar pelan: toko kosong, toko kosong, toko kosong.]\n\n"Aku sudah belok kiri empat kali. Harusnya aku kembali ke tempat awal… dan aku memang kembali ke tempat awal.\n\nLampu di ujung sana baru saja padam. Ada titik-titik putih. Berpasangan."\n\n[Bisikan. Sangat dekat dengan mikrofon.]' },
   5: { title: 'KASET #5 — "Pelajaran Renang"', body: '[Kolam renang putih yang sangat terang. Airnya tenang. Tidak ada suara selain tetesan.]\n\n"Tidak ada jendela. Tidak ada pintu keluar. Cuma keramik putih sejauh mata memandang.\n\nDi ujung kolam ada sesuatu yang panjang. Ia punya banyak tangan, dan semua wajahnya menoleh ke arahku bersamaan."\n\n[Jeritan banyak mulut. Rekaman terputus.]' },
@@ -55,13 +55,13 @@ export const PA_LINES = {
   flavor: [
     'Perhatian. Semua siswa diharap tetap berada di kelas masing-masing.',
     'Jam pelajaran akan diperpanjang. Tidak ada yang diizinkan pulang.',
-    'Petugas sedang berkeliling. Berjalanlah dengan tertib.',
+    'Penjaga sedang berkeliling. Berjalanlah dengan tertib.',
     'Diumumkan kepada orang tua: anak Anda baik-baik saja. Anak Anda akan selalu baik-baik saja.',
     'Upacara bendera akan dilaksanakan sebentar lagi. Sebentar lagi. Sebentar lagi.',
   ],
   locate: [
-    'Perhatian. Ada siswa di luar kelas tanpa izin. Petugas, harap menuju lokasi.',
-    'Kami melihatmu. Tetap di tempat. Petugas sedang menuju ke sana.',
+    'Perhatian. Ada siswa di luar kelas tanpa izin. Penjaga, harap menuju lokasi.',
+    'Kami melihatmu. Tetap di tempat. Sesuatu sedang menuju ke sana.',
     'Siswa yang membawa kamera, harap melapor. Kami tahu kamu di mana.',
   ],
   blackout: [
