@@ -274,7 +274,7 @@ export class Monitor extends Entity {
       case 'locker': { // walking to / inspecting a locker
         const L = this.lockerTarget;
         speed = (this.lockerSure ? this.run : this.walk * 1.2) * this.speedMul;
-        const fd = hideOf(L).inspect;
+        const fd = hideOf(L).inspect + (this.reach || 0);   // long bodies stop further back so the head stays outside
         const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
         const arrived = this.path && this.pathIdx < this.path.length ? this.followPath(dt, speed) : this.moveToward(fx, fz, dt, speed, 0.25, true);
         if (arrived || this.distTo({ x: fx, z: fz }) < 0.35) {
@@ -325,7 +325,7 @@ export class Monitor extends Entity {
   targetLocker(L, sure) {
     this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0; this.breathHeard = 0;
     this.setState('locker');
-    const fd = hideOf(L).inspect;
+    const fd = hideOf(L).inspect + (this.reach || 0);   // long bodies stop further back so the head stays outside
     const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
     this.goToWorld(fx, fz);
     if (!sure) this.game.hud.toast(`Ada yang mendekati ${hideOf(L).label}mu… tahan napas!`, 2.5);

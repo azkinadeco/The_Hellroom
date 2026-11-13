@@ -76,6 +76,7 @@ export const ENTITY_INFO = {
 class Pale extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'pale', { walk: 1.3, run: 4.6, stepEvery: 0.7, stepVol: [0.12, 0.25], radius: 0.4 });
+    this.reach = 0.6;
   }
   chaseSound() { this.game.audio.hiss(this.pos); }
   sense() {
@@ -104,6 +105,7 @@ class Pale extends Monitor {
 class Centipede extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'centipede', { walk: 1.15, run: 3.8, sight: [12, 360, 28, 360], stepEvery: 0.45, stepVol: [0.1, 0.2], radius: 0.6 });
+    this.reach = 0.6;
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
 }
@@ -113,6 +115,7 @@ class Centipede extends Monitor {
 class Spider extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'spider', { walk: 1.7, run: 4.9, sight: [17, 140, 32, 360], stepEvery: 0.42, stepVol: [0.15, 0.3], radius: 0.7 });
+    this.reach = 0.55;
     this.skitterT = 1;
   }
   chaseSound() { this.game.audio.scream(this.pos); }
@@ -128,6 +131,7 @@ class Spider extends Monitor {
 class Clock extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'clock', { walk: 1.25, run: 4.0, sight: [15, 110, 28, 360], stepEvery: 0.8, stepVol: [0.5, 0.8], radius: 0.55 });
+    this.reach = 0.25;
     this.tickT = 1;
   }
   chaseSound() { const a = this.game.audio; a.chime(this.pos); this.game.schedule(0.9, () => a.chime(this.pos)); }
@@ -143,6 +147,7 @@ class Clock extends Monitor {
 class Weaver extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'weaver', { walk: 1.0, run: 3.7, sight: [11, 360, 26, 360], stepEvery: 0.9, stepVol: [0.1, 0.2], radius: 0.6 });
+    this.reach = 0.35;
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
   update(dt) {
@@ -157,6 +162,7 @@ class Weaver extends Monitor {
 class Squid extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'squid', { walk: 1.35, run: 4.4, sight: [14, 120, 30, 360], stepEvery: 0.7, stepVol: [0.12, 0.25], radius: 0.6 });
+    this.reach = 0.35;
     this.lureT = 4;
   }
   chaseSound() { this.game.audio.hiss(this.pos); }

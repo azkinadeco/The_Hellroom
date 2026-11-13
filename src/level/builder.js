@@ -509,7 +509,7 @@ class Instancer {
       if (!this.groups.has(gk)) {
         let mat = bakeMaterial(p.mesh.material, 'attr');
         if (matFn) mat = matFn(mat);
-        this.groups.set(gk, { geo: p.mesh.geometry, mat, matrices: [], bakes: [], chunk });
+        this.groups.set(gk, { geo: p.mesh.geometry, mat, matrices: [], bakes: [], chunk, key });
       }
       const g = this.groups.get(gk);
       g.matrices.push(base.clone().multiply(p.matrix));
@@ -590,6 +590,7 @@ class Instancer {
       g.matrices.forEach((m, i) => im.setMatrixAt(i, m));
       im.computeBoundingSphere();
       im.matrixAutoUpdate = false;
+      im.name = g.key || '';
       const [cx, cz] = g.chunk.split(',').map(Number);
       im.userData.chunk = { minX: cx * CHUNK, maxX: (cx + 1) * CHUNK, minZ: cz * CHUNK, maxZ: (cz + 1) * CHUNK };
       if (g.hide) im.userData.hide = true;

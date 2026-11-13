@@ -612,8 +612,45 @@ def preview(name, size=400, view=(1.0, -1.7, 0.75), floor=True, lens=50,
 DO_PREVIEW = True
 
 
+# Batch 20 performance pass: props that appear by the hundred get thinned at
+# export. ("collapse", ratio) for organic shapes, ("planar", degrees) for boxy
+# furniture (merges coplanar faces only; triangulated exports gain little).
+DECIMATE = {
+    "figure_stand": ("collapse", 0.42), "figure_reach": ("collapse", 0.42), "figure_kneel": ("collapse", 0.42),
+    "specimen_shelf": ("collapse", 0.4), "tree_dead": ("collapse", 0.5), "anatomy_skeleton": ("collapse", 0.5),
+    "tree_big": ("collapse", 0.6), "fossil_skeleton": ("collapse", 0.6), "armour_stand": ("collapse", 0.6),
+}
+
+
+def _decimate(name):
+    spec = DECIMATE.get(name)
+    if not spec:
+        return
+    import math as _m
+    for o in [o for o in bpy.context.scene.objects if o.type == "MESH"]:
+        if len(o.data.polygons) < 24:
+            continue
+        bpy.context.view_layer.objects.active = o
+        for oo in bpy.context.selected_objects:
+            oo.select_set(False)
+        o.select_set(True)
+        m = o.modifiers.new("thin", "DECIMATE")
+        if spec[0] == "collapse":
+            m.decimate_type = "COLLAPSE"; m.ratio = spec[1]; m.use_collapse_triangulate = True
+        else:
+            m.decimate_type = "DISSOLVE"; m.angle_limit = _m.radians(spec[1])
+            m.delimit = {"MATERIAL"}
+        try:
+            bpy.ops.object.modifier_apply(modifier=m.name)
+        except Exception as e:  # shape keys or multi-user data: keep the original
+            print("   decimate skipped", o.name, e)
+            o.modifiers.remove(m)
+
+
 def finish(name, budget=3000, max_meshes=6, **pkw):
     """Export the current scene as assets/models/<name>.glb + preview."""
+    bpy.context.view_layer.update()
+    _decimate(name)
     bpy.context.view_layer.update()
     tris = tri_count()
     meshes = mesh_count()
