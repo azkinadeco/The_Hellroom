@@ -2,7 +2,7 @@
 // geometry with baked light, instanced props (chunked for culling), and
 // individually animated doors, lockers and items.
 import * as THREE from 'three';
-import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y } from '../config.js';
+import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y, HIDE, hideOf } from '../config.js';
 import { AOBuilder, contactShadows, lightGlows } from '../render/dressing.js';
 import { skyEye } from '../render/skyeye.js';
 import { normalFromTexture, GLOSS, RELIEF } from '../render/normals.js';
@@ -10,6 +10,7 @@ const NORMALS = new Map();   // texture key -> derived normal map (shared by eve
 import { DIRS, EDGE, VOID } from './map.js';
 import { bakeMaterial, LightField } from '../render/bake.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { buildArchitecture } from './architecture.js';
 
 // One shared vertex-colour material for all merged opaque props.
 const VC_SRC = new THREE.MeshLambertMaterial({ vertexColors: true });
@@ -210,6 +211,8 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   // ---------- railings round open space, shop windows ----------
   buildRails(map, gen, def, root, field, gb, texFor, openAbove);
   buildGlass(map, root, field);
+  // ---------- built architecture: trims, arcades, beams, windows ----------
+  for (const m of buildArchitecture({ map, gen, def, field, roomById, openAbove, noFloor, noCeil, FH, texFor }).meshes) root.add(m);
 
   const tex = (k) => { const t = T[k]; if (!t) console.warn('missing texture', k); return t || T.wall_hall; };
   const mkMat = (map_, key) => {
@@ -323,7 +326,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   }
   // soft contact shadows under everything that stands on the floor
   const shadowList = gen.props.slice();
-  for (const l of gen.lockers) shadowList.push({ type: l.kind === 'stall' ? 'toilet_stall' : 'school_locker', x: l.x, z: l.z, rot: l.rot });
+  for (const l of gen.lockers) shadowList.push({ type: hideOf(l).model, x: l.x, z: l.z, rot: l.rot });
   const cs = contactShadows(assets, shadowList);
   if (cs) root.add(cs);
   // light pools on the floor and halos on the ceiling round lit fixtures
@@ -344,10 +347,11 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     return fixtureMats[l.state];
   });
   // hideable lockers: body instanced + door instanced (door matrices animated)
-  const lockers = [
-    ...inst.addLockers(gen.lockers.filter((l) => l.kind !== 'stall'), 'school_locker'),
-    ...inst.addLockers(gen.lockers.filter((l) => l.kind === 'stall'), 'toilet_stall'),
-  ];
+  // every kind of hiding spot (config HIDE) is its own body batch + door batch
+  const hideKinds = new Map();
+  for (const l of gen.lockers) { const k = HIDE[l.kind] ? l.kind : 'locker'; if (!hideKinds.has(k)) hideKinds.set(k, []); hideKinds.get(k).push(l); }
+  const hideMeshes = [];
+  const lockers = [...hideKinds].flatMap(([k, list]) => inst.addLockers(list, HIDE[k].model, HIDE[k], hideMeshes));
 
   // ---------- doors ----------
   const doors = [];
@@ -433,7 +437,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
 
   inst.finish();
   root.updateMatrixWorld(true);
-  return { lifts, chunked: inst.chunked, root, field, lockers, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, glowMats: glows.mats, waterMat, poolMats, figures };
+  return { lifts, chunked: inst.chunked, root, field, lockers, hideMeshes, doors, exitObj, exitGlow: glow, fuseObj, lamps, items, fixtureMats, glowMats: glows.mats, waterMat, poolMats, figures };
 }
 
 function itemLift(type) {
@@ -512,9 +516,10 @@ class Instancer {
       g.bakes.push(b[0], b[1]);
     });
   }
-  addLockers(list, key) {
+  addLockers(list, key, h = HIDE.locker, meshesOut = null) {
     if (!list.length) return [];
     const model = this.assets.models[key];
+    if (!model) { console.warn('missing model', key); return []; }
     model.updateMatrixWorld(true);
     const doorNode = model.getObjectByName('Door');
     const inDoor = (o) => { let p = o; while (p) { if (p === doorNode) return true; p = p.parent; } return false; };
@@ -534,8 +539,14 @@ class Instancer {
       im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       im.frustumCulled = false;
       this.root.add(im);
+      im.userData.pts = list.map((l) => [l.x, l.z]); im.userData.hide = true;
+      if (meshesOut) meshesOut.push(im);
       return { im, local: p.local, bake: new Float32Array(list.length * 2) };
     });
+    // how the moving part moves: hinge about Y (default) or X, slide, or fold (curtain)
+    const doorM = (a) => h.slide ? new THREE.Matrix4().makeTranslation(h.slide[0] * a, h.slide[1] * a, h.slide[2] * a)
+      : h.fold ? new THREE.Matrix4().makeScale(Math.max(0.08, 1 - a), 1, 1)
+        : h.axis === 'x' ? new THREE.Matrix4().makeRotationX(a) : new THREE.Matrix4().makeRotationY(a);
     list.forEach((l, idx) => {
       this._q.setFromAxisAngle(this._v.set(0, 1, 0), l.rot);
       const base = new THREE.Matrix4().compose(new THREE.Vector3(l.x, 0, l.z), this._q, this._s);
@@ -543,7 +554,7 @@ class Instancer {
       const chunk = Math.floor(l.x / CHUNK) + ',' + Math.floor(l.z / CHUNK);
       bodyParts.forEach((p, i) => {
         const gk = key + '#body#' + i + '#' + chunk;
-        if (!this.groups.has(gk)) this.groups.set(gk, { geo: p.mesh.geometry, mat: bakeMaterial(p.mesh.material, 'attr'), matrices: [], bakes: [], chunk });
+        if (!this.groups.has(gk)) this.groups.set(gk, { geo: p.mesh.geometry, mat: bakeMaterial(p.mesh.material, 'attr'), matrices: [], bakes: [], chunk, hide: true });
         const g = this.groups.get(gk);
         g.matrices.push(base.clone().multiply(p.matrix));
         g.bakes.push(b[0], b[1]);
@@ -552,7 +563,7 @@ class Instancer {
         ...l, index: idx, angle: 0, target: 0,
         setDoor: (angle) => {
           locker.angle = angle;
-          const rotM = new THREE.Matrix4().makeRotationY(angle);
+          const rotM = doorM(angle);
           for (const dm of doorMeshes) {
             const m = base.clone().multiply(pivotBase).multiply(rotM).multiply(dm.local);
             dm.im.setMatrixAt(idx, m);
@@ -564,7 +575,11 @@ class Instancer {
       locker.setDoor(0);
       lockers.push(locker);
     });
-    for (const dm of doorMeshes) dm.im.geometry.setAttribute('bake', new THREE.InstancedBufferAttribute(dm.bake, 2));
+    for (const dm of doorMeshes) {
+      dm.im.geometry.setAttribute('bake', new THREE.InstancedBufferAttribute(dm.bake, 2));
+      // cull the door batch like everything else; the sphere is padded for the swing
+      dm.im.computeBoundingSphere(); dm.im.boundingSphere.radius += 1.2; dm.im.frustumCulled = true;
+    }
     return lockers;
   }
   finish() {
@@ -577,6 +592,7 @@ class Instancer {
       im.matrixAutoUpdate = false;
       const [cx, cz] = g.chunk.split(',').map(Number);
       im.userData.chunk = { minX: cx * CHUNK, maxX: (cx + 1) * CHUNK, minZ: cz * CHUNK, maxZ: (cz + 1) * CHUNK };
+      if (g.hide) im.userData.hide = true;
       this.chunked.push(im);
       this.root.add(im);
     }

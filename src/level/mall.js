@@ -482,7 +482,7 @@ FURNISH.mlost = (r, f, rng, P) => {
 };
 FURNISH.matm = (r, f, rng, P) => {
   const k = kit(r, f, P);
-  for (let u = 1.2; u < k.W - 0.5; u += 1.4) k.put('info_totem', u, 0.35, k.faceIn, [0.7, 0.3, 2]);
+  for (let u = 1.2; u < k.W - 0.5; u += 1.4) k.put('atm_machine', u, 0.42, k.faceIn + (rng.chance(0.2) ? rng.range(-0.2, 0.2) : 0), [0.75, 0.7, 2]);
   k.spot(k.W / 2, 3.0, 0.02);
 };
 FURNISH.msecurity = (r, f, rng, P) => {

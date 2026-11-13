@@ -1,3 +1,4 @@
+import { hideOf } from './config.js';
 const $ = (id) => document.getElementById(id);
 
 export class HUD {
@@ -68,7 +69,9 @@ export class HUD {
     this.gaze.querySelector('i').style.width = (gz * 100) + '%';
     const gzs = gz.toFixed(2);
     if (this._last.gz !== gzs) { this._last.gz = gzs; this.el.style.setProperty('--gaze', gzs); }
-    this.louvers.classList.toggle('show', !!p.hidden && p.hidden.kind !== 'stall');
+    const ov = p.hidden ? hideOf(p.hidden).overlay : null;
+    this.louvers.classList.toggle('show', ov === 'louvers');
+    this.louvers.classList.toggle('peek', ov === 'peek');
     document.body.classList.toggle('hiding', !!p.hidden);
 
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) this.toastEl.classList.remove('show'); }

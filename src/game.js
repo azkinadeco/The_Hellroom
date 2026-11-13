@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LEVELS, DIFFICULTY, NOISE, CELL, HIDE } from './config.js';
+import { LEVELS, DIFFICULTY, NOISE, CELL, HIDE, hideOf } from './config.js';
 import { generateLevel } from './level/generator.js';
 import { generateBuilding, FH } from './level/building.js';
 import { buildLevel, cloneWithBake, buildSlides } from './level/builder.js';
@@ -445,7 +445,7 @@ export class Game {
     this.deathT = 0;
     this.killer = entity;
     if (locker) { // dragged out of the locker
-      const h = HIDE[locker.kind || 'locker'];
+      const h = hideOf(locker);
       locker.target = h.open;
       p.hidden = null;
       p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
@@ -460,7 +460,7 @@ export class Game {
     const p = this.player;
     if (this.busy) return;
     this.busy = true;
-    const h = HIDE[L.kind || 'locker'];
+    const h = hideOf(L);
     L.target = h.open;
     this.audio.lockerClang({ x: L.x, y: 1, z: L.z }, 0.35);
     this.emitNoise(L.x, L.z, NOISE.locker, 'locker');
@@ -471,9 +471,10 @@ export class Game {
       if (!p.alive) { this.busy = false; return; }
       if (entering) {
         L.viewYaw = L.rot + Math.PI;
-        L.camX = L.x + Math.sin(L.rot) * h.cam; L.camZ = L.z + Math.cos(L.rot) * h.cam;
+        const lat = h.lat || 0;
+        L.camX = L.x + Math.sin(L.rot) * h.cam + Math.cos(L.rot) * lat; L.camZ = L.z + Math.cos(L.rot) * h.cam - Math.sin(L.rot) * lat;
         p.hidden = L; p.crouched = false; p.hideT = this.time;
-        p.yaw = L.viewYaw; p.pitch = 0;
+        p.yaw = L.viewYaw; p.pitch = h.look || 0;
         p.flashlight = false;
         this.hud.toast(this.input.touch ? 'Tahan tombol NAPAS saat ada yang mendekat' : 'Tahan SPASI untuk menahan napas', 2.5);
       } else {
@@ -481,7 +482,7 @@ export class Game {
         p.pos.x = L.x + Math.sin(L.rot) * h.exit; p.pos.z = L.z + Math.cos(L.rot) * h.exit;
         p.yaw = L.rot + Math.PI;
       }
-      L.target = 0;
+      L.target = entering ? h.ajar || 0 : 0;   // some spots stay open a crack while you are inside
       setTimeout(() => { this.busy = false; this.audio.lockerClang({ x: L.x, y: 1, z: L.z }, 0.25); }, 250);
     }, 330);
   }
@@ -825,7 +826,7 @@ export class Game {
     this.hintT += dt;
     if (this.hintT > 7) this.hint('start', t ? 'Berjalan pelan lebih senyap daripada LARI. JONGKOK paling senyap.' : 'Berjalan lebih senyap daripada berlari (Shift). Jongkok (C) paling senyap.', 5.5);
     if (this.hintT < 3 || !p.alive) return;
-    if (!p.hidden && this.built.lockers.some((L) => Math.hypot(L.x - p.pos.x, L.z - p.pos.z) < 2.2)) this.hint('locker', 'Loker bisa dipakai untuk bersembunyi.', 4);
+    if (!p.hidden && this.built.lockers.some((L) => Math.hypot(L.x - p.pos.x, L.z - p.pos.z) < 2.2)) { const L = this.built.lockers.find((q) => Math.hypot(q.x - p.pos.x, q.z - p.pos.z) < 2.2), n = hideOf(L).label; this.hint('locker', `${n[0].toUpperCase() + n.slice(1)} bisa dipakai untuk bersembunyi.`, 4); }
     const first = this.entities[0];
     if (first && this.hintT > 10 && ENTITY_INFO[first.kind] && ENTITY_INFO[first.kind].hint) this.hint('ent_' + first.kind, ENTITY_INFO[first.kind].hint, 6);
     if (this.danger > 0.3) this.hint('entity', 'Ada yang berpatroli di dekatmu. Menjauh, atau sembunyi di loker sebelum terlihat.', 5);
@@ -850,6 +851,7 @@ export class Game {
     for (const f of this.floors) {
       const show = f.built.root.visible;
       for (const d of f.built.doors) if (d.obj) d.obj.visible = show && (d.x - c.x) ** 2 + (d.z - c.z) ** 2 < far * far;
+      for (const m of f.built.hideMeshes || []) m.visible = show && m.userData.pts.some(([x, z]) => (x - c.x) ** 2 + (z - c.z) ** 2 < far * far);
     }
   }
   adaptResolution(dt) {
@@ -876,7 +878,7 @@ export class Game {
 
   deathCause(k) {
     const why = this.lockerReason; this.lockerReason = null;
-    if (why === 'seen') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihatmu masuk ke ${k.lockerTarget && k.lockerTarget.kind === 'stall' ? 'bilik' : 'loker'}. Bersembunyilah saat tidak sedang terlihat.`;
+    if (why === 'seen') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihatmu masuk ke ${hideOf(k.lockerTarget).label}. Bersembunyilah saat tidak sedang terlihat.`;
     if (why === 'breath') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} mendengar napasmu. Saat ada yang mendekati tempat persembunyianmu, tahan napas (${this.input.touch ? 'tombol NAPAS' : 'SPASI'}) sampai langkahnya pergi.`;
     if (this.blackoutT > 0 && (k.kind === 'echo' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
     return (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';

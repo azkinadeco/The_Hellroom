@@ -5,6 +5,7 @@
 import { CELL, WALL_T } from '../config.js';
 import { DIRS, EDGE } from './map.js';
 import { roomFrame, doorSides, sideHasDoorNear, yawFor, aabb } from './generator.js';
+import { dressVariety } from './variety.js';
 
 const wallOff = WALL_T / 2;
 
@@ -88,15 +89,61 @@ function kelas(r, f, rng, P) {
   if (!sideHasDoorNear(r, fr, 0, 1.1)) { const [x, z] = at(0.45, 0.45); P('flag_stand', x, z, faceIn + 0.6, [0.4, 0.4, 2]); }
   const tu = W > 7 ? W * 0.72 : W / 2;
   { const [x, z] = at(tu, 0.85); P('teacher_desk', x, z, faceIn, [1.5, 0.75, 0.8]); spot(tu - 0.4, 0.85, 0.79); }
-  // two-seat desks in the blocks between aisles
+  // two-seat desks in the blocks between aisles. Batch 19: each classroom
+  // gets its own layout (rows, exam grid, group tables, a music room, one
+  // half cleared with the chairs stacked, one the ceiling came down in)
   const us = blocks(W).map((a) => a + 1.5), vs = blocks(D);
-  for (const va of vs) for (const vr of [0.98, 2.04]) for (const u of us) {
-    const v = va + vr;
-    if (v > D - 0.9 || rng.chance(0.06)) continue;
-    const [x, z] = at(u + rng.range(-0.05, 0.05), v);
-    if (rng.chance(0.05)) { P('chair_fallen', x, z, faceFront + rng.range(-1, 1), [0.6, 0.6, 0.5]); continue; }
-    P('desk_pair', x, z, faceFront + rng.range(-0.04, 0.04), [1.2, 0.95, 0.8]);
-    r.spots.push([...(() => { const [sx, sz] = at(u + rng.range(-0.35, 0.35), v - 0.22); return [sx, 0.73, sz]; })()]);
+  const isStart = f.b && f.b.start && f.b.start.room === r;
+  const variant = r.variant || (isStart || r.type === 'exhibit' ? 'rows' : rng.pick(['rows', 'rows', 'exam', 'groups', 'music', 'stacked', 'ruin']));
+  r.variant = variant;
+  const deskSpot = (u, v) => { const [sx, sz] = at(u + rng.range(-0.35, 0.35), v - 0.22); r.spots.push([sx, 0.73, sz]); };
+  if (variant === 'exam') {
+    // single desks one per block, spaced out for an exam
+    for (const va of vs) for (const u of us) {
+      const v = va + 1.5;
+      if (v > D - 0.9) continue;
+      const [x, z] = at(u + rng.range(-0.05, 0.05), v);
+      P('student_desk', x, z, faceFront + rng.range(-0.05, 0.05), [0.7, 1.1, 0.8]);
+      if (rng.chance(0.6)) r.spots.push([x - fr.n[0] * 0.25, 0.77, z - fr.n[1] * 0.25]);
+      if (rng.chance(0.15)) { const [px, pz] = at(u + 0.45, v + 0.6); P('paper_pile', px, pz, rng.range(0, 6), null); }
+    }
+  } else if (variant === 'groups') {
+    // pairs of desks pushed together face to face
+    for (const va of vs) for (const u of us) {
+      const v = va + 1.5;
+      if (v + 0.85 > D - 0.3 || rng.chance(0.1)) continue;
+      for (const [dv, rot] of [[-0.42, faceIn], [0.42, faceFront]]) {
+        const [x, z] = at(u, v + dv);
+        P('desk_pair', x, z, rot + rng.range(-0.05, 0.05), [1.2, 0.8, 0.8]);
+      }
+      deskSpot(u, v + 0.3);
+    }
+  } else {
+    const music = variant === 'music', stacked = variant === 'stacked', ruin = variant === 'ruin';
+    for (const va of vs) for (const vr of [0.98, 2.04]) for (const u of us) {
+      const v = va + vr;
+      if (v > D - 0.9 || rng.chance(0.06)) continue;
+      if (music && va > 3) continue;                       // only the front rows, the piano at the back
+      if (stacked && v > D / 2 && rng.chance(0.75)) {      // the back half cleared, chairs stacked up
+        if (vr < 1) { const [x, z] = at(u + rng.range(-0.3, 0.3), v + 0.5); P(rng.chance(0.7) ? 'stacked_chairs' : 'bag_pile', x, z, rng.range(0, 6), [0.5, 0.5, 1.3]); }
+        continue;
+      }
+      const [x, z] = at(u + rng.range(-0.05, 0.05), v);
+      if (ruin && rng.chance(0.3)) { P(rng.pick(['fallen_tile', 'paper_pile', 'chair_fallen']), x, z, rng.range(0, 6), rng.chance(0.5) ? null : [0.6, 0.6, 0.5]); continue; }
+      if (rng.chance(0.05)) { P('chair_fallen', x, z, faceFront + rng.range(-1, 1), [0.6, 0.6, 0.5]); continue; }
+      P('desk_pair', x, z, faceFront + (ruin ? rng.range(-0.5, 0.5) : rng.range(-0.04, 0.04)), [1.2, 0.95, 0.8]);
+      deskSpot(u, v);
+    }
+    if (music) {
+      const back = roomFrame(r, { N: 'S', S: 'N', W: 'E', E: 'W' }[fr.side]);
+      for (const u of [W / 2 - 1.5, W / 2 + 1.5, 3]) {
+        if (sideHasDoorNear(r, back, u - 1.2, u + 1.2)) continue;
+        const [x, z] = back.toWorld(u, wallOff + 0.3);
+        P('upright_piano', x, z, yawFor(back.n[0], back.n[1]), [1.5, 1.0, 1.3]);
+        r.spots.push([x - back.n[0] * 0.15, 1.3, z - back.n[1] * 0.15]);
+        break;
+      }
+    }
   }
   // back wall: cabinet, wall magazine, brooms, maybe a locker
   if (!sideHasDoorNear(r, back, 0.2, 1.9)) { const [x, z] = back.toWorld(1.05, wallOff + 0.24); P('class_cabinet', x, z, faceBack, [1.0, 0.48, 1.8]); r.spots.push([x, 1.82, z]); }
@@ -212,20 +259,27 @@ function ward(r, f, rng, P) {
   const back = roomFrame(r, OPPOSITE[fr.side]);
   const W = fr.width;
   const kind = r.type === 'igd' ? 'gurney' : 'hospital_bed';
+  // batch 19: wards differ — tidy (lockers by every bed), crowded (drips and
+  // oxygen), abandoned (beds dragged askew, half of them gone)
+  const mode = r.type === 'ward' ? rng.pick(['tidy', 'tidy', 'crowded', 'abandoned']) : 'crowded';
+  r.variant = mode;
   for (const wf of [fr, back]) {
     const rotAlong = yawFor(wf.alongX ? 1 : 0, wf.alongX ? 0 : 1);
     for (const ua of blocks(W)) {
       const u = ua + 1.5;
-      if (sideHasDoorNear(r, wf, u - 1.4, u + 1.4) || rng.chance(0.12)) continue;
+      if (sideHasDoorNear(r, wf, u - 1.4, u + 1.4) || rng.chance(mode === 'abandoned' ? 0.4 : 0.12)) continue;
       const [x, z] = wf.toWorld(u, 0.62);
-      P(rng.chance(r.type === 'igd' ? 0.3 : 0.08) ? 'gurney_body' : kind, x, z, rotAlong + (rng.chance(0.5) ? Math.PI : 0) + rng.range(-0.04, 0.04), [2.05, 0.95, 0.7]);
+      P(rng.chance(r.type === 'igd' ? 0.3 : 0.08) ? 'gurney_body' : kind, x, z, rotAlong + (rng.chance(0.5) ? Math.PI : 0) + (mode === 'abandoned' ? rng.range(-0.25, 0.25) : rng.range(-0.04, 0.04)), [2.05, 0.95, 0.7]);
       r.spots.push([x, kind === 'gurney' ? 0.92 : 0.64, z]);
-      if (rng.chance(0.7)) { const [ix, iz] = wf.toWorld(u + 1.25, 0.35); P('iv_stand', ix, iz, rng.range(0, 6), [0.3, 0.3, 1.9]); }
-      if (rng.chance(0.6)) { const [cx, cz] = wf.toWorld(u - 1.45, 1.2); P('ward_curtain', cx, cz, yawFor(wf.alongX ? 0 : 1, wf.alongX ? 1 : 0), null); }
+      const side = rng.next();
+      if (mode === 'tidy' && side < 0.65) { const [ix, iz] = wf.toWorld(u + 1.25, 0.35); P('bedside_cabinet', ix, iz, yawFor(wf.n[0], wf.n[1]), [0.45, 0.45, 0.8]); r.spots.push([ix, 0.8, iz]); }
+      else if (mode === 'crowded' && side < 0.3) { const [ix, iz] = wf.toWorld(u + 1.3, 0.3); P('oxygen_tanks', ix, iz, yawFor(wf.n[0], wf.n[1]), [0.55, 0.32, 1.3]); }
+      else if (mode !== 'abandoned' ? side < 0.9 : side < 0.3) { const [ix, iz] = wf.toWorld(u + 1.25, 0.35); P('iv_stand', ix, iz, rng.range(0, 6), [0.3, 0.3, 1.9]); }
+      if (mode !== 'abandoned' && rng.chance(0.6)) { const [cx, cz] = wf.toWorld(u - 1.45, 1.2); P('ward_curtain', cx, cz, yawFor(wf.alongX ? 0 : 1, wf.alongX ? 1 : 0), null); }
     }
   }
   if (r.type !== 'ward' && !sideHasDoorNear(r, fr, 0, 1.2)) { const [x, z] = fr.toWorld(0.55, 1.6); P('med_cart', x, z, yawFor(fr.n[0], fr.n[1]), [0.6, 0.45, 1]); r.spots.push([x, 0.98, z]); }
-  if (rng.chance(0.4)) { const [x, z] = fr.toWorld(W / 2, fr.depth / 2); P('wheelchair', x + rng.range(-0.3, 0.3), z, rng.range(0, 6), null); }
+  if (rng.chance(mode === 'abandoned' ? 0.9 : 0.4)) { const [x, z] = fr.toWorld(W / 2, fr.depth / 2); P('wheelchair', x + rng.range(-0.3, 0.3), z, rng.range(0, 6), null); }
   locker(r, f, back, W - 0.6) || locker(r, f, back, 0.6);
   { const [x, z] = fr.toWorld(W / 2, fr.depth / 2); r.spots.push([x, 0.02, z]); }
 }
@@ -321,7 +375,9 @@ function sel(r, f, rng, P) {
     r.spots.push([x, 0.74, z]);
     if (r.w === 1 || r.h === 1) { const [bx, bz] = fr.toWorld(fr.width / 2, wallOff); P('lines_board', bx, bz, yawFor(fr.n[0], fr.n[1]), null); }
   }
-  if (c && rng.chance(0.5)) { const fr = roomFrame(r, c); const [x, z] = fr.toWorld(fr.width - 0.4, 0.35); P('trash_bin', x, z, rng.range(0, 6), [0.4, 0.4, 0.5]); }
+  // batch 19: most cells have the steel toilet, the rest a bin
+  if (c && rng.chance(0.6)) { const fr = roomFrame(r, c); const u = fr.width - 0.45; const [x, z] = fr.toWorld(u, wallOff); P('steel_toilet', x, z, yawFor(fr.n[0], fr.n[1]), null); f.out.colliders.push(aabb(...fr.toWorld(u, wallOff + 0.38), 0.6, 0.76, yawFor(fr.n[0], fr.n[1]))); }
+  else if (c && rng.chance(0.5)) { const fr = roomFrame(r, c); const [x, z] = fr.toWorld(fr.width - 0.4, 0.35); P('trash_bin', x, z, rng.range(0, 6), [0.4, 0.4, 0.5]); }
   r.spots.push([r.cx, 0.02, r.cz]);
 }
 // punishment classroom: single desks in rows, every one turned to face the
@@ -383,6 +439,12 @@ function gallery(r, f, rng, P) {
     if (roll < 0.28) { P('plinth', px, pz, 0, [0.8, 0.8, 1.6]); P(rng.pick(FIG), px, pz, rng.range(0, 6), null, { y: 0.9 }); }
     else if (roll < 0.46) { P('hall_bench', px, pz, rng.chance(0.5) ? 0 : Math.PI / 2, [1.6, 0.42, 0.5]); r.spots.push([px, 0.46, pz]); }
     else if (roll < 0.54) { P('display_case', px, pz, rng.range(-0.2, 0.2), [0.85, 0.85, 1.7]); }
+    // batch 19: other exhibits on the floor
+    else if (roll < 0.58) P('armour_stand', px, pz, rng.pick([0, 1, 2, 3]) * Math.PI / 2, [0.6, 0.5, 1.9]);
+    else if (roll < 0.62) { const rot = rng.chance(0.5) ? 0 : Math.PI / 2; P('vase_set', px, pz, rot, [1.2, 0.5, 1.5]); r.spots.push([px, 0.72, pz]); }
+    else if (roll < 0.65) P('fossil_skeleton', px, pz, rng.chance(0.5) ? 0 : Math.PI / 2, [1.8, 0.6, 1.2]);
+    else if (roll < 0.67) P('sarcophagus', px, pz, rng.chance(0.5) ? 0 : Math.PI / 2, [0.95, 2.2, 0.9]);
+    else if (roll < 0.69) { P('map_table', px, pz, rng.chance(0.5) ? 0 : Math.PI / 2, [1.4, 0.9, 0.9]); r.spots.push([px, 0.9, pz]); }
   }
   r.spots.push([r.cx, 0.02, r.cz], [(r.x0 + 0.5) * CELL, 0.02, (r.z0 + 0.5) * CELL]);
 }
@@ -528,6 +590,7 @@ export function dressExtra(f, rng, def, reserved) {
     if (!r.sign || dress === 'school' || r.mallSign) continue;
     f.out.signs.push({ x: d.x - d.inX * (wallOff + 0.01), z: d.z - d.inZ * (wallOff + 0.01), y: 2.42, rot: yawFor(-d.inX, -d.inZ), text: r.sign });
   }
+  dressVariety(f, def, reserved);   // batch 19: per-room extras + hall dressing
 }
 
 function dressMall(f, rng, reserved) {

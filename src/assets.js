@@ -2,6 +2,7 @@
 // procedural fallback so the game still runs if a file is missing.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { HIDE } from './config.js';
 
 export const MODEL_KEYS = [
   'student_desk', 'teacher_desk', 'chalkboard', 'school_locker', 'locker_bank',
@@ -18,6 +19,17 @@ export const MODEL_KEYS = [
   'mannequin', 'mannequin_bust', 'kiddie_ride', 'shopping_trolley', 'checkout_lane', 'food_stall', 'cafe_table', 'cinema_screen', 'cinema_seats', 'popcorn_cart',
   'arcade_cabinet', 'shutter_half', 'info_totem', 'planter_bench', 'stroller', 'wet_floor_sign', 'info_desk', 'atrium_stage', 'atrium_chandelier', 'fountain_basin', 'sale_banner',
   'lifeguard_chair', 'tile_pillar', 'shower_column', 'water_curtain', 'pool_steps', 'drain_grate', 'tile_bench', 'float_ring', 'beach_ball', 'tile_tunnel', 'low_portal', 'wall_ladder', 'lane_rope_lo',
+  // batch 19: hiding spots (config HIDE), each with a moving `Door` node
+  'wardrobe', 'filing_cabinet', 'desk_hide', 'bed_hide', 'cell_cot', 'curtain_booth', 'fitting_room', 'photo_box', 'shower_booth', 'pool_cabin', 'crate_hide', 'laundry_cart', 'morgue_drawer',
+  // Batch 19 variety props (blender/props14.py)
+  'globe_stand', 'upright_piano', 'bag_pile', 'umbrella_stand', 'stacked_chairs', 'projector_cart', 'sports_rack', 'water_dispenser', 'cleaning_cart',
+  'oxygen_tanks', 'crash_cart', 'vending_machine', 'specimen_fridge', 'supply_rack', 'bedside_cabinet',
+  'steel_toilet', 'wall_chains', 'intercom_panel', 'barred_cabinet', 'punish_stool', 'file_boxes',
+  'atm_machine', 'potted_palm', 'recycle_bins', 'massage_chair', 'claw_machine', 'queue_posts', 'shopping_bags',
+  'lounge_chair', 'towel_cart', 'lifering_stand', 'pool_robot', 'kickboard_rack',
+  'armour_stand', 'sarcophagus', 'fossil_skeleton', 'map_table', 'vase_set', 'info_sign',
+  'fire_extinguisher', 'wall_speaker', 'mop_bucket', 'box_pile_a', 'box_pile_b', 'box_pile_c', 'paper_pile', 'fallen_tile', 'chair_broken',
+  'pipe_bundle', 'fuse_cabinet', 'poster_a', 'poster_b', 'poster_c', 'cctv_camera', 'emergency_light', 'exit_sign',
   'entity_spider', 'entity_clock', 'entity_weaver', 'entity_echo', 'entity_squid',
   'entity_pale', 'entity_gaper', 'entity_shade', 'entity_eyes', 'entity_centipede',
 ];
@@ -41,9 +53,34 @@ const FALLBACK = {
   figure_stand: [0.5, 1.8, 0.3, 0xd6d2c8], figure_reach: [0.5, 1.8, 0.6, 0xd6d2c8], figure_kneel: [0.5, 1.3, 0.6, 0xd6d2c8],
   item_eraser: [0.14, 0.03, 0.055, 0x8a5a32, -0.015],
   item_note: [0.21, 0.005, 0.28, 0xf0eedc, 0], item_tape: [0.19, 0.025, 0.1, 0x111111, -0.012],
+  wardrobe: [1.0, 1.95, 0.6, 0x7a5232], filing_cabinet: [0.9, 1.95, 0.5, 0x7d8580], desk_hide: [1.6, 0.78, 0.8, 0x8a5c36],
+  bed_hide: [2.0, 0.62, 0.95, 0x9aa79a], cell_cot: [1.9, 0.48, 0.8, 0x6d6f70], curtain_booth: [1.1, 2.1, 1.0, 0x8fb3a8],
+  fitting_room: [1.1, 2.25, 1.1, 0x8a2a2e], photo_box: [1.2, 2.15, 1.1, 0xe6dfe6], shower_booth: [1.0, 2.1, 1.0, 0xdfe8ea],
+  pool_cabin: [0.95, 2.0, 1.0, 0x5aa6b8], crate_hide: [1.2, 0.95, 0.9, 0xa2794a], laundry_cart: [1.0, 0.95, 0.65, 0x9fb0b4],
+  morgue_drawer: [0.85, 2.05, 1.0, 0xb9bdbd],
   entity_spider: [1.8, 2.3, 1.8, 0x5a4a52], entity_clock: [0.9, 2.2, 0.7, 0x6b4a2e], entity_weaver: [1.2, 2.0, 1.2, 0x8a3a30],
   entity_echo: [1.6, 2.0, 1.2, 0x8a3a30], entity_squid: [1.6, 2.0, 1.6, 0x6a5a78],
   entity_pale: [0.5, 1.0, 1.4, 0xcdc4bd], entity_gaper: [0.5, 1.7, 0.5, 0xb59287],
+  // Batch 19 variety props: [w, h, d, colour, y]
+  globe_stand: [0.4, 1.0, 0.4, 0x2c5f8a], upright_piano: [1.45, 1.25, 0.6, 0x151313], bag_pile: [0.8, 0.4, 0.6, 0x27324a],
+  umbrella_stand: [0.3, 0.9, 0.3, 0x4a4f53], stacked_chairs: [0.45, 1.3, 0.45, 0xb58a5a], projector_cart: [0.7, 1.3, 0.5, 0xa3a9ad],
+  sports_rack: [1.0, 0.95, 0.5, 0xc8641e], water_dispenser: [0.32, 1.42, 0.32, 0xd6d2c4], cleaning_cart: [0.9, 0.9, 0.45, 0xd8b22a],
+  oxygen_tanks: [0.55, 1.3, 0.3, 0x2c5a3a], crash_cart: [0.75, 1.0, 0.5, 0xa8261f], vending_machine: [0.9, 1.85, 0.75, 0xa8261f],
+  specimen_fridge: [0.7, 1.75, 0.65, 0xd6d2c4], supply_rack: [1.2, 1.8, 0.45, 0xd6d8d8], bedside_cabinet: [0.45, 0.8, 0.45, 0xd6d2c4],
+  steel_toilet: [0.6, 1.05, 0.75, 0xb9bdbd], wall_chains: [0.7, 0.4, 0.1, 0x4a4f53, 1.5], intercom_panel: [0.22, 0.32, 0.05, 0x7c827b, 1.3],
+  barred_cabinet: [0.9, 1.6, 0.42, 0x4a4f53], punish_stool: [0.4, 1.2, 0.4, 0x9a6b3f], file_boxes: [0.8, 0.9, 0.42, 0xb08a5a],
+  atm_machine: [0.75, 1.9, 0.7, 0xb4b6b2], potted_palm: [0.6, 1.8, 0.6, 0x2f7f7a], recycle_bins: [1.2, 0.95, 0.4, 0x2f6a3a],
+  massage_chair: [0.8, 1.3, 1.2, 0xb4b6b2], claw_machine: [0.85, 1.95, 0.85, 0xc9768e], queue_posts: [2.4, 0.98, 0.3, 0xd6d8d8],
+  shopping_bags: [0.8, 0.5, 0.5, 0xb08a5a], lounge_chair: [0.65, 0.8, 1.9, 0xe8e6de], towel_cart: [0.9, 1.1, 0.5, 0xecebe4],
+  lifering_stand: [0.3, 1.6, 0.3, 0xc8641e], pool_robot: [0.45, 0.35, 0.4, 0x2c5d9a], kickboard_rack: [1.0, 1.2, 0.4, 0xd84a3a],
+  armour_stand: [0.6, 1.85, 0.5, 0xa3a9ad], sarcophagus: [0.95, 0.9, 2.25, 0xb8923c], fossil_skeleton: [1.8, 1.2, 0.6, 0xd8ccae],
+  map_table: [1.4, 0.9, 0.9, 0x5e3d22], vase_set: [1.2, 1.5, 0.5, 0xa49d8c], info_sign: [0.42, 1.15, 0.3, 0xe6e4dc],
+  fire_extinguisher: [0.2, 0.55, 0.2, 0xa8261f, 0.62], wall_speaker: [0.36, 0.26, 0.16, 0x5e3d22, 2.3], mop_bucket: [0.35, 1.4, 0.35, 0x7f8384],
+  box_pile_a: [1.1, 0.8, 0.6, 0xa8804f], box_pile_b: [0.8, 1.4, 0.8, 0xa8804f], box_pile_c: [1.2, 0.85, 1.0, 0xa8804f],
+  paper_pile: [1.0, 0.25, 0.7, 0xe9e4d4], fallen_tile: [0.9, 0.05, 0.9, 0xd8d4c4], chair_broken: [0.6, 0.4, 0.6, 0xb58a5a],
+  pipe_bundle: [3.0, 0.3, 0.25, 0x4a4f53, 2.5], fuse_cabinet: [0.6, 1.2, 0.25, 0x7c827b, 0.5],
+  poster_a: [0.6, 0.8, 0.01, 0xe4d48a, 1.15], poster_b: [0.6, 0.8, 0.01, 0x9fc4d0, 1.15], poster_c: [0.56, 0.76, 0.02, 0xe8c0a8, 1.17],
+  cctv_camera: [0.12, 0.15, 0.4, 0xd6d2c4, 2.5], emergency_light: [0.34, 0.2, 0.15, 0xd6d2c4, 2.38], exit_sign: [0.42, 0.18, 0.1, 0x38ff6a, 2.41],
   entity_shade: [1.0, 2.2, 0.8, 0x050505], entity_eyes: [1.2, 1.2, 0.2, 0x5b3739, 0.9], entity_centipede: [0.9, 1.9, 2.4, 0xad8a7e],
 };
 
@@ -102,6 +139,7 @@ function prepareModel(root) {
   });
 }
 
+const HIDE_MODELS = new Set(Object.values(HIDE).map((h) => h.model));
 function makeFallbackModel(k) {
   const [w, h, d, color, y = 0] = FALLBACK[k] || [0.5, 0.5, 0.5, 0xff00ff];
   const g = new THREE.Group();
@@ -113,7 +151,7 @@ function makeFallbackModel(k) {
   if (k === 'chalkboard' || k === 'fuse_box' || k === 'wall_clock') mesh.position.z = d / 2;
   if (k.startsWith('item')) mesh.position.y = 0;
   g.add(mesh);
-  if (k === 'school_locker' || k === 'toilet_stall' || k.startsWith('door')) {
+  if (HIDE_MODELS.has(k) || k.startsWith('door')) {
     const pivot = new THREE.Group();
     pivot.name = k.startsWith('door') ? 'DoorLeaf' : 'Door';
     if (!k.startsWith('door')) { pivot.position.set(-w / 2, 0, d / 2); mesh.scale.z = 0.95; }

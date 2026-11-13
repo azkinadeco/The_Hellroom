@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PLAYER, NOISE } from './config.js';
+import { PLAYER, NOISE, hideOf } from './config.js';
 import { clamp, damp } from './util/rng.js';
 
 export class Player {
@@ -55,8 +55,9 @@ export class Player {
         const base = this.hidden.viewYaw;
         let d = this.yaw - base;
         while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
-        this.yaw = base + clamp(d, -0.6, 0.6);
-        const pr = this.hidden.kind === 'stall' ? [-0.9, 0.3] : [-0.35, 0.3];
+        const h = hideOf(this.hidden), yl = h.yaw ?? 0.6;
+        this.yaw = base + clamp(d, -yl, yl);
+        const pr = h.pitch || [-0.35, 0.3];
         this.pitch = clamp(this.pitch, pr[0], pr[1]);
       }
       this.pitch = clamp(this.pitch, -1.45, 1.45);
@@ -157,7 +158,7 @@ export class Player {
   }
 
   _applyCamera(dt) {
-    const targetEye = this.hidden ? 1.55 : this.crouched ? PLAYER.eyeCrouch : PLAYER.eye;
+    const targetEye = this.hidden ? (hideOf(this.hidden).eye ?? 1.55) : this.crouched ? PLAYER.eyeCrouch : PLAYER.eye;
     this.eye = damp(this.eye, targetEye, 10, dt);
     const bobAmt = this.hidden ? 0 : Math.min(this.moving, 1.4) * (this.sprinting ? 0.055 : 0.035);
     const by = Math.abs(Math.sin(this.bob)) * bobAmt;

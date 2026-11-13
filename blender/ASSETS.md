@@ -328,3 +328,84 @@ Concepts: `Image Aset/SCP-852 Spine Weaver Maiden.jpg`, `SCP-9205  Fractured Ech
 | `entity_weaver` | Penenun Tulang, ~1.95 m. Flayed armless woman (striated pecs, ribcage over a dark cavity, coiled gut, fat, sinew bands), three-eyed screaming head with a forked tongue, long black hair swept back into a huge spine of eyes and small hands that coils from her neck round her belly into a mound of bones, sinew and skeletal hands (~1.2 m footprint). Joints `Hips` (mound root) → `Spine` → `Chest` → `Neck` → `Head` (death camera) → `Tongue`, `Hair`; spine `CoilA0-2` (from Chest), `CoilB0-2` (from Spine); spine hands `SHand0-3`; floor hands `Drag0-3` (from Hips). Clips `Idle` 3.0 (loop), `Walk` 1.2 (loop, drags herself on the bone hands), `Run` 0.6 (loop), `Attack` 1.0 (rears, lunges 0.38 m, tongue lashes, spine hands reach). 25.8k tris |
 | `entity_echo` | Gema Retak, ~2.0 m tall, ~1.9 m wide. Flayed core on the same bone mound; main head split vertically (two halves, four eyes, raw flesh between, tongue), a cracked porcelain mask face (`EchoPorcelain`) on the left chest, a third screaming face low right, spine of eyes coiled once round, eight twisted-sinew arms ending in pale human hands. Joints `Hips → Spine → Chest → Neck → Head` (split face, death camera) → `Tongue`, `Hair`; `FaceB` (mask), `FaceC` (scream face); `CoilA0-1`, `CoilB0-1`; arms `Arm{L,R}{0-3}` → `…b` → `…c` (hand on c; 0 = top, 3 = lowest). Clips `Idle` 3.0 (loop), `Pose1`-`Pose4` 0.5 each (near-static: arms raised / reaching at the viewer / spread & twisted / clutching itself, faces turned — swap while unseen), `Walk` 1.4 (loop, low arms pull it along), `Attack` 1.0 (rears, all arms sweep forward and close, 0.34 m lunge). 25.4k tris |
 | `entity_squid` | Perempuan Gurita, ~1.95 m. Gaunt grey-violet woman hunched forward in black rags and grey gauze, white face with sunken black eye hollows and a screaming mouth, long wet black hair, long bony arms with clawed hands; below the waist an exposed spine, glossy coloured organs and wrapped tentacles; eight violet floor tentacles (~1 m) with pale suckers and bone spikes, tips curled. Joints `Hips` (hub) → `Spine` → `Chest` → `Neck` → `Head` (death camera) → `HairL`, `HairR`, `HairB`; `Shoulder{L,R} → Elbow… → Hand…`; `BodyTent0-1` (from Spine); floor tentacles `Tent0-7 → Tent{i}b → Tent{i}c`. Clips `Idle` 2.6 (loop), `Walk` 1.2 (loop, tentacle waves), `Run` 0.6 (loop, leaning), `Attack` 1.0 (rears, lunges 0.42 m, arms grab). 23.6k tris |
+
+## Batch 19 — hiding spots (blender/props13.py, group `hide`)
+
+Places the player can hide in, under or behind, so levels are no longer "lockers everywhere". Conventions as props.py (origin on the floor at the footprint centre, front = Blender -Y = three.js +Z, back against a wall). The part that moves is a child `Door` whose origin is the pivot; config.js `HIDE` says how it moves (hinge about Y, `axis: 'x'` lid/drape, `slide`, `fold` = curtain squashed towards its pivot), where the hidden camera sits (`cam`, `lat`, `eye`, `pitch`, `yaw`) and the footprint/wall offset used by placement. Every hidden view looks out through a real gap (slats, a crack, a hem above the floor, a lid left open a finger's width — `ajar`). Two meshes, 2–4 materials each (they are instanced: one draw call per material). Build: `Blender -b --factory-startup -P blender/build_assets.py -- hide`.
+
+| asset | HIDE kind | notes |
+|---|---|---|
+| `wardrobe` | `wardrobe` | lemari pakaian 1.0 × 0.6 × 1.95, two louvred leaves with real gaps, raised lower panels, cornice; clothes on the right half. `Door` = left leaf (hinge x = -0.49). Camera behind the left louvres. ~1.5k tris |
+| `filing_cabinet` | `filing` | lemari arsip besi 0.9 × 0.5 × 1.95, real vent slits at eye height on the left leaf, binders + archive boxes on shelves above/below. `Door` = left leaf, left ajar 0.1 rad while occupied. 1.2k |
+| `desk_hide` | `desk` | big teacher's desk 1.6 × 0.8 × 0.78, knee-hole between pedestals, the modesty panel on the pupils' side is the hinged `Door` (0.16 off the floor). Low camera (0.42) under the top. 1.3k |
+| `bed_hide` | `bed` | iron bed 2.0 × 0.95 (long side on the wall), blanket hanging down the front to 0.17 = `Door` (pivot on the mattress edge, swings up about X). Camera lying underneath at 0.13. 1.4k |
+| `cell_cot` | `cot` | detention cot 1.9 × 0.8 on wall brackets, rough grey blanket with a ragged hem = `Door`. 0.6k |
+| `curtain_booth` | `curtain` | hospital privacy bay 1.1 × 1.0 × 2.1, chrome frame, green curtains, stool + drip stand; front curtain `Door` folds to the left post, 0.3 m gap underneath. 1.0k |
+| `fitting_room` | `fitting` | KAMAR PAS 1.1 × 1.1 × 2.25, cream panels, mirror, hooks, stool; red velvet curtain `Door`. 1.0k |
+| `photo_box` | `photo` | mall PHOTO BOX 1.2 × 1.1 × 2.15, white/pink shell, glowing sign + strip samples + screen (`EmitPhoto`), bench; black curtain `Door`. Seated camera 1.12. 0.9k |
+| `shower_booth` | `shower` | pool rinse cubicle 1.0 × 1.0 × 2.1, tiled partitions, chrome shower, pale plastic curtain `Door`. 0.7k |
+| `pool_cabin` | `cabin` | fibreglass changing cabin 0.95 × 1.0 × 2.0, white door (hinge left, no. 7) 0.22 off the floor, bench + hooks inside. 0.9k |
+| `crate_hide` | `crate` | wooden shipping crate 1.2 × 0.9 × 0.95, plank sides with real 2 cm gaps, battens, stencils (AWAS RAPUH); lid = `Door` hinged on the back top edge, propped a crack. 1.6k |
+| `laundry_cart` | `laundry` | hospital linen trolley 1.0 × 0.65 × 0.95 on casters, canvas bin of sheets, vinyl lid = `Door` (hinge at the back). 1.3k |
+| `morgue_drawer` | `morgue` | single stainless column 0.85 × 1.0 × 2.05, three drawers; the middle one (vent grille at eye height + tray) is `Door` and slides out. 1.0k |
+
+Placement: furnishing still drops plain lockers; `src/level/hides.js` (run per floor after furnishing) turns each into what the room would have (rules per level theme and room type), converts some furniture into the hiding spot (teacher desk → `desk_hide`, hospital/house bed → `bed_hide`, cell bunk → `cell_cot`) replacing the room's locker, and gives rooms that had none (shops, shower halls, morgue, store rooms) one on a free stretch of solid wall. Every candidate is checked against walls, doors, other colliders and a clear front.
+
+## Batch 19 — variety props (props14.py, group `variety`)
+
+Build: `Blender -b --factory-startup -P blender/build_assets.py -- variety`. Conventions as props.py (metres, origin on the floor, front = −Y = three.js +Z). Wall pieces have their back on the wall plane (y = 0), stick out −Y and are modelled at their real height, so the game places them with `y: 0` and no collider (contact shadows skip them because they start above 0.2 m). All materials are opaque and single sided, so the game merges each prop into one draw call per chunk; only `vending_machine` (`EmitVend`), `atm_machine` (`EmitAtm`) and `exit_sign` (`EmitExit`) carry a second, glowing mesh. Placement lives in `src/level/variety.js` (per-theme room recipes + hall dressing) and in the classroom / ward / cell / gallery / ATM furnishing.
+
+| asset | tris | notes |
+|---|---|---|
+| `globe_stand` | 616 | classroom globe on a turned wooden stand, brass meridian, 1.0 m |
+| `upright_piano` | 524 | black upright piano 1.45 × 0.6 with stool in front (model reaches 0.92 m out); music rooms, back wall |
+| `bag_pile` | 780 | five school backpacks in a heap |
+| `umbrella_stand` | 360 | steel bucket with three closed umbrellas |
+| `stacked_chairs` | 480 | five school chairs stacked, 1.3 m |
+| `projector_cart` | 476 | AV trolley with overhead projector and a box underneath |
+| `sports_rack` | 996 | ball cart (basket/volley/foot balls) with a skipping rope |
+| `water_dispenser` | 232 | office dispenser with upturned gallon, red/blue taps |
+| `cleaning_cart` | 472 | janitor cart: mop bucket + wringer, mop, bin bag, sprays |
+| `oxygen_tanks` | 452 | two green O₂ cylinders chained on a trolley |
+| `crash_cart` | 448 | red five-drawer emergency cart, defibrillator, drip pole |
+| `vending_machine` | 895 | red drinks machine 0.9 × 0.75 × 1.85, lit window of cans, “MINUMAN DINGIN” |
+| `specimen_fridge` | 1132 | lab fridge with open door frame, jars of grey things, biohazard label |
+| `supply_rack` | 808 | chrome wire shelving of medical supplies |
+| `bedside_cabinet` | 324 | hospital bedside locker + over-bed table (table on +X) |
+| `steel_toilet` | 284 | prison steel toilet/sink combo, wall piece (back on the wall, bowl 0.75 out) |
+| `wall_chains` | 800 | steel plate at 1.9 m with two chains and shackles, wall piece |
+| `intercom_panel` | 416 | wall intercom at 1.45 m, “PANGGIL PETUGAS” |
+| `barred_cabinet` | 644 | records cabinet behind bars with padlock, files inside |
+| `punish_stool` | 476 | tall stool, paper dunce cap, sign “SAYA TIDAK AKAN MENGULANGI” |
+| `file_boxes` | 781 | archive boxes labelled with years, papers spilled |
+| `atm_machine` | 334 | free-standing ATM with lit screen, keypad, “ATM” header |
+| `potted_palm` | 600 | teal glazed pot with a tired indoor palm |
+| `recycle_bins` | 666 | ANORGANIK / ORGANIK / B3 sorting bins |
+| `massage_chair` | 496 | coin-op massage chair |
+| `claw_machine` | 1206 | pink claw crane, open play box of plush toys, “AMBIL HADIAH” |
+| `queue_posts` | 384 | three chrome stanchions with red belts, 2.4 m along X |
+| `shopping_bags` | 204 | four paper shopping bags, one tipped over |
+| `lounge_chair` | 428 | white slatted sun lounger with a towel |
+| `towel_cart` | 540 | chrome trolley of folded towels |
+| `lifering_stand` | 456 | post with life ring, rope and “PELAMPUNG” sign |
+| `pool_robot` | 360 | pool-cleaning robot with its coiled blue cable |
+| `kickboard_rack` | 560 | rack of foam kickboards + bin of pool noodles |
+| `armour_stand` | 1922 | suit of plate armour with halberd on a wooden base |
+| `sarcophagus` | 496 | painted sarcophagus on a stone dais, 0.95 × 2.25 |
+| `fossil_skeleton` | 1104 | small theropod skeleton on a black plinth 1.8 × 0.6 |
+| `map_table` | 344 | glass-topped map table with magnifier |
+| `vase_set` | 556 | stone plinth with celadon, blue-and-white and terracotta vases |
+| `info_sign` | 483 | chrome stand sign “JANGAN DISENTUH” |
+| `fire_extinguisher` | 309 | APAR on a wall bracket with red sign, wall piece |
+| `wall_speaker` | 80 | PA speaker high on the wall (2.45 m), wall piece |
+| `mop_bucket` | 208 | bucket with mop and rag |
+| `box_pile_a`, `box_pile_b`, `box_pile_c` | 144 / 192 / 360 | carton heap; tall leaning stack + fallen open box; pallet of shrink-wrapped cartons |
+| `paper_pile` | 336 | stacks of old papers with sheets scattered |
+| `fallen_tile` | 212 | ceiling tile broken on the floor with debris and a T-bar |
+| `chair_broken` | 120 | school chair on its back with a snapped leg |
+| `pipe_bundle` | 396 | three pipes 3 m along X under the ceiling (2.55–2.8 m), valve wheel, rust streak; wall piece |
+| `fuse_cabinet` | 253 | grey electrical cabinet with warning triangle (decor, not the fuse box) |
+| `poster_a`, `poster_b`, `poster_c` | ~650 | “JAGA KEBERSIHAN”, “DILARANG BERLARI”, framed “HARAP TENANG”; centred at 1.55 m |
+| `cctv_camera` | 134 | box camera on an arm at 2.6 m |
+| `emergency_light` | 168 | twin-head emergency light at 2.45 m |
+| `exit_sign` | 179 | lit green “KELUAR” box sign at 2.5 m |

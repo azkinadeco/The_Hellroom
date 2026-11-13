@@ -30,6 +30,8 @@ import props9  # noqa: E402
 import props10  # noqa: E402
 import props11  # noqa: E402
 import props12  # noqa: E402
+import props13  # noqa: E402
+import props14  # noqa: E402
 import textures3  # noqa: E402
 import items  # noqa: E402
 import entities  # noqa: E402
@@ -52,8 +54,10 @@ GROUPS = {
     "museum": props10.ASSETS,
     "mall3": props11.ASSETS,
     "pool3": props12.ASSETS,
+    "hide": props13.ASSETS,
+    "variety": props14.ASSETS,
     "pool": textures2.ASSETS,
-    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS, **props6.ASSETS, **props7.ASSETS, **props8.ASSETS, **props9.ASSETS, **props10.ASSETS, **props11.ASSETS, **props12.ASSETS},
+    "props": {**props.ASSETS, **props2.ASSETS, **props3.ASSETS, **props4.ASSETS, **props5.ASSETS, **props6.ASSETS, **props7.ASSETS, **props8.ASSETS, **props9.ASSETS, **props10.ASSETS, **props11.ASSETS, **props12.ASSETS, **props13.ASSETS, **props14.ASSETS},
     "figures": props5.ASSETS,
     "poolprops": props4.ASSETS,
     "lab": props3.ASSETS,

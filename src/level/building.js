@@ -9,6 +9,7 @@ import { LevelMap, DIRS, EDGE, VOID } from './map.js';
 import { furnishRoom, dressHalls, yawFor } from './generator.js';
 import { furnishExtra, dressExtra } from './furnish2.js';
 import { LAYOUTS } from './layouts.js';
+import { varyHides } from './hides.js';
 import './mall.js';   // registers LAYOUTS.mall + its furnishing
 import './pool.js';   // registers LAYOUTS.poolrooms + its furnishing
 
@@ -241,6 +242,7 @@ function finish(b, rng, def) {
       f.out.colliders = f.out.colliders.filter((c) => ![...drop].some((L) => Math.abs((c.minX + c.maxX) / 2 - L.x) < 1e-3 && Math.abs((c.minZ + c.maxZ) / 2 - L.z) < 1e-3));
     }
     dressHalls(f.map, rng, f.out, reserved, true, def.lockerReach || 3);
+    varyHides(f, def, def.seed || 0);   // lockers become the hiding places each room would really have
     // nothing may stand on a flight of stairs or in a lift
     const blocked = (x, z) => { const r = f.out.rooms.find((q) => q.id === f.map.reg(Math.floor(x / CELL), Math.floor(z / CELL))); return r && (r.type === 'stairs' || r.type === 'lift'); };
     f.out.props = f.out.props.filter((p) => p.type === 'slide_top' || !blocked(p.x, p.z));
