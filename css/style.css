@@ -245,3 +245,9 @@ body.clear-screen #title h1 { text-shadow: none; }
 .ending-cast .portrait { width: 72px; height: 90px; }
 @keyframes endIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 body.clear-screen .ending-lines p, body.clear-screen .ending-credits { animation-duration: 0.8s; }
+
+/* batch 26: hand-drawn floor plan */
+.automap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-0.6deg); display: none; background: #e6dfc8; padding: 8px 8px 6px; box-shadow: 0 8px 40px #000; max-width: 92vw; max-height: 86vh; opacity: 0.94; }
+.automap.show { display: block; }
+.automap canvas { display: block; max-width: calc(92vw - 16px); max-height: calc(86vh - 70px); image-rendering: pixelated; }
+#automap-label { font-family: var(--type); font-size: 13px; line-height: 1.35; color: #2a261e; text-shadow: none; white-space: pre-line; margin-top: 4px; }

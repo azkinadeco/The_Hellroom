@@ -13,6 +13,7 @@ import { DoorSystem, Interactor } from './interact.js';
 import { spawnEntity, ENTITY_INFO } from './ai/creatures.js';
 import { randomReachableCell } from './ai/path.js';
 import { Anomalies } from './anomalies.js';
+import { AutoMap } from './automap.js';
 import { NOTES, TAPES, PA_LINES } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
@@ -149,6 +150,8 @@ export class Game {
     this.setFloor(startFloor);
     this.interactor = new Interactor(this);
     this.anomalies = new Anomalies(this);
+    if (!this.automap) this.automap = new AutoMap(this);
+    this.automap.reset();
     // per-level look: tint of the baked light, colour of the dark
     const fogC = def.fogColor ?? 0x070806;
     this.scene.fog = new THREE.FogExp2(fogC, def.fog);
@@ -208,6 +211,7 @@ export class Game {
   }
 
   unload() {
+    if (this.automap) this.automap.setOpen(false);
     for (const e of this.entities) e.remove();
     this.entities = [];
     for (const f of this.floors || []) {
@@ -266,6 +270,7 @@ export class Game {
     const prev = this.floorK;
     this.setFloor(k);
     this.hud.caption(`Lantai ${k + 1}`, 1.6);
+    if (this.automap) { this.automap.view = k; this.automap.dirty = true; }
     // the resident does not stay behind: a hunter follows up the same stairs,
     // anything else turns up somewhere else on the new floor
     const kinds = this.entities.map((e) => ({ kind: e.kind, chasing: this.chasers.has(e) }));
@@ -596,6 +601,16 @@ export class Game {
 
     if (input.consume('pause')) { this.ui.pause(); input.endFrame(); return; }
     if (input.consume('objectives')) this.hud.showObjectives(this.objectiveText());
+    // the floor plan: M opens it, R (or PETA again on touch) leafs through the floors
+    if (input.consume('map')) {
+      const a = this.automap;
+      if (!a.open) { if (p.alive) { a.setOpen(true); this.hint('map', 'Denah hanya memuat tempat yang sudah kamu lihat. Permainan TIDAK berhenti saat denah terbuka.', 5); } }
+      else if (input.touch && a.seen.length > 1 && (a.view + 1) % a.seen.length !== this.floorK) a.cycle();
+      else a.setOpen(false);
+    }
+    if (input.consume('mapfloor') && this.automap.open) this.automap.cycle();
+    if (!p.alive && this.automap.open) this.automap.setOpen(false);
+    this.automap.update(dt);
 
     // camcorder zoom: narrower FOV, slower look, small battery cost
     const zoom = input.zooming() && p.alive && p.battery > 0;

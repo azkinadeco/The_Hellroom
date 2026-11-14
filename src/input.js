@@ -19,7 +19,7 @@ export class Input {
   _bind() {
     const map = {
       KeyE: 'interact', KeyF: 'flashlight', KeyN: 'nightvision', KeyC: 'crouch', ControlLeft: 'crouch',
-      Escape: 'pause', KeyP: 'pause', Tab: 'objectives', Space: 'breath', KeyG: 'throw',
+      Escape: 'pause', KeyP: 'pause', Tab: 'objectives', Space: 'breath', KeyG: 'throw', KeyM: 'map', KeyR: 'mapfloor',
     };
     addEventListener('keydown', (e) => {
       if (e.code === 'Tab') e.preventDefault();
