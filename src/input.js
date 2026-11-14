@@ -13,6 +13,8 @@ export class Input {
     this.sprintToggle = false;
     this.crouchToggle = false;
     this.breathHeld = false;
+    this.pad = { move: { x: 0, y: 0 }, sprint: false, zoom: false, breath: false, prev: [], edges: new Set(), seen: false };
+    this.vibrate = true;
     this._bind();
   }
 
@@ -111,6 +113,36 @@ export class Input {
     }
   }
 
+  // ---- gamepad (standard mapping). Called once per frame, also in menus.
+  poll(dt) {
+    const P = this.pad;
+    P.edges.clear();
+    let gp = null;
+    try { for (const g of (navigator.getGamepads ? navigator.getGamepads() : [])) if (g && g.connected && g.buttons.length >= 10) { gp = g; break; } } catch (_) { /* not allowed */ }
+    if (!gp) { P.move.x = P.move.y = 0; P.sprint = P.zoom = P.breath = false; this.gp = null; return; }
+    this.gp = gp;
+    const dz = (v) => (Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v) * 0.18) / 0.82);
+    const down = (i) => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.4));
+    const MAP = { 0: 'interact', 1: 'crouch', 2: 'flashlight', 3: 'nightvision', 4: 'throw', 8: 'map', 9: 'pause', 12: 'objectives', 15: 'mapfloor' };
+    for (let i = 0; i < gp.buttons.length; i++) {
+      const d = down(i);
+      if (d && !P.prev[i]) { P.edges.add(i); P.seen = true; if (this.enabled && MAP[i]) this.pressed.add(MAP[i]); if (this.enabled && i === 10) this.sprintToggle = !this.sprintToggle; }
+      P.prev[i] = d;
+    }
+    if (!this.enabled) { P.move.x = P.move.y = 0; return; }
+    P.move.x = dz(gp.axes[0] || 0); P.move.y = dz(gp.axes[1] || 0);
+    if (P.move.x || P.move.y) P.seen = true;
+    const rx = dz(gp.axes[2] || 0), ry = dz(gp.axes[3] || 0);
+    this.lookDX += rx * Math.abs(rx) * 1500 * dt; this.lookDY += ry * Math.abs(ry) * 1000 * dt;
+    P.zoom = down(6); P.sprint = down(7); P.breath = down(5);
+  }
+  // short buzz on the phone and the controller
+  rumble(ms = 120, strength = 0.6) {
+    if (!this.vibrate) return;
+    try { if (this.touch && navigator.vibrate) navigator.vibrate(ms); } catch (_) { /* ignore */ }
+    try { const a = this.gp && this.gp.vibrationActuator; if (a && a.playEffect) a.playEffect('dual-rumble', { duration: ms, strongMagnitude: strength, weakMagnitude: strength * 0.6 }).catch(() => {}); } catch (_) { /* ignore */ }
+  }
+
   // axis -1..1
   axis() {
     let x = 0, y = 0;
@@ -119,14 +151,14 @@ export class Input {
     if (k.has('KeyS') || k.has('ArrowDown')) y += 1;
     if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
     if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
-    x += this.move.x; y += this.move.y;
+    x += this.move.x + this.pad.move.x; y += this.move.y + this.pad.move.y;
     const l = Math.hypot(x, y);
     if (l > 1) { x /= l; y /= l; }
     return { x, y };
   }
-  sprint() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.sprintToggle; }
-  zooming() { return this.keys.has('KeyZ') || this.zoomToggle; }
-  holdingBreath() { return this.keys.has('Space') || this.breathHeld; }
+  sprint() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.sprintToggle || this.pad.sprint; }
+  zooming() { return this.keys.has('KeyZ') || this.zoomToggle || this.pad.zoom; }
+  holdingBreath() { return this.keys.has('Space') || this.breathHeld || this.pad.breath; }
   consume(a) { const had = this.pressed.has(a); this.pressed.delete(a); return had; }
   endFrame() { this.pressed.clear(); this.lookDX = 0; this.lookDY = 0; }
   resetToggles() {

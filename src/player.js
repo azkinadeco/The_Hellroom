@@ -163,7 +163,7 @@ export class Player {
   _applyCamera(dt) {
     const targetEye = this.hidden ? (hideOf(this.hidden).eye ?? 1.55) : this.crouched ? PLAYER.eyeCrouch : PLAYER.eye;
     this.eye = damp(this.eye, targetEye, 10, dt);
-    const bobAmt = this.hidden ? 0 : Math.min(this.moving, 1.4) * (this.sprinting ? 0.055 : 0.035);
+    const bobAmt = this.hidden ? 0 : Math.min(this.moving, 1.4) * (this.sprinting ? 0.055 : 0.035) * (this.bobScale ?? 1);
     const by = Math.abs(Math.sin(this.bob)) * bobAmt;
     const bx = Math.cos(this.bob) * bobAmt * 0.5;
     const c = this.camera;

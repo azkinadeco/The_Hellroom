@@ -280,3 +280,11 @@ body.clear-screen .ending-lines p, body.clear-screen .ending-credits { animation
   #title .menu { display: grid; grid-template-columns: auto auto; column-gap: 34px; justify-content: start; }
   #title .menu button { font-size: 22px; text-align: left; }
 }
+
+/* batch 32: accessibility */
+.row > span { display: flex; align-items: center; gap: 10px; width: 55%; justify-content: flex-end; }
+.row > span input[type=range] { width: 100%; }
+body.big-text .caption { font-size: 30px; bottom: 84px; white-space: normal; text-align: center; max-width: 90vw; }
+body.big-text .toast { font-size: 32px; }
+body.big-text .prompt { font-size: 30px; }
+body.big-text .hud-bl, body.big-text .objectives { font-size: 26px; }

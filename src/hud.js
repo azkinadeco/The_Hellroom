@@ -38,7 +38,7 @@ export class HUD {
     this._set(this.battPct, 'bp', b + '%');
     this.batt.style.width = (b / 100 * 36) + 'px';
     this.batt.parentElement.classList.toggle('low', b < 20);
-    this._set(this.mode, 'mode', (p.zooming ? `ZOOM ${(72 / g.camera.fov).toFixed(1)}x  ` : '') + (p.nightVision ? 'NIGHT' : p.flashlight ? 'LAMP' : 'SP'));
+    this._set(this.mode, 'mode', (p.zooming ? `ZOOM ${(g.baseFov / g.camera.fov).toFixed(1)}x  ` : '') + (p.nightVision ? 'NIGHT' : p.flashlight ? 'LAMP' : 'SP'));
     const inv = p.inventory;
     const need = g.def.fuses;
     const lines = [`SEKRING  ${g.fusesInstalled + inv.fuses}/${need}${g.fusesInstalled ? `  (${g.fusesInstalled} terpasang)` : ''}`];

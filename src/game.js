@@ -83,6 +83,12 @@ export class Game {
     this.vhs.enabled = true;
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
     document.body.classList.toggle('clear-screen', this.clear);
+    this.baseFov = s.fov || 72;
+    this.calm = !!s.calm;
+    this.player.bobScale = s.bob === false ? 0 : 1;
+    this.input.vibrate = s.vibrate !== false;
+    document.body.classList.toggle('big-text', !!s.bigText);
+    if (this.state === 'menu' || !this.input.zooming()) { this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix(); }
     this.input.sensitivity = s.sens;
     this.input.invertY = s.invertY;
     this.audio.setVolume(s.volume);
@@ -169,7 +175,7 @@ export class Game {
     p.battery = 100; p.flashlight = false; p.nightVision = false;
     p.water = this.gen.water; p.y = 0;
     this.audio.setTheme(def.theme || null); this.themeT = 0;
-    this.camera.fov = 72; this.camera.updateProjectionMatrix();
+    this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0 };
     this.projectiles = [];
     this.hintT = 0;
@@ -401,7 +407,7 @@ export class Game {
     for (const e of this.entities) if (e !== src && Math.hypot(e.pos.x - x, e.pos.z - z) < 48) e.onNoise(x, z, 1, 'alert');
   }
   onChaseStart(e) {
-    if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); }
+    if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); this.input.rumble(180, 0.7); }
   }
   onChaseEnd(e) { if (this.chasers.delete(e) && this.player.alive) { this.graceT = this.diff.grace; this.quietT = 0; this.stats.escapes = (this.stats.escapes || 0) + 1; } }
   // Pacing: after an escape patrols wander off for a while; after a long quiet
@@ -489,6 +495,7 @@ export class Game {
       p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
     }
     this.audio.jumpscare();
+    this.input.rumble(700, 1);
     this.audio.sting(entity.kind, entity.pos);
     this.ui.scare && this.ui.scare(this.clear);
     this.input.resetToggles();
@@ -660,9 +667,9 @@ export class Game {
 
     // camcorder zoom: narrower FOV, slower look, small battery cost
     const zoom = input.zooming() && p.alive && p.battery > 0;
-    const fov = damp(this.camera.fov, zoom ? 26 : 72, 8, dt);
+    const fov = damp(this.camera.fov, zoom ? 26 : this.baseFov, 8, dt);
     if (Math.abs(fov - this.camera.fov) > 0.01) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
-    p.lookScale = fov / 72;
+    p.lookScale = fov / this.baseFov;
     p.zooming = zoom;
     if (zoom) p.battery = Math.max(0, p.battery - 0.15 * dt);
     p.update(dt, input, this.world, this);
@@ -718,6 +725,7 @@ export class Game {
     let interference = this.danger > 0.45 && !this.clear ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
     this.world.blackout = this.blackoutT > 0;
     if (this.blackoutT > 0) { this.blackoutT -= dt; interference = this.blackoutT < 0.6 || Math.random() < 0.02 ? 0.6 : 0.1; }
+    if (this.calm) { this.flickerVal = Math.max(0.88, this.flickerVal); if (this.blackoutT <= 0) interference = Math.max(interference, 0.8); else interference = 0.1; }   // no strobing
     bakeUniforms.uFlicker.value = this.flickerVal;
     bakeUniforms.uPower.value = damp(bakeUniforms.uPower.value, interference, 20, dt);
     for (const f of this.floors) {
