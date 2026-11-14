@@ -84,3 +84,52 @@ export const FILMS = {
   echo: '[ZOOM 2.8x. Lampu berkedip.]\n\nDi setiap frame yang terang ia diam. Di setiap frame yang gelap ia satu langkah lebih dekat.\n\nKalau rekaman dihentikan tepat di frame gelap, salah satu wajahnya sedang menatap lensa.',
   squid: '[ZOOM 2.8x. Lorong basah.]\n\nBisikannya terekam jelas di kaset walaupun di telingaku cuma seperti angin. Ia menyebut namaku. Lalu nama ibuku.\n\nRambutnya tidak pernah kering.',
 };
+
+// Announcements that belong to one kind of building (def.arch); mixed with the school ones.
+export const PA_THEME = {
+  detention: [
+    'Jam hukuman diperpanjang. Tahanan dilarang melihat ke langit-langit.',
+    'Penghitungan ulang. Jumlah sel tidak sesuai dengan jumlah kaki.',
+    'Menara pengawas melaporkan: ada yang berjalan di lantai dua. Itu bukan penjaga.',
+  ],
+  hospital: [
+    'Dokter jaga harap ke Bangsal B. Pasien nomor tiga sudah tidak di ranjangnya.',
+    'Jam besuk telah berakhir. Pengunjung yang masih di dalam, mohon jangan berkedip.',
+    'Kode putih. Kode putih. Jangan memunggungi lorong.',
+  ],
+  mall: [
+    'Pengunjung yang terhormat, mal akan segera tutup. Mal sudah tutup. Mal tidak pernah buka.',
+    'Kepada orang tua dari anak yang membawa kamera, anak Anda menunggu di bagian yang gelap.',
+    'Promo hari ini: lampu di lantai Anda akan dipadamkan lebih awal.',
+  ],
+  pool: [
+    'Peserta pelajaran renang harap berbaris. Hitung dari satu. Hitung sampai semua wajah sudah menyebut angka.',
+    'Dilarang berlari di tepi kolam. Ia mendengar air.',
+    'Pengawas kolam sedang istirahat. Pengawas kolam tidak akan kembali.',
+  ],
+  museum: [
+    'Pengunjung dilarang menyentuh koleksi. Koleksi dilarang menyentuh pengunjung.',
+    'Museum tutup lima menit lagi. Mohon periksa apakah jumlah patung masih sama.',
+    'Tur malam dimulai. Tetaplah bersama rombongan. Anda tidak punya rombongan.',
+  ],
+  backroom: [
+    'Perhatian. Lantai ini tidak ada di denah. Anda juga tidak.',
+    'Dengung lampu akan berhenti sebentar. Jangan bergerak saat itu terjadi.',
+  ],
+};
+
+// One line under the level card, from the second level on.
+export const TIPS = [
+  'Menutup pintu di belakangmu memutus pandangan penghuni yang mengejar.',
+  'Denah (M) tidak menghentikan waktu. Bukalah di tempat yang aman.',
+  'Memasang sekring di kotak panel menyimpan rekamanmu, walau sekringnya belum lengkap.',
+  'Jam weker paling berguna diletakkan jauh dari tujuanmu, bukan di dekatnya.',
+  'Di dalam tempat sembunyi, napasmu baru terdengar kalau penghuni berdiri tepat di depannya.',
+  'Zoom ke arah penghuni selama enam detik membuka rekaman lapangannya di Arsip.',
+  'Karpet meredam langkah. Keramik dan air membuatnya terdengar jauh.',
+  'Senter membuatmu lebih mudah terlihat. Mode malam tidak, tapi baterainya lebih boros.',
+  'Kalau lama buntu, periksa denahmu. Kadang ada tanda yang tidak kamu buat.',
+  'Penghuni yang kehilangan jejakmu akan memeriksa tempat sembunyi terdekat lebih dulu.',
+  'Pengumuman yang menyebut "kami melihatmu" tidak bisa melacakmu kalau kamu sedang bersembunyi.',
+  'Lift kadang berhenti di lantai yang tidak kamu tekan. Tangga tidak pernah berbohong.',
+];

@@ -7,7 +7,7 @@ import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VER
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
 import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
-import { INTRO, ENDING, NOTES, TAPES, FILMS, FILM_NEED } from './story.js';
+import { INTRO, ENDING, NOTES, TAPES, FILMS, FILM_NEED, TIPS } from './story.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'hellroom.save.v2';
@@ -174,10 +174,11 @@ function startLevel(index, test = null) {
   $('intro-code').textContent = def.code;
   $('intro-name').textContent = def.name;
   $('intro-sub').textContent = def.subtitle;
-  $('intro-text').textContent = index === 0 ? INTRO.join('\n\n') : '';
+  $('intro-text').textContent = index === 0 && !test ? INTRO.join('\n\n') : tipLine();
   show('intro');
 }
 
+const tipLine = () => 'Tip: ' + TIPS[Math.floor(Math.random() * TIPS.length)];
 const modText = (def) => (def.mods && def.mods.length ? def.mods.map((k) => `☠ ${ENDLESS_MODS[k].name} — ${ENDLESS_MODS[k].desc}`).join('\n') : '');
 // one seed per run: the whole descent is fixed the moment you start it, and a
 // run you walked away from can be picked up at the floor you had reached
@@ -189,7 +190,7 @@ function startEndless(floor, seed = null) {
   $('intro-code').textContent = 'MODE TANPA UJUNG · ' + pendingDef.code;
   $('intro-name').textContent = pendingDef.name;
   $('intro-sub').textContent = pendingDef.subtitle;
-  $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : '', modText(pendingDef)].filter(Boolean).join('\n\n');
+  $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : tipLine(), modText(pendingDef)].filter(Boolean).join('\n\n');
   show('intro');
 }
 // Kaset Harian: one fixed floor per calendar day, the same for everyone; best time is kept

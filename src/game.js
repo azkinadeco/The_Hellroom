@@ -15,7 +15,7 @@ import { randomReachableCell } from './ai/path.js';
 import { Anomalies } from './anomalies.js';
 import { AutoMap } from './automap.js';
 import { OddEvents } from './events.js';
-import { NOTES, TAPES, PA_LINES, FILM_NEED } from './story.js';
+import { NOTES, TAPES, PA_LINES, PA_THEME, FILM_NEED } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
 // residents throw shadows in the flashlight beam
@@ -927,7 +927,8 @@ export class Game {
     const early = this.def.id === 1;
     const r = Math.random();
     const kind = this.def.paBlackout && r < 0.7 ? 'blackout' : r < (early ? 0.6 : 0.4) ? 'flavor' : (early || r < 0.72) ? 'locate' : 'blackout';
-    const lines = PA_LINES[kind];
+    const themed = PA_THEME[this.def.arch];
+    const lines = kind === 'flavor' && themed && Math.random() < 0.7 ? themed : PA_LINES[kind];
     const line = lines[Math.floor(Math.random() * lines.length)];
     this.audio.paChime();
     this.schedule(1.3, () => {
