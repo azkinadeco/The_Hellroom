@@ -149,6 +149,16 @@ const ENDLESS_LOOK = {
   museum: { arch: 'museum', rail: 'parapet', clean: true, tint: [1.06, 0.94, 0.78], fogColor: 0x0a0705, grade: [1.05, 0.99, 0.92], railColor: 0xd9d4c8, railCap: 0x6b5a3e, textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'] },
   backroom: { arch: 'backroom', rail: 'parapet', theme: 'backroom', tint: [1.05, 1.0, 0.72], fogColor: 0x0b0a05, grade: [1.04, 1.02, 0.88], clean: true, railColor: 0xc9b98a, railCap: 0x8a7a4a },
 };
+// Kutukan lantai: one rule change per endless floor from floor 2 (two from floor 6).
+export const ENDLESS_MODS = {
+  gelap:  { name: 'Listrik Sekarat', desc: 'Hampir semua lampu mati.', def: { lightsOff: 0.85, flicker: 0.5 } },
+  kabut:  { name: 'Kabut Tebal', desc: 'Jarak pandang jauh lebih pendek.', fog: 1.7 },
+  gema:   { name: 'Lantai Bergema', desc: 'Langkahmu terdengar lebih jauh.', def: { noiseMul: 1.5 } },
+  boros:  { name: 'Baterai Bocor', desc: 'Baterai kamera terkuras hampir dua kali lebih cepat.', def: { drainMul: 1.8 } },
+  gelisah: { name: 'Penghuni Gelisah', desc: 'Penghuni bergerak lebih cepat.', def: { speedMul: 1.15 } },
+  padam:  { name: 'Pemadaman Bergilir', desc: 'Listrik padam berkali-kali.', def: { paBlackout: true } },
+  angker: { name: 'Lantai Angker', desc: 'Hal-hal ganjil terjadi jauh lebih sering.', def: { odd: 3 } },
+};
 export function endlessDef(floor, seed) {
   const f = floor;
   let st = (seed * 9301 + f * 49297) % 233280;
@@ -160,7 +170,7 @@ export function endlessDef(floor, seed) {
   const band = [ri(3, 4), ri(3, 4)];
   const aw = Math.min(10, 4 + ri(0, Math.min(6, f))), ah = Math.min(8, 4 + ri(0, Math.min(4, f)));
   const floors = Math.min(4, 2 + (f >= 2 ? 1 : 0) + (f >= 5 ? 1 : 0));
-  return {
+  const def = {
     id: 'endless', endless: true, floor: f,
     code: `LANTAI ${-f}`,
     name: ENDLESS_NAMES[(seed + f) % ENDLESS_NAMES.length],
@@ -174,4 +184,9 @@ export function endlessDef(floor, seed) {
     ...ENDLESS_LOOK[style],
     entities, tape: false,
   };
+  const keys = Object.keys(ENDLESS_MODS), mods = [];
+  for (let n = f >= 6 ? 2 : f >= 2 ? 1 : 0; n > 0 && keys.length; n--) mods.push(keys.splice(ri(0, keys.length - 1), 1)[0]);
+  for (const k of mods) { const M = ENDLESS_MODS[k]; Object.assign(def, M.def || {}); if (M.fog) def.fog = Math.min(0.11, def.fog * M.fog); }
+  def.mods = mods;
+  return def;
 }

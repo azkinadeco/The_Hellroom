@@ -83,7 +83,7 @@ export class Player {
 
     // ----- battery -----
     const drain = (this.flashlight ? PLAYER.batteryDrainLight : 0) + (this.nightVision ? PLAYER.batteryDrainNV : 0);
-    this.battery = Math.max(0, this.battery - drain * dt);
+    this.battery = Math.max(0, this.battery - drain * dt * (game.def.drainMul || 1));
     if (this.battery <= 0 && (this.flashlight || this.nightVision)) {
       this.flashlight = false; this.nightVision = false;
       game.hud.toast('Baterai kamera habis — cari baterai cadangan');

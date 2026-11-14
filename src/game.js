@@ -391,7 +391,7 @@ export class Game {
   emitNoise(x, z, radius, type) {
     for (const e of this.entities) {
       const d = Math.hypot(e.pos.x - x, e.pos.z - z);
-      let r = radius * this.diff.hearing;
+      let r = radius * this.diff.hearing * (type === 'step' ? this.def.noiseMul || 1 : 1);
       if (!this.world.los(e.pos.x, e.pos.z, x, z)) r *= 0.55;
       if (d < r) { e.onNoise(x, z, 1 - d / r, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; }
     }
@@ -820,10 +820,10 @@ export class Game {
     if (!this.player.alive || this.winT >= 0) return;
     this.paT -= dt;
     if (this.paT > 0) return;
-    this.paT = 75 + Math.random() * 60;
+    this.paT = this.def.paBlackout ? 40 + Math.random() * 30 : 75 + Math.random() * 60;
     const early = this.def.id === 1;
     const r = Math.random();
-    const kind = r < (early ? 0.6 : 0.4) ? 'flavor' : (early || r < 0.72) ? 'locate' : 'blackout';
+    const kind = this.def.paBlackout && r < 0.7 ? 'blackout' : r < (early ? 0.6 : 0.4) ? 'flavor' : (early || r < 0.72) ? 'locate' : 'blackout';
     const lines = PA_LINES[kind];
     const line = lines[Math.floor(Math.random() * lines.length)];
     this.audio.paChime();

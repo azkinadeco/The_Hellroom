@@ -32,7 +32,7 @@ export class Entity {
     this.waitT = 1 + Math.random() * 2;
     this.bakeT = 0;
     this.radius = 0.35;
-    this.speedMul = game.diff.speed;
+    this.speedMul = game.diff.speed * (game.def.speedMul || 1);
     this.stepAcc = 0;
     this.headNode = this.obj.getObjectByName('Head');
   }

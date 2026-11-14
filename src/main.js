@@ -3,7 +3,7 @@ import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { HUD } from './hud.js';
 import { Game } from './game.js';
-import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS } from './config.js';
+import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS } from './config.js';
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
 import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
+const defaults = { endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -81,7 +81,9 @@ const ui = {
     $('scare').className = '';
     input.enabled = false; releasePointer();
     hud.show(false); $('touch-layer').classList.add('hidden');
-    if (game.def.endless) {
+    if (game.def.daily) $('btn-retry').textContent = 'Coba Lagi';
+    else if (game.def.endless) {
+      save.endlessRun = null;
       const cleared = game.def.floor - 1;
       cause += `\n\nLantai yang berhasil dilewati: ${cleared}  ·  Rekor: ${save.bestFloor}`;
       $('btn-retry').textContent = 'Mulai Lagi dari Lantai -1';
@@ -95,7 +97,22 @@ const ui = {
     input.enabled = false; releasePointer();
     hud.show(false); $('touch-layer').classList.add('hidden');
     const t = Math.floor(game.time);
+    if (game.def.daily) {
+      const prev = save.daily[game.def.daily], isBest = !prev || t < prev;
+      save.daily = { [game.def.daily]: isBest ? t : prev };   // only today is kept
+      const newB = awardBadges({ g: game, save, win: true, story: false });
+      persist();
+      $('win-title').textContent = 'KASET HARIAN SELESAI';
+      $('win-rank').textContent = '';
+      $('win-stats').innerHTML = [['Waktu', fmt(t)], ['Terbaik hari ini', fmt(save.daily[game.def.daily]) + (isBest ? '  ★' : '')], ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kesulitan', DIFFICULTY[game.diffKey].label]]
+        .map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
+      $('win-text').textContent = 'Besok bangunannya berbeda. Hari ini kamu masih bisa mencoba lebih cepat.' + badgeLine(newB);
+      $('btn-next').textContent = 'Coba Lebih Cepat';
+      show('win');
+      return;
+    }
     if (game.def.endless) {
+      save.endlessRun = { seed: game.def.runSeed ?? Math.floor(Math.random() * 1e6), floor: game.def.floor + 1 };
       save.bestFloor = Math.max(save.bestFloor, game.def.floor);
       const newB = awardBadges({ g: game, save, win: true, story: false });
       persist();
@@ -159,13 +176,31 @@ function startLevel(index, test = null) {
   show('intro');
 }
 
-function startEndless(floor) {
+const modText = (def) => (def.mods && def.mods.length ? def.mods.map((k) => `☠ ${ENDLESS_MODS[k].name} — ${ENDLESS_MODS[k].desc}`).join('\n') : '');
+// one seed per run: the whole descent is fixed the moment you start it, and a
+// run you walked away from can be picked up at the floor you had reached
+function startEndless(floor, seed = null) {
+  if (seed === null) seed = Math.floor(Math.random() * 1e6);
+  save.endlessRun = { seed, floor }; persist();
   pendingLevel = -1;
-  pendingDef = endlessDef(floor, Math.floor(Math.random() * 1e6)); pendingGod = false;
+  pendingDef = endlessDef(floor, seed); pendingDef.runSeed = seed; pendingGod = false;
   $('intro-code').textContent = 'MODE TANPA UJUNG · ' + pendingDef.code;
   $('intro-name').textContent = pendingDef.name;
   $('intro-sub').textContent = pendingDef.subtitle;
-  $('intro-text').textContent = floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : '';
+  $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : '', modText(pendingDef)].filter(Boolean).join('\n\n');
+  show('intro');
+}
+// Kaset Harian: one fixed floor per calendar day, the same for everyone; best time is kept
+const today = () => { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+function startDaily() {
+  const date = today(), floor = 3 + (date % 4);
+  pendingLevel = -1; pendingGod = false;
+  pendingDef = { ...endlessDef(floor, date % 999983), daily: date, code: 'KASET HARIAN', subtitle: `${String(date).slice(6)}/${String(date).slice(4, 6)}/${String(date).slice(0, 4)} · bangunan yang sama untuk semua orang hari ini.` };
+  const rec = save.daily[date];
+  $('intro-code').textContent = 'KASET HARIAN';
+  $('intro-name').textContent = pendingDef.name;
+  $('intro-sub').textContent = pendingDef.subtitle;
+  $('intro-text').textContent = [rec ? `Waktu terbaikmu hari ini: ${fmt(rec)}` : 'Keluar secepat mungkin. Waktu terbaikmu hari ini akan dicatat.', modText(pendingDef)].filter(Boolean).join('\n\n');
   show('intro');
 }
 
@@ -209,6 +244,10 @@ function quitToMenu() {
 function buildTitle() {
   const btn = document.querySelector('#title [data-go="play"]');
   btn.textContent = save.unlocked > 1 ? `▶ Lanjutkan — ${LEVELS[save.unlocked - 1].code}` : '▶ Mainkan';
+  const er = save.endlessRun, eb = document.querySelector('#title [data-go="endless"]');
+  eb.textContent = er && er.floor > 1 ? `Mode Tanpa Ujung — lanjut LANTAI ${-er.floor}` : 'Mode Tanpa Ujung';
+  const dr = save.daily[today()];
+  document.querySelector('#title [data-go="daily"]').textContent = 'Kaset Harian' + (dr ? `  ✓ ${fmt(dr)}` : '');
   document.querySelector('#title .tag').textContent = 'Rekaman Handycam · 1996' + (save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
 }
 // resident portrait for a card; unseen residents stay a dark silhouette
@@ -370,7 +409,8 @@ document.addEventListener('click', (e) => {
   audio.init();
   const go = b.dataset.go;
   if (go === 'play') { startLevel(save.unlocked - 1); return; }
-  if (go === 'endless') { startEndless(1); return; }
+  if (go === 'endless') { const r = save.endlessRun; if (r && r.floor > 1) startEndless(r.floor, r.seed); else startEndless(1); return; }
+  if (go === 'daily') { startDaily(); return; }
   if (go === 'archive') buildArchive();
   if (go === 'levels') buildLevels();
   if (go === 'rooms') buildRooms();
@@ -388,12 +428,12 @@ $('note-close').onclick = () => {
 $('btn-resume').onclick = () => ui.resume();
 $('btn-restart').onclick = () => { audio.resume(); pendingLevel = game.levelIndex; beginPlay(); };
 $('btn-quit').onclick = quitToMenu;
-$('btn-retry').onclick = () => { if (game.def.endless) { startEndless(1); return; } pendingLevel = game.levelIndex; beginPlay(); };
+$('btn-retry').onclick = () => { if (game.def.daily) { startDaily(); return; } if (game.def.endless) { startEndless(1); return; } pendingLevel = game.levelIndex; beginPlay(); };
 $('btn-dead-menu').onclick = quitToMenu;
 $('btn-win-menu').onclick = quitToMenu;
 $('btn-end-menu').onclick = quitToMenu;
 $('btn-end-again').onclick = () => startLevel(0);
-$('btn-next').onclick = () => { if (game.def.endless) { startEndless(game.def.floor + 1); return; } const n = game.levelIndex + 1; startLevel(n >= LEVELS.length ? 0 : n); };
+$('btn-next').onclick = () => { if (game.def.daily) { startDaily(); return; } if (game.def.endless) { startEndless(game.def.floor + 1, game.def.runSeed); return; } const n = game.levelIndex + 1; startLevel(n >= LEVELS.length ? 0 : n); };
 addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && current === 'note') $('note-close').click();
   if ((e.code === 'Enter' || e.code === 'Space') && current === 'intro') { e.preventDefault(); beginPlay(); }

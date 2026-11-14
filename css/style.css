@@ -270,3 +270,13 @@ body.clear-screen .ending-lines p, body.clear-screen .ending-credits { animation
 .archive-item.badge b { font-weight: normal; }
 .bicon { font-size: 26px; width: 34px; text-align: center; flex: 0 0 auto; }
 #win .stats { margin-top: 24px; }
+/* batch 31: eight title entries must fit short screens */
+@media (max-height: 640px) {
+  #title .menu button { font-size: 25px; padding: 1px 0; }
+  #title .tag { margin: 2px 0 12px; font-size: 20px; }
+  #title .logo { width: min(22vw, 25vh, 200px); min-width: 90px; }
+}
+@media (max-height: 520px) {
+  #title .menu { display: grid; grid-template-columns: auto auto; column-gap: 34px; justify-content: start; }
+  #title .menu button { font-size: 22px; text-align: left; }
+}
