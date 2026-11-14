@@ -258,3 +258,15 @@ body.clear-screen .ending-lines p, body.clear-screen .ending-credits { animation
 .film-box { font-family: var(--type); font-size: 15px; line-height: 1.5; white-space: pre-line; border: 1px dashed var(--line); padding: 10px 12px; margin-top: 6px; color: #cfccbc; }
 .film-box.locked { color: var(--dim); font-family: var(--mono); font-size: 18px; }
 .archive-item .tapeicon { margin-left: auto; }
+
+/* batch 30: grades + badges */
+.rank { color: var(--accent); font-weight: normal; }
+.rank[data-rank="S"] { color: #ffd76a; text-shadow: 0 0 10px rgba(255,200,60,0.6); }
+.rank[data-rank="C"] { color: var(--dim); }
+.rank.big { position: absolute; right: 30px; top: 18px; font-size: 76px; line-height: 1; transform: rotate(8deg); border: 3px solid currentColor; border-radius: 50%; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; }
+.rank.big:empty { display: none; }
+.archive-item.badge { display: flex; gap: 10px; align-items: center; line-height: 1.1; }
+.archive-item.badge small { color: var(--dim); font-size: 16px; }
+.archive-item.badge b { font-weight: normal; }
+.bicon { font-size: 26px; width: 34px; text-align: center; flex: 0 0 auto; }
+#win .stats { margin-top: 24px; }

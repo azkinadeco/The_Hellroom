@@ -285,7 +285,7 @@ export class Monitor extends Entity {
           if (p.hidden === L && this.inspectT > 0.6 && !p.holdingBreath && this.game.time - (p.hideT || 0) > 1.0) this.breathHeard += dt;
           const caught = this.lockerSure || this.breathHeard > 1.3;
           if (caught && p.hidden === L) { this.game.lockerReason = this.lockerSure ? 'seen' : 'breath'; this.attack(L); break; }
-          if (this.inspectT > 3.4) { this.inspectT = 0; this.setState('patrol'); this.waitT = 1; this.suspicion = 0.3; g.onChaseEnd(this); }
+          if (this.inspectT > 3.4) { if (p.hidden === L) g.stats.inspected = (g.stats.inspected || 0) + 1; this.inspectT = 0; this.setState('patrol'); this.waitT = 1; this.suspicion = 0.3; g.onChaseEnd(this); }
         }
         break;
       }

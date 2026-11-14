@@ -6,6 +6,7 @@ import { Game } from './game.js';
 import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS } from './config.js';
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
+import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
 import { INTRO, ENDING, NOTES, TAPES, FILMS, FILM_NEED } from './story.js';
 
 const $ = (id) => document.getElementById(id);
@@ -16,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
+const defaults = { badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -85,6 +86,8 @@ const ui = {
       cause += `\n\nLantai yang berhasil dilewati: ${cleared}  ·  Rekor: ${save.bestFloor}`;
       $('btn-retry').textContent = 'Mulai Lagi dari Lantai -1';
     } else $('btn-retry').textContent = 'Putar Ulang';
+    cause += badgeLine(awardBadges({ g: game, save, win: false, story: false }));
+    persist();
     $('dead-cause').textContent = cause;
     show('dead');
   },
@@ -94,17 +97,24 @@ const ui = {
     const t = Math.floor(game.time);
     if (game.def.endless) {
       save.bestFloor = Math.max(save.bestFloor, game.def.floor);
+      const newB = awardBadges({ g: game, save, win: true, story: false });
       persist();
       $('win-title').textContent = `${game.def.code} SELESAI`;
       $('win-stats').innerHTML = [['Waktu lantai ini', fmt(t)], ['Lantai dilewati', game.def.floor], ['Rekor terdalam', save.bestFloor],
         ['Terlihat oleh penghuni', `${game.stats.spotted}×`]].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
-      $('win-text').textContent = 'Di balik pintu darurat ada tangga. Tangga itu hanya mengarah ke bawah.';
+      $('win-rank').textContent = '';
+      $('win-text').textContent = 'Di balik pintu darurat ada tangga. Tangga itu hanya mengarah ke bawah.' + badgeLine(newB);
       $('btn-next').textContent = `Turun ke Lantai ${-(game.def.floor + 1)}`;
       show('win');
       return;
     }
     const key = game.def.id + ':' + game.diffKey;
+    const gr = gradeRun(game);
+    let newB = [];
     if (!game.def.test) {
+      const order = 'CBAS';
+      if (order.indexOf(gr.rank) > order.indexOf(save.ranks[key] || ' ')) save.ranks[key] = gr.rank;
+      newB = awardBadges({ g: game, save, win: true, story: true, rank: gr.rank });
       const prev = save.best[key];
       if (!prev || t < prev) save.best[key] = t;
       save.unlocked = Math.max(save.unlocked, Math.min(LEVELS.length, game.levelIndex + 2));
@@ -112,17 +122,19 @@ const ui = {
     }
     $('win-title').textContent = `${game.def.code} SELESAI`;
     $('win-stats').innerHTML = [
-      ['Waktu rekaman', fmt(t)], ['Rekor', save.best[key] ? fmt(save.best[key]) : '—'], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
+      ['Waktu rekaman', `${fmt(t)}  (par ${fmt(parOf(game.def))})`], ['Rekor', save.best[key] ? fmt(save.best[key]) : '—'], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
       ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Bukti direkam', game.stats.films ? `${game.stats.films} penghuni` : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
+    $('win-rank').textContent = gr.rank; $('win-rank').dataset.rank = gr.rank;
     const last = game.levelIndex >= LEVELS.length - 1;
-    if (last && !game.def.test) { showEnding(t); return; }
-    $('win-text').textContent = last ? ENDING : 'Pintu darurat terbuka ke… lorong lain. Sekolah ini lebih dalam dari yang kamu kira.';
+    if (last && !game.def.test) { showEnding(t, gr, newB); return; }
+    $('win-text').textContent = (last ? ENDING : 'Pintu darurat terbuka ke… lorong lain. Sekolah ini lebih dalam dari yang kamu kira.') + badgeLine(newB);
     $('btn-next').textContent = last ? 'Main Lagi dari Awal' : 'Level Berikutnya';
     show('win');
   },
 };
 
+const badgeLine = (list) => (list.length ? '\n\n' + list.map((b) => `${b.icon} Lencana baru: ${b.name}`).join('\n') : '');
 let ignoreUnlock = false;
 function releasePointer() { if (document.pointerLockElement) { ignoreUnlock = true; input.unlock(); } }
 document.addEventListener('pointerlockchange', () => {
@@ -214,7 +226,7 @@ function buildLevels() {
     b.disabled = i + 1 > save.unlocked;
     const best = save.best[l.id + ':' + save.diff];
     const kind = l.entities[0] && l.entities[0].type, seen = kind && save.met.includes(kind);
-    b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;
+    b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${save.ranks[l.id + ':' + save.diff] ? `<b class="rank" data-rank="${save.ranks[l.id + ':' + save.diff]}">${save.ranks[l.id + ':' + save.diff]}</b> ` : ''}${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;
     b.onclick = () => startLevel(i);
     list.appendChild(b);
   });
@@ -260,6 +272,14 @@ function buildArchive() {
     const tp = TAPES[l.id];
     if (tp) add('📼 ' + tp.title, tapes.has(String(l.id)), tp.title, tp.body);
   });
+  const hl = document.createElement('h3'); hl.textContent = `Lencana  ${save.badges.length}/${BADGES.length}`; list.appendChild(hl);
+  for (const b of BADGES) {
+    const ok = save.badges.includes(b.id);
+    const d = document.createElement('div');
+    d.className = 'archive-item badge' + (ok ? '' : ' locked');
+    d.innerHTML = `<span class="bicon">${ok ? b.icon : '·'}</span><span><b>${b.name}</b><br><small>${b.desc}</small></span>`;
+    list.appendChild(d);
+  }
   $('archive-count').textContent = `${have}/${total} ditemukan  ·  Rekor Mode Tanpa Ujung: ${save.bestFloor} lantai`;
 }
 // test rooms: every level unlocked, pick the resident, optional invulnerability
@@ -316,7 +336,7 @@ function openBeast(k) {
 }
 
 // final level cleared: the tape plays out, then credits
-function showEnding(t) {
+function showEnding(t, gr = null, newB = []) {
   save.endingSeen = true; persist();
   const lines = ENDING.split('\n\n');
   const box = $('ending-lines'); box.innerHTML = '';
@@ -325,7 +345,7 @@ function showEnding(t) {
   const cast = LEVELS.map((l) => l.entities[0].type).filter((k, i, a) => a.indexOf(k) === i)
     .map((k) => `<div class="cast">${portrait(k, met.has(k))}<span>${met.has(k) ? ENTITY_INFO[k].name : '???'}</span></div>`).join('');
   $('ending-cast').innerHTML = cast;
-  $('ending-stats').textContent = `Waktu rekaman terakhir ${fmt(t)}  ·  Kaset rahasia ${save.tapes.length}/${LEVELS.length}  ·  Penghuni ditemui ${save.met.length}`;
+  $('ending-stats').textContent = (gr ? `Peringkat ${gr.rank}  ·  ` : '') + (newB.length ? newB.map((b) => `${b.icon} ${b.name}`).join('  ·  ') + '  ·  ' : '') + `Waktu rekaman terakhir ${fmt(t)}  ·  Kaset rahasia ${save.tapes.length}/${LEVELS.length}  ·  Penghuni ditemui ${save.met.length}`;
   $('ending-credits').style.animationDelay = (1 + lines.length * 2.6) + 's';
   show('ending');
 }

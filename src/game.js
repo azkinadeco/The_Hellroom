@@ -393,7 +393,7 @@ export class Game {
       const d = Math.hypot(e.pos.x - x, e.pos.z - z);
       let r = radius * this.diff.hearing;
       if (!this.world.los(e.pos.x, e.pos.z, x, z)) r *= 0.55;
-      if (d < r) e.onNoise(x, z, 1 - d / r, type);
+      if (d < r) { e.onNoise(x, z, 1 - d / r, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; }
     }
   }
   alert(x, z, src) {
