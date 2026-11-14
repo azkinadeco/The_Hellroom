@@ -180,6 +180,7 @@ export class Game {
     this.powered = false;
     this.time = 0;
     this.stats = { spotted: 0, notes: 0 };
+    this.quietT = 0; this.graceT = 0;
     this.busy = false;
     this.deathT = -1; this.winT = -1;
     this.glitch = 0; this.danger = 0; this.gazeFx = 0; this.deathRoll = 0; this.deathDrop = 0;
@@ -402,7 +403,19 @@ export class Game {
   onChaseStart(e) {
     if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); }
   }
-  onChaseEnd(e) { this.chasers.delete(e); }
+  onChaseEnd(e) { if (this.chasers.delete(e) && this.player.alive) { this.graceT = this.diff.grace; this.quietT = 0; this.stats.escapes = (this.stats.escapes || 0) + 1; } }
+  // Pacing: after an escape patrols wander off for a while; after a long quiet
+  // stretch the next patrol leg ends somewhere near the player instead.
+  pickPatrol(e) {
+    const m = this.map, p = this.player;
+    const [px, pz] = m.cellOf(p.pos.x, p.pos.z), [cx, cz] = e.cell();
+    if (this.graceT > 0) {
+      for (let i = 0; i < 6; i++) { const c = randomReachableCell(m, Math.random, cx, cz, 4, 18); if (c && Math.abs(c[0] - px) + Math.abs(c[1] - pz) >= 10) return c; }
+      return null;
+    }
+    if (this.quietT > this.diff.quiet) { this.quietT = this.diff.quiet * 0.4; this.stats.lured = (this.stats.lured || 0) + 1; return randomReachableCell(m, Math.random, px, pz, 4, 8); }
+    return null;
+  }
 
   surfaceAt(x, z) {
     const th = this.def.theme;
@@ -699,6 +712,8 @@ export class Game {
     const chase = this.chasers.size > 0 ? 1 : 0;
     danger = Math.max(danger, chase * 0.55);
     this.danger = damp(this.danger, danger, 3, dt);
+    if (this.graceT > 0) this.graceT -= dt;
+    if (danger > 0.25 || chase || p.hidden) this.quietT = Math.max(0, this.quietT - dt * 4); else this.quietT += dt;
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);
     let interference = this.danger > 0.45 && !this.clear ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
     this.world.blackout = this.blackoutT > 0;

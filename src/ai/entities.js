@@ -218,7 +218,7 @@ export class Monitor extends Entity {
           this.onIdle(dt);
           if (this.waitT <= 0) {
             const [cx, cz] = this.cell();
-            const t = randomReachableCell(g.map, Math.random, cx, cz, 4, 18);
+            const t = (g.pickPatrol && g.pickPatrol(this)) || randomReachableCell(g.map, Math.random, cx, cz, 4, 18);
             if (t) this.goTo(...t);
           }
           break;
