@@ -188,6 +188,8 @@ export class Game {
     this.time = 0;
     this.stats = { spotted: 0, notes: 0 };
     this.quietT = 0; this.graceT = 0;
+    this.checkpoint = null; this.retries = 0;
+    for (const f of this.floors) for (const d of f.built.doors) d.wasLocked = !!d.locked;
     this.busy = false;
     this.deathT = -1; this.winT = -1;
     this.glitch = 0; this.danger = 0; this.gazeFx = 0; this.deathRoll = 0; this.deathDrop = 0;
@@ -590,16 +592,11 @@ export class Game {
     const fb = this.gen.fusebox;
     this.audio.fuseInsert({ x: fb.x, y: 1.4, z: fb.z });
     this.emitNoise(fb.x, fb.z, NOISE.fuse, 'fuse');
-    // show physical fuses seated in the panel sockets
-    const fuseObj = this.built.fuseObj;
-    for (let i = 1; i <= 3; i++) {
-      const slot = fuseObj.getObjectByName('Slot' + i);
-      if (!slot || slot.userData.filled || i > Math.ceil(this.fusesInstalled * 3 / this.def.fuses)) continue;
-      const f = cloneWithBake(this.assets.models.item_fuse, [0.6, 0]);
-      slot.add(f); slot.userData.filled = true;
+    this.showFuses();
+    if (this.fusesInstalled < this.def.fuses && this.canCheckpoint()) {
+      this.checkpoint = this.snapshot();
+      this.hint('checkpoint', 'Kotak panel menyimpan rekamanmu. Kalau kamu mati, kamu bisa melanjutkan dari sini.', 5);
     }
-    const frac = this.fusesInstalled / this.def.fuses;
-    this.built.lamps.forEach((l, i) => { if (frac >= (i + 1) / this.built.lamps.length - 1e-6) l.material.emissive.set(0x22ff55); });
     if (this.fusesInstalled >= this.def.fuses) {
       this.powered = true;
       this.audio.powerUp();
@@ -610,6 +607,60 @@ export class Game {
       this.exitFloor.built.exitObj.traverse((o) => { if (o.isMesh && o.material.userData.emissive) sign.push(o); });
       for (const s of sign) s.material.emissiveIntensity = 2.2;
     } else this.hud.toast(`Sekring terpasang (${this.fusesInstalled}/${this.def.fuses})`);
+  }
+
+  // physical fuses seated in the panel sockets + the row of lamps
+  showFuses() {
+    const B = this.fuseFloor.built, fuseObj = B.fuseObj;
+    for (let i = 1; i <= 3; i++) {
+      const slot = fuseObj.getObjectByName('Slot' + i);
+      if (!slot || slot.userData.filled || i > Math.ceil(this.fusesInstalled * 3 / this.def.fuses)) continue;
+      const f = cloneWithBake(this.assets.models.item_fuse, [0.6, 0]);
+      slot.add(f); slot.userData.filled = true;
+    }
+    const frac = this.fusesInstalled / this.def.fuses;
+    B.lamps.forEach((l, i) => { if (frac >= (i + 1) / B.lamps.length - 1e-6) l.material.emissive.set(0x22ff55); });
+  }
+
+  // ---------------------------------------------------------------- checkpoint
+  // Seating fuses in the panel saves the run (not on Sulit, not in endless).
+  canCheckpoint() { return this.diffKey !== 'sulit' && !this.def.endless; }
+  snapshot() {
+    const p = this.player, fb = this.fuseFloor.gen.fusebox;
+    return {
+      floorK: this.fuseFloor.k, x: fb.x + Math.sin(fb.rot) * 0.95, z: fb.z + Math.cos(fb.rot) * 0.95, yaw: fb.rot,
+      battery: p.battery, inventory: { ...p.inventory }, fusesInstalled: this.fusesInstalled, time: this.time,
+      stats: { ...this.stats },
+      taken: this.floors.map((f) => f.built.items.slice(0, f.gen.items.length).map((it, i) => (it.taken ? i : -1)).filter((i) => i >= 0)),
+      read: this.floors.map((f) => f.built.items.slice(0, f.gen.items.length).map((it, i) => (it.read ? i : -1)).filter((i) => i >= 0)),
+      unlocked: this.floors.map((f) => f.built.doors.filter((d) => d.wasLocked && !d.locked).map((d) => d.key)),
+      map: this.automap.dump(),
+    };
+  }
+  // call right after loadLevel() of the same level
+  restore(cp) {
+    const p = this.player;
+    this.floors.forEach((f, k) => {
+      for (const i of cp.taken[k] || []) { const it = f.built.items[i]; if (it) { it.taken = true; it.obj.visible = false; } }
+      for (const i of cp.read[k] || []) { const it = f.built.items[i]; if (it) it.read = true; }
+      for (const d of f.built.doors) if ((cp.unlocked[k] || []).includes(d.key)) d.locked = false;
+    });
+    if (cp.floorK !== this.floorK) this.setFloor(cp.floorK);
+    p.pos.set(cp.x, 0, cp.z); p.y = 0; p.yaw = cp.yaw; p.pitch = 0;
+    p.battery = Math.max(cp.battery, 25);
+    p.inventory = { ...cp.inventory };
+    this.fusesInstalled = cp.fusesInstalled;
+    this.showFuses();
+    this.time = cp.time;
+    this.stats = { ...cp.stats, retries: (this.retries = (this.retries || 0) + 1) };
+    this.automap.load(cp.map);
+    this.checkpoint = cp;
+    // the resident starts somewhere else, never next to the panel
+    const kinds = this.entities.map((e) => e.kind);
+    for (const e of this.entities) e.remove();
+    this.entities = []; this.chasers.clear();
+    for (const k of kinds) this.spawnFar(k);
+    this.graceT = this.diff.grace;
   }
 
   tryExit() {

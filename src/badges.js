@@ -33,6 +33,7 @@ export function gradeRun(g) {
   const over = Math.max(0, g.time - parOf(g.def)) / 60;
   let score = 100 - Math.min(40, over * 5) - Math.min(40, g.stats.spotted * 8);
   score += Math.min(g.stats.notes, g.def.notes) * 2 + (g.stats.tape ? 5 : 0) + (g.stats.films || 0) * 4 - (g.stats.notes < g.def.notes ? 6 : 0) - (g.stats.tape ? 0 : 5);
+  score -= (g.stats.retries || 0) * 10;   // continued from the panel
   score = Math.max(0, Math.min(100, Math.round(score)));
   return { score, rank: score >= 92 ? 'S' : score >= 76 ? 'A' : score >= 55 ? 'B' : 'C' };
 }

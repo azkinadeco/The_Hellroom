@@ -292,3 +292,7 @@ body.big-text .hud-bl, body.big-text .objectives { font-size: 26px; }
 /* batch 33: alarm clock decoy */
 .tbtn.alarm { display: none; }
 body.can-alarm .tbtn.alarm { display: block; }
+
+/* batch 34: checkpoint button on the death screen */
+#dead .row-menu { flex-wrap: wrap; row-gap: 10px; }
+#dead .row-menu button { white-space: nowrap; font-size: 24px; }

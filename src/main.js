@@ -91,6 +91,8 @@ const ui = {
     cause += badgeLine(awardBadges({ g: game, save, win: false, story: false }));
     persist();
     $('dead-cause').textContent = cause;
+    $('btn-checkpoint').classList.toggle('hidden', !game.checkpoint);
+    if (game.checkpoint) $('btn-checkpoint').textContent = `Lanjut dari Panel (${game.checkpoint.fusesInstalled}/${game.def.fuses})`;
     show('dead');
   },
   showWin() {
@@ -140,7 +142,7 @@ const ui = {
     $('win-title').textContent = `${game.def.code} SELESAI`;
     $('win-stats').innerHTML = [
       ['Waktu rekaman', `${fmt(t)}  (par ${fmt(parOf(game.def))})`], ['Rekor', save.best[key] ? fmt(save.best[key]) : '—'], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
-      ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Bukti direkam', game.stats.films ? `${game.stats.films} penghuni` : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label],
+      ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Bukti direkam', game.stats.films ? `${game.stats.films} penghuni` : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label + (game.stats.retries ? `  ·  ${game.stats.retries}× lanjut dari panel` : '')],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
     $('win-rank').textContent = gr.rank; $('win-rank').dataset.rank = gr.rank;
     const last = game.levelIndex >= LEVELS.length - 1;
@@ -204,12 +206,14 @@ function startDaily() {
   show('intro');
 }
 
-function beginPlay() {
+function beginPlay(cp = null) {
   audio.init();
   goFullscreen();
   try {
+    const retries = cp ? game.retries : 0;
     game.loadLevel(pendingLevel, save.diff, pendingDef);
     game.godMode = pendingGod;
+    if (cp) { game.retries = retries; game.restore(cp); }
   } catch (e) { showError(e.stack || e); return; }
   hideAll();
   hud.show(true);
@@ -217,7 +221,7 @@ function beginPlay() {
   game.state = 'playing';
   input.enabled = true;
   input.lock();
-  hud.toast(game.def.name, 3);
+  hud.toast(cp ? 'Rekaman dilanjutkan dari kotak panel' : game.def.name, 3);
   setTimeout(() => game.state === 'playing' && hud.showObjectives(game.objectiveText(), 6), 1500);
 }
 
@@ -422,7 +426,8 @@ document.addEventListener('click', (e) => {
   if (go === 'title' && current === 'settings' && returnTo === 'pause') { show('pause'); return; }
   show(go);
 });
-$('intro-go').onclick = beginPlay;
+$('intro-go').onclick = () => beginPlay();
+$('btn-checkpoint').onclick = () => { pendingLevel = game.levelIndex; beginPlay(game.checkpoint); };
 $('note-close').onclick = () => {
   if (noteFromArchive) { noteFromArchive = false; show('archive'); return; }
   hideAll(); game.state = 'playing'; input.enabled = true; input.lock();
