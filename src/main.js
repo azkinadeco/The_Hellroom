@@ -39,6 +39,28 @@ let current = 'loading', returnTo = 'title';
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === id);
   current = id;
+  // keyboard and controller users land on the obvious button
+  requestAnimationFrame(() => { if (current !== id) return; const scr = $(id), f = focusables(); const t = (scr && [...scr.querySelectorAll('.primary')].find((b) => f.includes(b))) || f[0]; if (t) t.focus({ preventScroll: true }); });
+}
+function focusables() {
+  const scr = document.querySelector('.screen.active');
+  return scr ? [...scr.querySelectorAll('button, select, input')].filter((e) => !e.disabled && e.offsetParent !== null) : [];
+}
+function moveFocus(d) {
+  const f = focusables(); if (!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  const t = f[i < 0 ? (d > 0 ? 0 : f.length - 1) : (i + d + f.length) % f.length];
+  t.focus(); t.scrollIntoView({ block: 'nearest' });
+}
+// left / right on a slider or a select
+function nudge(d) {
+  const el = document.activeElement;
+  if (!el || !focusables().includes(el)) return false;
+  if (el.tagName === 'SELECT') { el.selectedIndex = Math.max(0, Math.min(el.options.length - 1, el.selectedIndex + d)); }
+  else if (el.type === 'range') { const st = +el.step || 1; el.value = Math.max(+el.min, Math.min(+el.max, +el.value + d * st * 2)); }
+  else return false;
+  el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
 }
 function hideAll() { for (const s of document.querySelectorAll('.screen')) s.classList.remove('active'); current = null; }
 
@@ -507,7 +529,11 @@ $('btn-end-again').onclick = () => startLevel(0);
 $('btn-next').onclick = () => { if (game.def.daily) { startDaily(); return; } if (game.def.endless) { startEndless(game.def.floor + 1, game.def.runSeed); return; } const n = game.levelIndex + 1; startLevel(n >= LEVELS.length ? 0 : n); };
 addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && current === 'note') $('note-close').click();
-  if ((e.code === 'Enter' || e.code === 'Space') && current === 'intro') { e.preventDefault(); beginPlay(); }
+  if ((e.code === 'Enter' || e.code === 'Space') && current === 'intro' && document.activeElement.tagName !== 'BUTTON') { e.preventDefault(); beginPlay(); }
+  if (!current || (game && game.state === 'playing')) return;
+  if (e.code === 'ArrowDown' || e.code === 'ArrowUp') { e.preventDefault(); moveFocus(e.code === 'ArrowDown' ? 1 : -1); }
+  else if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && document.activeElement.tagName === 'BUTTON') { e.preventDefault(); moveFocus(e.code === 'ArrowRight' ? 1 : -1); }
+  else if (e.code === 'Enter' && document.activeElement.type === 'checkbox') document.activeElement.click();
 });
 
 // controller in the menus: A confirms the obvious button, Start resumes, B goes back
@@ -515,9 +541,15 @@ function padMenus() {
   const e = input.pad.edges;
   if (!e.size || (game && game.state === 'playing')) return;
   const click = (sel) => { const b = document.querySelector(sel); if (b) b.click(); };
-  if (current === 'pause') { if (e.has(9) || e.has(0) || e.has(1)) ui.resume(); return; }
+  if (e.has(12)) moveFocus(-1);
+  if (e.has(13)) moveFocus(1);
+  if (e.has(14) && !nudge(-1)) moveFocus(-1);
+  if (e.has(15) && !nudge(1)) moveFocus(1);
+  if (current === 'pause' && (e.has(9) || e.has(1))) { ui.resume(); return; }
+  const af = document.activeElement;
+  if (e.has(0) && af && focusables().includes(af) && af.tagName !== 'SELECT' && af.type !== 'range') { af.click(); return; }
   if (e.has(0)) click({ title: '#title [data-go="play"]', intro: '#intro-go', note: '#note-close', dead: '#btn-retry', win: '#btn-next', ending: '#btn-end-menu' }[current] || '.none');
-  else if (e.has(1)) click(`#${current} .back, #btn-dead-menu, #btn-win-menu`.replace('#btn-dead-menu', current === 'dead' ? '#btn-dead-menu' : '.none').replace('#btn-win-menu', current === 'win' ? '#btn-win-menu' : '.none'));
+  else if (e.has(1)) click(`#${current} .back[data-go], #btn-dead-menu, #btn-win-menu`.replace('#btn-dead-menu', current === 'dead' ? '#btn-dead-menu' : '.none').replace('#btn-win-menu', current === 'win' ? '#btn-win-menu' : '.none'));
 }
 
 // ---------------------------------------------------------------- boot

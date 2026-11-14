@@ -317,3 +317,10 @@ body.can-alarm .tbtn.alarm { display: block; }
 .bind b { font-weight: normal; color: var(--accent); }
 .bind.wait { border-color: var(--accent); }
 @media (max-width: 560px) { .bind-list { grid-template-columns: 1fr; } }
+
+/* batch 42: visible focus for keyboard and controller */
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.menu button:focus-visible { outline: none; }
+.menu button:focus-visible::before { content: '▸ '; color: var(--accent); }
+.primary:focus-visible { outline: 2px solid var(--accent) !important; }
+.primary:focus-visible::before { content: '' !important; }
