@@ -115,6 +115,13 @@ export class AutoMap {
     const fb = f.gen.fusebox, ex = f.gen.exit;
     if (fb && at(...fb.cell)) mark((fb.cell[0] + 0.5) * CELL, (fb.cell[1] + 0.5) * CELL, '⚡', g.powered ? GREEN : RED);
     if (ex && at(...ex.cell)) mark((ex.cell[0] + 0.5) * CELL, (ex.cell[1] + 0.5) * CELL, '✚', g.powered ? GREEN : RED);
+    // the mark you did not draw
+    const A = g.assist;
+    if (A && A.k === k) {
+      const ax = (A.x / CELL) * u, az = (A.z / CELL) * u, ar = Math.max(u * 1.2, (A.r / CELL) * u);
+      c.strokeStyle = RED; c.lineWidth = 2; c.setLineDash([4, 3]); c.beginPath(); c.arc(ax, az, ar, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+      mark(A.x, A.z, '?', RED);
+    }
     // room names
     c.font = `${Math.max(8, Math.floor(u * 0.75))}px monospace`; c.fillStyle = 'rgba(42,38,30,0.75)';
     for (const r of f.gen.rooms) {
@@ -136,6 +143,6 @@ export class AutoMap {
     c.setTransform(1, 0, 0, 1, 0, 0);
     const n = this.seen.length, touch = g.input.touch;
     this.label.textContent = `DENAH — ${g.def.name} · Lantai ${k + 1}/${n}${k === g.floorK ? '' : ' (bukan lantaimu)'}`
-      + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : '  ·  R: ganti lantai') : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci';
+      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : '  ·  R: ganti lantai') : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci';
   }
 }

@@ -67,9 +67,9 @@ export const hideOf = (L) => HIDE[(L && L.kind) || 'locker'] || HIDE.locker;
 export const DIFFICULTY = {
   // quiet: seconds without any threat before a patrol drifts towards you
   // grace: seconds after an escape during which patrols drift away from you
-  mudah:  { label: 'Mudah',  speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35 },
+  mudah:  { label: 'Mudah',  speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150 },
   normal: { label: 'Normal', speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24 },
-  sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12 },
+  sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420 },
 };
 
 // Test rooms in the main menu (Pilih Room): every map playable, resident

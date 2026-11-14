@@ -189,6 +189,7 @@ export class Game {
     this.stats = { spotted: 0, notes: 0 };
     this.quietT = 0; this.graceT = 0;
     this.checkpoint = null; this.retries = 0;
+    this.assist = null; this.assistT = 0; this.assistSig = null;
     for (const f of this.floors) for (const d of f.built.doors) d.wasLocked = !!d.locked;
     this.busy = false;
     this.deathT = -1; this.winT = -1;
@@ -672,6 +673,39 @@ export class Game {
     this.audio.setAmbience(false);
   }
 
+  // ---------------------------------------------------------------- assist
+  // No progress for a long while: a mark nobody drew appears on the floor plan,
+  // on the room that holds the next thing you need.
+  updateAssist(dt) {
+    if (this.settings.assist === false || this.diff.noAssist || this.winT >= 0) return;
+    this.assistT = (this.assistT || 0) + dt;
+    this.assistTick = (this.assistTick || 0) - dt;
+    if (this.assistTick > 0) return;
+    this.assistTick = 1;
+    const p = this.player, items = this.floors.flatMap((f) => f.built.items.slice(0, f.gen.items.length).map((it) => ({ it, f })));
+    const sig = p.inventory.fuses + this.fusesInstalled * 7 + items.filter((q) => q.it.type === 'key' && q.it.taken).length * 50 + (this.powered ? 1000 : 0);
+    if (sig !== this.assistSig) { this.assistSig = sig; this.assistT = 0; if (this.assist) { this.assist = null; this.automap.dirty = true; } return; }
+    if (this.assist || this.assistT < (this.diff.assistAfter || 240)) return;
+    const roomMark = (f, id) => { const r = f.gen.rooms.find((q) => q.id === id); return r ? { k: f.k, x: (r.x0 + r.x1 + 1) * CELL / 2, z: (r.z0 + r.z1 + 1) * CELL / 2, r: Math.max(r.x1 - r.x0 + 1, r.z1 - r.z0 + 1) * CELL / 2 } : null; };
+    const point = (f, q) => ({ k: f.k, x: q.x, z: q.z, r: CELL });
+    let mark = null;
+    if (this.powered) mark = point(this.exitFloor, this.exitFloor.gen.exit);
+    else if (p.inventory.fuses + this.fusesInstalled >= this.def.fuses || (p.inventory.fuses && !items.some((q) => q.it.type === 'fuse' && !q.it.taken))) mark = point(this.fuseFloor, this.fuseFloor.gen.fusebox);
+    else {
+      const want = (type) => items.filter((q) => q.it.type === type && !q.it.taken)
+        .sort((a, b) => (Math.abs(a.f.k - this.floorK) * 60 + Math.hypot(a.it.x - p.pos.x, a.it.z - p.pos.z)) - (Math.abs(b.f.k - this.floorK) * 60 + Math.hypot(b.it.x - p.pos.x, b.it.z - p.pos.z)));
+      const lockedRoom = (q) => { const r = q.f.gen.rooms.find((o) => o.id === q.it.room); return !!(r && r.doors && r.doors.length && r.doors.every((d) => d.locked)); };
+      const fuses = want('fuse');
+      let pick = fuses.find((q) => !lockedRoom(q) || p.inventory.keys > 0) || want('key')[0] || fuses[0];
+      if (pick) mark = roomMark(pick.f, pick.it.room) || point(pick.f, pick.it);
+    }
+    if (!mark) return;
+    this.assist = mark; this.automap.dirty = true;
+    this.stats.assists = (this.stats.assists || 0) + 1;
+    this.hud.toast(this.diff.noMap ? 'Kamu merasa harus pergi ke suatu tempat…' : `Ada tanda di denahmu yang tidak kamu buat. (${this.input.touch ? 'PETA' : 'M'})`, 4.5);
+    this.audio.whisper({ x: p.pos.x, y: 1.5, z: p.pos.z }, 0.25);
+  }
+
   // ---------------------------------------------------------------- evidence
   // Hold the zoom on a resident: every second on tape counts towards its field
   // recording in the archive (kept between runs).
@@ -757,6 +791,7 @@ export class Game {
       }
     }
     this.updateFilm(dt, zoom);
+    this.updateAssist(dt);
     this.doorSys.update(dt);
     this.cullDoors();
     for (const L of this.built.lockers) {
