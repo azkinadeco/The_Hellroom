@@ -307,3 +307,6 @@ body.can-alarm .tbtn.alarm { display: block; }
 /* batch 39 */
 .back.ng { margin-top: 10px; width: 100%; text-align: left; }
 .back.ng.on { border-color: var(--danger); color: #ff8a80; }
+
+/* batch 40 */
+.ending-other { color: var(--accent); margin: 6px 0; }

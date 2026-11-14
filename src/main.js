@@ -7,7 +7,7 @@ import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VER
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
 import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
-import { INTRO, ENDING, NOTES, TAPES, FILMS, FILM_NEED, TIPS } from './story.js';
+import { INTRO, ENDING, NOTES, TAPES, FILMS, FILM_NEED, TIPS, ENDING_TRUE, TRUE_FILMS } from './story.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'hellroom.save.v2';
@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
+const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -273,7 +273,7 @@ function buildTitle() {
   eb.textContent = er && er.floor > 1 ? `Mode Tanpa Ujung — lanjut LANTAI ${-er.floor}` : 'Mode Tanpa Ujung';
   const dr = save.daily[today()];
   document.querySelector('#title [data-go="daily"]').textContent = 'Kaset Harian' + (dr ? `  ✓ ${fmt(dr)}` : '');
-  document.querySelector('#title .tag').textContent = 'Rekaman Handycam · 1996' + (save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
+  document.querySelector('#title .tag').textContent = 'Rekaman Handycam · 1996' + (save.trueEnding ? '  ·  ★★ AKHIR SEBENARNYA' : save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
 }
 // resident portrait for a card; unseen residents stay a dark silhouette
 function portrait(kind, seen) {
@@ -414,8 +414,13 @@ function openBeast(k) {
 
 // final level cleared: the tape plays out, then credits
 function showEnding(t, gr = null, newB = []) {
-  save.endingSeen = true; persist();
-  const lines = ENDING.split('\n\n');
+  const nFilm = RESIDENTS.filter((k) => (save.film[k] || 0) >= FILM_NEED).length;
+  const truth = save.tapes.length >= LEVELS.length && nFilm >= TRUE_FILMS;
+  save.endingSeen = true; if (truth) save.trueEnding = true;
+  newB = newB.concat(awardBadges({ g: game, save, win: false, story: false }));
+  persist();
+  $('ending-other').textContent = truth ? '★ Akhir yang sebenarnya' : save.trueEnding ? '' : `Ada akhir lain. Ia butuh keenam kaset rahasia (${save.tapes.length}/${LEVELS.length}) dan bukti enam penghuni (${Math.min(nFilm, TRUE_FILMS)}/${TRUE_FILMS}).`;
+  const lines = (truth ? ENDING_TRUE : ENDING).split('\n\n');
   const box = $('ending-lines'); box.innerHTML = '';
   lines.forEach((ln, i) => { const p = document.createElement('p'); p.textContent = ln; p.style.animationDelay = (0.6 + i * 2.6) + 's'; box.appendChild(p); });
   const met = new Set(save.met);

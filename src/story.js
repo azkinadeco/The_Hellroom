@@ -133,3 +133,7 @@ export const TIPS = [
   'Pengumuman yang menyebut "kami melihatmu" tidak bisa melacakmu kalau kamu sedang bersembunyi.',
   'Lift kadang berhenti di lantai yang tidak kamu tekan. Tangga tidak pernah berbohong.',
 ];
+
+// The other ending: every secret tape found and at least TRUE_FILMS residents on film.
+export const TRUE_FILMS = 6;
+export const ENDING_TRUE = 'Pintu darurat terbuka. Kali ini kamu tidak melangkah.\n\nKamu memutar keenam kaset itu satu per satu di depan pintu, dan cahaya putih di baliknya meredup setiap kali satu rekaman selesai. Di kaset terakhir ada suaramu sendiri, lebih tua, menyebut tanggal hari ini.\n\nSetelah cahaya itu padam, yang tersisa hanya pintu gudang biasa. Di luarnya ada halaman sekolah, pagi, dan bel masuk yang berbunyi sekali lalu berhenti.\n\nHandycam itu kamu tinggalkan di meja guru, tanpa kaset. Tidak akan ada yang menemukan rekaman ini, karena tidak ada lagi yang perlu ditemukan.';

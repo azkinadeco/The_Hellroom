@@ -8,6 +8,7 @@ const filmed = (save) => RESIDENTS.filter((k) => (save.film[k] || 0) >= FILM_NEE
 export const BADGES = [
   { id: 'lulus', icon: '🎓', name: 'Lulus Kelas Tambahan', desc: 'Selesaikan LEVEL 0.', test: (c) => c.win && c.story && c.g.def.id === 1 },
   { id: 'ending', icon: '🚪', name: 'Rekaman Terakhir', desc: 'Selesaikan LEVEL 5 dan lihat ending.', test: (c) => c.win && c.story && c.g.def.id === LEVELS.length },
+  { id: 'pulang', icon: '🌅', name: 'Pulang', desc: 'Temukan akhir yang sebenarnya.', test: (c) => !!c.save.trueEnding },
   { id: 'hantu', icon: '👻', name: 'Tidak Pernah Ada', desc: 'Selesaikan satu level tanpa pernah terlihat penghuni.', test: (c) => c.win && c.story && c.g.stats.spotted === 0 },
   { id: 'kilat', icon: '⏱', name: 'Bel Pulang', desc: 'Selesaikan satu level di bawah waktu par.', test: (c) => c.win && c.story && c.g.time < parOf(c.g.def) },
   { id: 'hemat', icon: '🔋', name: 'Hemat Baterai', desc: 'Selesaikan satu level dengan baterai kamera 60% atau lebih.', test: (c) => c.win && c.story && c.g.player.battery >= 60 },
