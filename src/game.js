@@ -572,6 +572,10 @@ export class Game {
       if (this.hintsSeen.has('alarm')) this.hud.toast('Jam weker diambil');
       this.hint('alarm', this.input.touch ? 'Tekan WEKER untuk meletakkan jam weker. Lima detik kemudian ia berdering dan memanggil penghuni ke sana.' : 'Tekan Q untuk meletakkan jam weker. Lima detik kemudian ia berdering dan memanggil penghuni ke sana.', 6);
     }
+    else if (it.type === 'battery' && it.grave) {
+      p.battery = Math.min(100, p.battery + 30); this.stats.graves = (this.stats.graves || 0) + 1;
+      this.hud.toast('Baterai ini dari kameramu sendiri. Rekaman sebelumnya berhenti di sini. (+30%)', 4.5);
+    }
     else if (it.type === 'battery') { p.battery = Math.min(100, p.battery + 45); this.hud.toast('Baterai kamera +45%'); }
   }
 
@@ -945,6 +949,17 @@ export class Game {
     } else if (kind === 'blackout') {
       this.schedule(4.2, () => { this.blackoutT = 14; this.audio.doorSlam({ x: this.player.pos.x + 10, y: 2, z: this.player.pos.z }); });
     }
+  }
+
+  // where the last recording of this level ended: your old battery is still there
+  placeGrave(G) {
+    const f = this.floors[G.k];
+    if (!f || !this.assets.models.item_battery) return;
+    const b = f.field.sample(G.x, 0.3, G.z, null, null, null, null);
+    const obj = cloneWithBake(this.assets.models.item_battery, [Math.max(0.2, b[0]), b[1]], 0.25);
+    obj.position.set(G.x, 0.03, G.z); obj.rotation.y = G.x * 7.3;
+    f.built.root.add(obj);
+    f.built.items.push({ type: 'battery', grave: true, x: G.x, y: 0, z: G.z, obj, taken: false });
   }
 
   // ---------------------------------------------------------------- alarm clock

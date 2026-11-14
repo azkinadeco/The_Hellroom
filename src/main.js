@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
+const defaults = { stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -81,6 +81,8 @@ const ui = {
     $('scare').className = '';
     input.enabled = false; releasePointer();
     hud.show(false); $('touch-layer').classList.add('hidden');
+    countRun('dead', game.killer && game.killer.kind);
+    lastDeath = { key: levelKey(game.def), k: game.floorK, x: game.player.pos.x, z: game.player.pos.z };
     if (game.def.daily) $('btn-retry').textContent = 'Coba Lagi';
     else if (game.def.endless) {
       save.endlessRun = null;
@@ -99,6 +101,7 @@ const ui = {
     input.enabled = false; releasePointer();
     hud.show(false); $('touch-layer').classList.add('hidden');
     const t = Math.floor(game.time);
+    countRun('win'); lastDeath = null;
     if (game.def.daily) {
       const prev = save.daily[game.def.daily], isBest = !prev || t < prev;
       save.daily = { [game.def.daily]: isBest ? t : prev };   // only today is kept
@@ -153,6 +156,16 @@ const ui = {
   },
 };
 
+// lifetime numbers for the archive; called whenever a run ends or is left
+let lastDeath = null;
+const levelKey = (def) => (def.endless ? 'e' + def.seed : 's' + def.id);
+function countRun(how, killer = null) {
+  const S = save.stats = { ...defaults.stats, ...save.stats, deaths: { ...(save.stats && save.stats.deaths) } };
+  S.time += Math.max(0, Math.round(game.time - (game.countedT || 0))); game.countedT = game.time;
+  S.escapes += (game.stats.escapes || 0) - (game.countedEsc || 0); game.countedEsc = game.stats.escapes || 0;
+  if (how === 'dead' && killer) S.deaths[killer] = (S.deaths[killer] || 0) + 1;
+  if (how === 'win') { S.wins++; if (game.def.endless && !game.def.daily) S.floors++; }
+}
 const badgeLine = (list) => (list.length ? '\n\n' + list.map((b) => `${b.icon} Lencana baru: ${b.name}`).join('\n') : '');
 let ignoreUnlock = false;
 function releasePointer() { if (document.pointerLockElement) { ignoreUnlock = true; input.unlock(); } }
@@ -215,6 +228,8 @@ function beginPlay(cp = null) {
     game.loadLevel(pendingLevel, save.diff, pendingDef);
     game.godMode = pendingGod;
     if (cp) { game.retries = retries; game.restore(cp); }
+    game.countedT = game.time; game.countedEsc = game.stats.escapes || 0;
+    if (lastDeath && lastDeath.key === levelKey(game.def)) game.placeGrave(lastDeath);
   } catch (e) { showError(e.stack || e); return; }
   hideAll();
   hud.show(true);
@@ -234,6 +249,7 @@ function goFullscreen() {
 }
 
 function quitToMenu() {
+  if (game.floors && game.floors.length) { countRun('quit'); persist(); }
   game.state = 'menu';
   game.unload();
   audio.setAmbience(false);
@@ -316,6 +332,13 @@ function buildArchive() {
     const tp = TAPES[l.id];
     if (tp) add('📼 ' + tp.title, tapes.has(String(l.id)), tp.title, tp.body);
   });
+  const hs = document.createElement('h3'); hs.textContent = 'Statistik'; list.appendChild(hs);
+  const S = { ...defaults.stats, ...save.stats }, dead = Object.entries(S.deaths || {}).sort((a, b) => b[1] - a[1]);
+  const nDead = dead.reduce((n, d) => n + d[1], 0), hh = Math.floor(S.time / 3600), mm = Math.floor(S.time / 60) % 60;
+  for (const [a, b] of [['Lama merekam', `${hh} jam ${mm} menit`], ['Level & lantai diselesaikan', S.wins], ['Rekaman terputus (mati)', nDead],
+    ['Paling sering membunuhmu', dead.length ? `${ENTITY_INFO[dead[0][0]] ? ENTITY_INFO[dead[0][0]].name : dead[0][0]} (${dead[0][1]}×)` : '—'], ['Lolos dari kejaran', S.escapes], ['Lantai Tanpa Ujung dilewati', S.floors]]) {
+    const d = document.createElement('div'); d.className = 'archive-item stat'; d.innerHTML = `<span>${a}</span><b>${b}</b>`; list.appendChild(d);
+  }
   const hl = document.createElement('h3'); hl.textContent = `Lencana  ${save.badges.length}/${BADGES.length}`; list.appendChild(hl);
   for (const b of BADGES) {
     const ok = save.badges.includes(b.id);
