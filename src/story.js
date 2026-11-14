@@ -69,3 +69,18 @@ export const PA_LINES = {
     'Lampu akan dimatikan untuk jam tidur siang. Tutup mata kalian.',
   ],
 };
+
+// Rekaman lapangan: unlocked in the archive by filming a resident through the zoom for FILM_NEED seconds.
+export const FILM_NEED = 6;
+export const FILMS = {
+  pale: '[ZOOM 2.8x. Lorong lantai dua.]\n\nIa berhenti setiap beberapa langkah dan memiringkan kepala. Sobekan di wajahnya membuka sedikit, seperti mencicipi udara.\n\nWaktu aku menahan napas, ia merangkak melewati kakiku. Jaraknya satu jengkal. Ia tidak pernah menoleh.',
+  spider: '[ZOOM 2.8x. Dari balik jeruji lantai tiga.]\n\nKeempat kakinya memakai sepatu sekolah. Ukurannya berbeda-beda.\n\nPerempuan di bawah perutnya tidak menjerit terus-menerus. Di antara jeritan, bibirnya bergerak. Kalau rekaman ini diperlambat, ia sedang mengabsen nama.',
+  gaper: '[ZOOM 2.8x. Bangsal B.]\n\nSelama kamera mengarah padanya ia tidak bergerak sama sekali. Dadanya pun tidak.\n\nTapi di setiap potongan rekaman, rahangnya terbuka sedikit lebih lebar daripada potongan sebelumnya.',
+  shade: '[ZOOM 2.8x. Mode malam. Depan toko yang lampunya mati.]\n\nDi rekaman ini ia tidak punya bentuk. Yang tertangkap hanya mata, dan jumlahnya berubah setiap frame: sebelas, empat, sembilan belas.\n\nSaat senter menyala, semua mata itu menutup bersamaan.',
+  centipede: '[ZOOM 2.8x. Tepi kolam utama.]\n\nSetiap ruas tubuhnya memakai baju renang sekolah. Masih ada nomor absennya.\n\nWajah paling depan menjerit. Wajah-wajah di belakangnya hanya menggerakkan bibir, mengikuti, terlambat setengah detik.',
+  eyes: '[ZOOM 2.8x. Galeri timur.]\n\nMata-mata itu tidak berkedip bersamaan. Mereka bergiliran, dari kiri ke kanan, sehingga selalu ada yang terbuka.\n\nAkar di bawahnya berdenyut pelan. Temponya sama dengan lampu REC di kameraku.',
+  clock: '[ZOOM 2.8x. Ujung lorong.]\n\nJarumnya menunjuk 11:59 dan tidak pernah sampai ke 12.\n\nPintu kacanya terbuka sedikit saat ia berjalan. Yang berayun di dalam bukan cuma bandul.',
+  weaver: '[ZOOM 2.8x. Dari balik pintu yang terbuka sedikit.]\n\nTangan-tangan kecil di tulang punggungnya terus bekerja, menyambung ruas demi ruas. Ia sedang menambah panjang dirinya sendiri.\n\nTumpukan tulang yang ia seret lebih banyak daripada kemarin.',
+  echo: '[ZOOM 2.8x. Lampu berkedip.]\n\nDi setiap frame yang terang ia diam. Di setiap frame yang gelap ia satu langkah lebih dekat.\n\nKalau rekaman dihentikan tepat di frame gelap, salah satu wajahnya sedang menatap lensa.',
+  squid: '[ZOOM 2.8x. Lorong basah.]\n\nBisikannya terekam jelas di kaset walaupun di telingaku cuma seperti angin. Ia menyebut namaku. Lalu nama ibuku.\n\nRambutnya tidak pernah kering.',
+};

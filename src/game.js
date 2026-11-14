@@ -15,7 +15,7 @@ import { randomReachableCell } from './ai/path.js';
 import { Anomalies } from './anomalies.js';
 import { AutoMap } from './automap.js';
 import { OddEvents } from './events.js';
-import { NOTES, TAPES, PA_LINES } from './story.js';
+import { NOTES, TAPES, PA_LINES, FILM_NEED } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
 // residents throw shadows in the flashlight beam
@@ -594,6 +594,36 @@ export class Game {
     this.audio.setAmbience(false);
   }
 
+  // ---------------------------------------------------------------- evidence
+  // Hold the zoom on a resident: every second on tape counts towards its field
+  // recording in the archive (kept between runs).
+  updateFilm(dt, zoom) {
+    const p = this.player;
+    this.film = this.film || {};
+    let fx = null;
+    if (zoom && p.alive) {
+      for (const e of this.entities) {
+        const have = this.film[e.kind] || 0;
+        if (have >= FILM_NEED || e.distTo(p.pos) > 30) continue;
+        const head = e.headNode ? e.headNode.getWorldPosition(this._fv || (this._fv = new THREE.Vector3())) : (this._fv || (this._fv = new THREE.Vector3())).set(e.pos.x, 1.2, e.pos.z);
+        head.project(this.camera);
+        if (head.z >= 1 || Math.abs(head.x) > 0.55 || Math.abs(head.y) > 0.7 || !this.isSeenByPlayer(e)) continue;
+        const now = Math.min(FILM_NEED, have + dt);
+        this.film[e.kind] = now;
+        fx = { kind: e.kind, f: now / FILM_NEED };
+        this.hint('film', 'Kameramu merekam bukti. Tahan zoom ke arah penghuni sampai meterannya penuh untuk membuka rekaman lapangan di Arsip.', 5);
+        if (now >= FILM_NEED) {
+          this.stats.films = (this.stats.films || 0) + 1;
+          this.audio.pickup();
+          this.hud.caption(`📼 Bukti terekam: ${(ENTITY_INFO[e.kind] || {}).name} — lihat di Arsip`, 4);
+          if (this.onFilm) this.onFilm(e.kind, now);
+        } else if (Math.floor(now) !== Math.floor(have) && this.onFilm) this.onFilm(e.kind, now);
+        break;
+      }
+    }
+    this.filmFx = fx;
+  }
+
   // ------------------------------------------------------------------ loop
   update(dt) {
     const input = this.input, p = this.player;
@@ -646,6 +676,7 @@ export class Game {
         if (this.onMeet && this.onMeet(e.kind)) this.hud.caption(`📁 Arsip Penghuni baru: ${(ENTITY_INFO[e.kind] || {}).name}`, 3);
       }
     }
+    this.updateFilm(dt, zoom);
     this.doorSys.update(dt);
     this.cullDoors();
     for (const L of this.built.lockers) {

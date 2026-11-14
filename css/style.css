@@ -251,3 +251,10 @@ body.clear-screen .ending-lines p, body.clear-screen .ending-credits { animation
 .automap.show { display: block; }
 .automap canvas { display: block; max-width: calc(92vw - 16px); max-height: calc(86vh - 70px); image-rendering: pixelated; }
 #automap-label { font-family: var(--type); font-size: 13px; line-height: 1.35; color: #2a261e; text-shadow: none; white-space: pre-line; margin-top: 4px; }
+
+/* batch 28: evidence meter + field recordings */
+.meter.film i { background: var(--danger); }
+.meter.film label { color: #ff8a80; }
+.film-box { font-family: var(--type); font-size: 15px; line-height: 1.5; white-space: pre-line; border: 1px dashed var(--line); padding: 10px 12px; margin-top: 6px; color: #cfccbc; }
+.film-box.locked { color: var(--dim); font-family: var(--mono); font-size: 18px; }
+.archive-item .tapeicon { margin-left: auto; }

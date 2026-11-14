@@ -8,7 +8,7 @@ export class HUD {
     this.batt = $('hud-batt'); this.battPct = $('hud-batt-pct'); this.mode = $('hud-mode');
     this.obj = $('hud-obj');
     this.prompt = $('prompt'); this.cross = $('crosshair');
-    this.stam = $('m-stamina'); this.breath = $('m-breath'); this.gaze = $('m-gaze');
+    this.stam = $('m-stamina'); this.breath = $('m-breath'); this.gaze = $('m-gaze'); this.film = $('m-film');
     this.toastEl = $('toast'); this.toastT = 0;
     this.louvers = $('louvers');
     this.objectives = $('objectives'); this.objT = 0;
@@ -67,6 +67,9 @@ export class HUD {
     this.gaze.classList.toggle('show', gz > 0.02);
     this.gaze.classList.toggle('warn', gz > 0.6);
     this.gaze.querySelector('i').style.width = (gz * 100) + '%';
+    const fm = g.filmFx;
+    this.film.classList.toggle('show', !!fm);
+    if (fm) this.film.querySelector('i').style.width = (fm.f * 100) + '%';
     const gzs = gz.toFixed(2);
     if (this._last.gz !== gzs) { this._last.gz = gzs; this.el.style.setProperty('--gaze', gzs); }
     const ov = p.hidden ? hideOf(p.hidden).overlay : null;

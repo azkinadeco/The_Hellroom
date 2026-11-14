@@ -6,7 +6,7 @@ import { Game } from './game.js';
 import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS } from './config.js';
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
-import { INTRO, ENDING, NOTES, TAPES } from './story.js';
+import { INTRO, ENDING, NOTES, TAPES, FILMS, FILM_NEED } from './story.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'hellroom.save.v2';
@@ -16,7 +16,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
+const defaults = { film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2 } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -113,7 +113,7 @@ const ui = {
     $('win-title').textContent = `${game.def.code} SELESAI`;
     $('win-stats').innerHTML = [
       ['Waktu rekaman', fmt(t)], ['Rekor', save.best[key] ? fmt(save.best[key]) : '—'], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
-      ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label],
+      ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Bukti direkam', game.stats.films ? `${game.stats.films} penghuni` : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
     const last = game.levelIndex >= LEVELS.length - 1;
     if (last && !game.def.test) { showEnding(t); return; }
@@ -238,7 +238,9 @@ function buildArchive() {
     total++; const ok = met.has(k); if (ok) have++;
     const b = document.createElement('button');
     b.className = 'archive-item' + (ok ? '' : ' locked');
-    b.innerHTML = ok ? `${portrait(k, true)}<span>${ENTITY_INFO[k].name}</span>` : `${portrait(k, false)}<span>??? — belum ditemui</span>`;
+    const filmed = (save.film[k] || 0) >= FILM_NEED;
+    total++; if (filmed) have++;
+    b.innerHTML = ok ? `${portrait(k, true)}<span>${ENTITY_INFO[k].name}</span>${filmed ? '<span class="tapeicon">📼</span>' : ''}` : `${portrait(k, false)}<span>??? — belum ditemui</span>`;
     b.disabled = !ok;
     b.onclick = () => openBeast(k);
     grid.appendChild(b);
@@ -302,6 +304,9 @@ function openBeast(k) {
   $('beast-name').textContent = info.name;
   $('beast-lore').textContent = info.lore || '';
   $('beast-tip').textContent = info.hint || info.death;
+  const sec = save.film[k] || 0, fb = $('beast-film');
+  fb.classList.toggle('locked', sec < FILM_NEED);
+  fb.textContent = sec >= FILM_NEED ? FILMS[k] : `Belum ada rekaman (${Math.floor(sec / FILM_NEED * 100)}%). Arahkan zoom kamera (Z) ke penghuni ini sampai meteran bukti penuh.`;
   show('beast');
   if (!beastViewer) beastViewer = new ModelViewer($('beast-canvas'), assets);
   const clips = beastViewer.show(k);
@@ -383,6 +388,8 @@ async function boot() {
   game.onTape = (id) => { if (!save.tapes.map(String).includes(String(id))) { save.tapes.push(id); persist(); } };
   game.met = new Set(save.met || []);
   game.onMeet = (kind) => { if (save.met.includes(kind)) return false; save.met.push(kind); persist(); return true; };
+  game.film = save.film;
+  game.onFilm = () => persist();
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
   if (!DEV_ROOMS) $('btn-rooms').remove();
