@@ -25,7 +25,7 @@ const CUES = {
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
   hiss: 'Desisan panjang', tick: 'Detak jam kakek', chime: 'Dentang lonceng jam', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
-  whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah',
+  whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah', alarm: 'Jam weker berdering',
 };
 
 export class Game {
@@ -176,7 +176,8 @@ export class Game {
     p.water = this.gen.water; p.y = 0;
     this.audio.setTheme(def.theme || null); this.themeT = 0;
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
-    p.inventory = { fuses: 0, keys: 0, erasers: 0 };
+    p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0 };
+    this.alarms = [];
     this.projectiles = [];
     this.hintT = 0;
     this.timers = [];
@@ -548,6 +549,7 @@ export class Game {
       return;
     }
     if (it.type === 'eraser' && p.inventory.erasers >= 3) { this.hud.toast('Tanganmu sudah penuh (maks. 3 penghapus)'); return; }
+    if (it.type === 'alarm' && p.inventory.alarms >= 2) { this.hud.toast('Kamu hanya bisa membawa 2 jam weker'); return; }
     it.taken = true;
     it.obj.visible = false;
     this.audio.pickup();
@@ -561,6 +563,11 @@ export class Game {
       p.inventory.erasers++;
       if (this.hintsSeen.has('eraser')) this.hud.toast('Penghapus papan diambil');
       this.hint('eraser', this.input.touch ? 'Tekan LEMPAR untuk melempar penghapus — bunyinya memancing penghuni ke sana.' : 'Tekan G / klik kanan untuk melempar penghapus — bunyinya memancing penghuni ke sana.', 5);
+    }
+    else if (it.type === 'alarm') {
+      p.inventory.alarms++;
+      if (this.hintsSeen.has('alarm')) this.hud.toast('Jam weker diambil');
+      this.hint('alarm', this.input.touch ? 'Tekan WEKER untuk meletakkan jam weker. Lima detik kemudian ia berdering dan memanggil penghuni ke sana.' : 'Tekan Q untuk meletakkan jam weker. Lima detik kemudian ia berdering dan memanggil penghuni ke sana.', 6);
     }
     else if (it.type === 'battery') { p.battery = Math.min(100, p.battery + 45); this.hud.toast('Baterai kamera +45%'); }
   }
@@ -674,6 +681,8 @@ export class Game {
     if (zoom) p.battery = Math.max(0, p.battery - 0.15 * dt);
     p.update(dt, input, this.world, this);
     if (input.consume('throw')) this.throwEraser();
+    if (input.consume('alarm')) this.setAlarm();
+    this.updateAlarms(dt);
     this.updateProjectiles(dt);
     this.updateHints(dt);
     this.cullChunks(dt);
@@ -848,6 +857,48 @@ export class Game {
       });
     } else if (kind === 'blackout') {
       this.schedule(4.2, () => { this.blackoutT = 14; this.audio.doorSlam({ x: this.player.pos.x + 10, y: 2, z: this.player.pos.z }); });
+    }
+  }
+
+  // ---------------------------------------------------------------- alarm clock
+  // Set down at your feet; rings 5 s later for 9 s and every resident that can
+  // hear it comes to look. One use each.
+  setAlarm() {
+    const p = this.player;
+    if (p.hidden || !p.alive || this.busy) return;
+    if (!p.inventory.alarms) { this.hud.toast('Kamu tidak membawa jam weker'); return; }
+    let x = p.pos.x - Math.sin(p.yaw) * 0.55, z = p.pos.z - Math.cos(p.yaw) * 0.55;
+    if (!this.world.los(p.pos.x, p.pos.z, x, z)) { x = p.pos.x; z = p.pos.z; }
+    p.inventory.alarms--;
+    const b = this.field.sample(x, 0.3, z, null, null, null, null);
+    const obj = cloneWithBake(this.assets.models.item_alarm, [Math.max(0.2, b[0]), b[1]], 0.25);
+    obj.position.set(x, (p.y || 0) + 0.106, z); obj.rotation.y = p.yaw; obj.scale.setScalar(1.4);
+    this.levelRoot.add(obj);
+    this.alarms.push({ obj, x, z, y: obj.position.y, t: 0, ringT: 0, floor: this.floorK, rot: p.yaw });
+    this.audio.click();
+    this.stats.alarms = (this.stats.alarms || 0) + 1;
+    this.hud.toast('Jam weker diputar… 5 detik. Menjauh!', 2.5);
+  }
+  updateAlarms(dt) {
+    for (const A of this.alarms) {
+      if (A.done) continue;
+      A.t += dt;
+      if (A.t < 5) { if (Math.floor(A.t * 2) !== Math.floor((A.t - dt) * 2) && A.floor === this.floorK) this.audio.tick({ x: A.x, y: 0.2, z: A.z }, 0.35); continue; }
+      if (A.t > 14) { A.done = true; A.obj.position.set(A.x, A.y, A.z); A.obj.rotation.set(0, A.rot, 0.0); continue; }
+      A.obj.position.x = A.x + (Math.random() - 0.5) * 0.012; A.obj.position.z = A.z + (Math.random() - 0.5) * 0.012;
+      A.obj.rotation.z = (Math.random() - 0.5) * 0.12;
+      A.ringT -= dt;
+      if (A.ringT <= 0 && A.floor === this.floorK) {
+        A.ringT = 0.8;
+        this.audio.alarmRing({ x: A.x, y: 0.2, z: A.z });
+        // louder than anything the player does: it pulls residents off a search, not off a chase
+        let heard = 0;
+        for (const e of this.entities) {
+          const d = Math.hypot(e.pos.x - A.x, e.pos.z - A.z), r = NOISE.alarm * this.diff.hearing * (this.world.los(e.pos.x, e.pos.z, A.x, A.z) ? 1 : 0.7);
+          if (d < r && d > 1.5) { e.onNoise(A.x, A.z, 1 - d / r, 'alert'); heard++; }
+        }
+        if (heard && !A.lured) { A.lured = true; this.stats.lures = (this.stats.lures || 0) + 1; }
+      }
     }
   }
 

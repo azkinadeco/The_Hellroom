@@ -420,6 +420,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     const obj = cloneWithBake(assets.models[key], field.sample(it.x, it.y + 0.3, it.z, null, null, null, null), 0.25);
     obj.position.set(it.x, it.y + itemLift(it.type), it.z);
     obj.rotation.y = Math.random() * Math.PI * 2;
+    if (it.type === 'alarm') obj.scale.setScalar(1.4);
     obj.userData.baseY = obj.position.y;
     root.add(obj);
     return { ...it, obj, taken: false };
@@ -475,7 +476,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
 }
 
 function itemLift(type) {
-  return { eraser: 0.016, fuse: 0.035, key: 0.012, battery: 0.03, note: 0.004, tape: 0.014 }[type] ?? 0.02;
+  return { eraser: 0.016, alarm: 0.106, fuse: 0.035, key: 0.012, battery: 0.03, note: 0.004, tape: 0.014 }[type] ?? 0.02;
 }
 
 // clone a model, converting materials to per-object baked uniform materials

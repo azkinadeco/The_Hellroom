@@ -225,7 +225,49 @@ def item_eraser():
     return L.finish("item_eraser", view=(0.5, -1.0, 0.9))
 
 
+def item_alarm():
+    """Wind-up twin-bell alarm clock standing upright, about 0.11 x 0.15 x 0.06 m.
+    Face towards Blender -Y (three.js +Z). Decoy item: the player winds it,
+    sets it down and it rings a few seconds later."""
+    mb = MB()
+    body = mat("AlarmBody", "#9c2f26", rough=0.35, metal=0.3)
+    chrome = mat("AlarmChrome", "#c9ccd0", rough=0.2, metal=0.8)
+    face = mat("AlarmFace", "#efe8d2", rough=0.8)
+    ink = mat("AlarmInk", "#1c1a17", rough=0.7)
+    R = 0.05
+    mb.cyl(R, 0.044, (0, 0, R + 0.012), body, rot=(90, 0, 0), segs=24)
+    mb.cyl(R + 0.004, 0.006, (0, -0.02, R + 0.012), chrome, rot=(90, 0, 0), segs=24)
+    mb.cyl(R - 0.004, 0.003, (0, -0.0235, R + 0.012), face, rot=(90, 0, 0), segs=24)
+    # hour marks and hands (stuck at one minute to twelve)
+    for k in range(12):
+        a = math.radians(k * 30)
+        mb.box((0.003, 0.0012, 0.008), (math.sin(a) * 0.038, -0.0252, R + 0.012 + math.cos(a) * 0.038), ink, rot=(0, math.degrees(a), 0))
+    mb.box((0.0035, 0.0012, 0.026), (-0.004, -0.0256, R + 0.012 + 0.012), ink, rot=(0, -18, 0))
+    mb.box((0.0025, 0.0012, 0.034), (-0.0016, -0.026, R + 0.012 + 0.016), ink, rot=(0, -6, 0))
+    mb.cyl(0.004, 0.003, (0, -0.0262, R + 0.012), chrome, rot=(90, 0, 0), segs=10)
+    # legs
+    for s in (-1, 1):
+        mb.limb((s * 0.028, 0.0, 0.022), (s * 0.042, 0.0, 0.0), 0.005, 0.004, chrome, segs=8)
+        mb.sphere((0.006, 0.006, 0.004), (s * 0.042, 0, 0.002), chrome, segs=8, rings=5)
+    # twin bells, posts, hammer and carry handle
+    for s in (-1, 1):
+        mb.limb((s * 0.022, 0, R * 2 + 0.006), (s * 0.03, 0, R * 2 + 0.022), 0.003, 0.003, chrome, segs=6)
+        mb.sphere((0.024, 0.024, 0.014), (s * 0.032, 0, R * 2 + 0.03), chrome, rot=(0, s * 24, 0), segs=14, rings=7)
+        mb.sphere((0.004, 0.004, 0.004), (s * 0.038, 0, R * 2 + 0.045), chrome, segs=6, rings=4)
+    mb.limb((0, 0, R * 2 + 0.008), (0, 0, R * 2 + 0.03), 0.002, 0.002, chrome, segs=6)
+    mb.sphere((0.006, 0.006, 0.006), (0, 0, R * 2 + 0.032), chrome, segs=8, rings=5)
+    pts = [(math.sin(math.radians(a)) * 0.03, 0, R * 2 + 0.038 + math.cos(math.radians(a)) * 0.02) for a in range(-80, 81, 20)]
+    mb.tube(pts, 0.0022, chrome, segs=6)
+    # winding key on the back
+    mb.cyl(0.003, 0.012, (0, 0.028, R + 0.004), chrome, rot=(90, 0, 0), segs=8)
+    mb.box((0.02, 0.003, 0.012), (0, 0.035, R + 0.004), chrome, bevel=0.001)
+    ob = mb.obj("Alarm")
+    _center(ob)
+    return L.finish("item_alarm", view=(0.6, -1.5, 0.5))
+
+
 ASSETS = {
+    "item_alarm": item_alarm,
     "item_eraser": item_eraser,
     "item_fuse": item_fuse,
     "item_key": item_key,

@@ -409,3 +409,6 @@ Build: `Blender -b --factory-startup -P blender/build_assets.py -- variety`. Con
 | `cctv_camera` | 134 | box camera on an arm at 2.6 m |
 | `emergency_light` | 168 | twin-head emergency light at 2.45 m |
 | `exit_sign` | 179 | lit green “KELUAR” box sign at 2.5 m |
+
+## item_alarm.glb (batch 33)
+Wind-up twin-bell alarm clock standing upright, about 0.11 x 0.15 x 0.06 m (three.js X/Y/Z), dial towards +Z. Origin at bbox centre (game lifts it 0.075 m). Single mesh `Alarm`, materials `AlarmBody`, `AlarmChrome`, `AlarmFace`, `AlarmInk`. Decoy item: set down with Q, rings after a few seconds.

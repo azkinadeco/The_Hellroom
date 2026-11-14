@@ -327,6 +327,7 @@ function finish(b, rng, def) {
   for (let i = startRoom ? 1 : 0; i < def.notes; i++) place('note', pick(), { note: i });
   if (def.tape !== false) { const far = [...open].sort((a, c) => dist(c) - dist(a)).slice(0, 3); if (far.length) place('tape', rng.pick(far)); }
   for (let i = 1; i < (def.erasers || 0); i++) place('eraser', pick());
+  for (let i = 0; i < (def.alarms ?? 2); i++) place('alarm', pick());
 }
 
 // a free hall wall next to the exit for the fuse panel

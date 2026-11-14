@@ -288,3 +288,7 @@ body.big-text .caption { font-size: 30px; bottom: 84px; white-space: normal; tex
 body.big-text .toast { font-size: 32px; }
 body.big-text .prompt { font-size: 30px; }
 body.big-text .hud-bl, body.big-text .objectives { font-size: 26px; }
+
+/* batch 33: alarm clock decoy */
+.tbtn.alarm { display: none; }
+body.can-alarm .tbtn.alarm { display: block; }

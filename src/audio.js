@@ -340,6 +340,19 @@ export class Audio {
     g.gain.setValueAtTime(0.06, t + 2.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
     o.start(t); mod.start(t); o.stop(t + 2.7); mod.stop(t + 2.7);
   }
+  // wind-up alarm clock: a hard, fast double bell
+  alarmRing(pos, dur = 0.75) {
+    if (!this.ready) return;
+    this._cue('alarm', pos);
+    const t = this.t, g = this._out(pos, 0.5), hp = this._filter('highpass', 1500);
+    hp.connect(g);
+    const mod = this._osc('square', 27), mg = this.ctx.createGain(); mg.gain.value = 0.5;
+    const am = this.ctx.createGain(); am.gain.value = 0.5; mod.connect(mg).connect(am.gain); am.connect(hp);
+    const os = [2140, 3230, 4310].map((f, i) => { const o = this._osc(i ? 'sine' : 'square', f * (0.99 + Math.random() * 0.02)); const og = this.ctx.createGain(); og.gain.value = [0.5, 0.35, 0.2][i]; o.connect(og).connect(am); return o; });
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.11, t + 0.02);
+    g.gain.setValueAtTime(0.11, t + dur - 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    for (const n of [mod, ...os]) { n.start(t); n.stop(t + dur + 0.02); }
+  }
   doorSlam(pos) { if (this.ready) { this._cue('slam', pos); this._thud(pos, this.t, 0.5); this.lockerClang(pos, 0.15); } }
   distantSteps(pos) {
     if (!this.ready) return;

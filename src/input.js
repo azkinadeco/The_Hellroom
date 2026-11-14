@@ -21,7 +21,7 @@ export class Input {
   _bind() {
     const map = {
       KeyE: 'interact', KeyF: 'flashlight', KeyN: 'nightvision', KeyC: 'crouch', ControlLeft: 'crouch',
-      Escape: 'pause', KeyP: 'pause', Tab: 'objectives', Space: 'breath', KeyG: 'throw', KeyM: 'map', KeyR: 'mapfloor',
+      Escape: 'pause', KeyP: 'pause', Tab: 'objectives', Space: 'breath', KeyG: 'throw', KeyM: 'map', KeyR: 'mapfloor', KeyQ: 'alarm',
     };
     addEventListener('keydown', (e) => {
       if (e.code === 'Tab') e.preventDefault();
@@ -123,7 +123,7 @@ export class Input {
     this.gp = gp;
     const dz = (v) => (Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v) * 0.18) / 0.82);
     const down = (i) => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.4));
-    const MAP = { 0: 'interact', 1: 'crouch', 2: 'flashlight', 3: 'nightvision', 4: 'throw', 8: 'map', 9: 'pause', 12: 'objectives', 15: 'mapfloor' };
+    const MAP = { 0: 'interact', 1: 'crouch', 2: 'flashlight', 3: 'nightvision', 4: 'throw', 8: 'map', 9: 'pause', 12: 'objectives', 14: 'alarm', 15: 'mapfloor' };
     for (let i = 0; i < gp.buttons.length; i++) {
       const d = down(i);
       if (d && !P.prev[i]) { P.edges.add(i); P.seen = true; if (this.enabled && MAP[i]) this.pressed.add(MAP[i]); if (this.enabled && i === 10) this.sprintToggle = !this.sprintToggle; }

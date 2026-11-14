@@ -44,7 +44,9 @@ export class HUD {
     const lines = [`SEKRING  ${g.fusesInstalled + inv.fuses}/${need}${g.fusesInstalled ? `  (${g.fusesInstalled} terpasang)` : ''}`];
     if (inv.keys) lines.push(`KUNCI    ×${inv.keys}`);
     if (inv.erasers) lines.push(`PENGHAPUS ×${inv.erasers}  [${g.input.touch ? 'LEMPAR' : 'G'}]`);
+    if (inv.alarms) lines.push(`JAM WEKER ×${inv.alarms}  [${g.input.touch ? 'WEKER' : 'Q'}]`);
     document.body.classList.toggle('can-throw', inv.erasers > 0 && !p.hidden);
+    document.body.classList.toggle('can-alarm', inv.alarms > 0 && !p.hidden);
     if (g.powered) lines.push('LISTRIK MENYALA — CARI PINTU KELUAR');
     this._set(this.obj, 'obj', lines.join('\n'));
 

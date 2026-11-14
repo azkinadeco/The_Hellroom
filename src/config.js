@@ -28,7 +28,7 @@ export const PLAYER = {
 
 // Noise radius (meters) emitted by player actions
 export const NOISE = {
-  walk: 7, sprint: 15, crouch: 2.2, splash: 11, door: 9, locker: 5, pickup: 3, gasp: 9, fuse: 8, throw: 14,
+  walk: 7, sprint: 15, crouch: 2.2, splash: 11, door: 9, locker: 5, pickup: 3, gasp: 9, fuse: 8, throw: 14, alarm: 26,
 };
 
 // Hideable spots, all data driven. Distances are metres along the spot's
