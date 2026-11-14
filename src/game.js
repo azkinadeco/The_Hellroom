@@ -14,6 +14,7 @@ import { spawnEntity, ENTITY_INFO } from './ai/creatures.js';
 import { randomReachableCell } from './ai/path.js';
 import { Anomalies } from './anomalies.js';
 import { AutoMap } from './automap.js';
+import { OddEvents } from './events.js';
 import { NOTES, TAPES, PA_LINES } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
@@ -152,6 +153,7 @@ export class Game {
     this.anomalies = new Anomalies(this);
     if (!this.automap) this.automap = new AutoMap(this);
     this.automap.reset();
+    this.odd = new OddEvents(this);
     // per-level look: tint of the baked light, colour of the dark
     const fogC = def.fogColor ?? 0x070806;
     this.scene.fog = new THREE.FogExp2(fogC, def.fog);
@@ -268,6 +270,7 @@ export class Game {
   changeFloor(k, via = {}) {
     if (k === this.floorK || !this.floors[k]) return;
     const prev = this.floorK;
+    if (this.odd) this.odd.clear();
     this.setFloor(k);
     this.hud.caption(`Lantai ${k + 1}`, 1.6);
     if (this.automap) { this.automap.view = k; this.automap.dirty = true; }
@@ -632,6 +635,7 @@ export class Game {
     this.updateSlide(dt);
     if (!this.liftRide && !this.slideRide) for (const e of this.entities) e.update(dt);
     this.anomalies.update(dt);
+    this.odd.update(dt);
     // first sighting unlocks the resident's archive entry
     this.metT = (this.metT || 0) - dt;
     if (this.metT <= 0 && p.alive) {
