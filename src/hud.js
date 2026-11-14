@@ -43,8 +43,8 @@ export class HUD {
     const need = g.def.fuses;
     const lines = [`SEKRING  ${g.fusesInstalled + inv.fuses}/${need}${g.fusesInstalled ? `  (${g.fusesInstalled} terpasang)` : ''}`];
     if (inv.keys) lines.push(`KUNCI    ×${inv.keys}`);
-    if (inv.erasers) lines.push(`PENGHAPUS ×${inv.erasers}  [${g.input.touch ? 'LEMPAR' : 'G'}]`);
-    if (inv.alarms) lines.push(`JAM WEKER ×${inv.alarms}  [${g.input.touch ? 'WEKER' : 'Q'}]`);
+    if (inv.erasers) lines.push(`PENGHAPUS ×${inv.erasers}  [${g.input.touch ? 'LEMPAR' : g.input.keyName('throw')}]`);
+    if (inv.alarms) lines.push(`JAM WEKER ×${inv.alarms}  [${g.input.touch ? 'WEKER' : g.input.keyName('alarm')}]`);
     document.body.classList.toggle('can-throw', inv.erasers > 0 && !p.hidden);
     document.body.classList.toggle('can-alarm', inv.alarms > 0 && !p.hidden);
     if (g.powered) lines.push('LISTRIK MENYALA — CARI PINTU KELUAR');
@@ -52,7 +52,7 @@ export class HUD {
 
     const target = g.interactor.target;
     const label = target ? g.interactor.label(target) : '';
-    const key = g.input.touch ? 'AKSI' : 'E';
+    const key = g.input.touch ? 'AKSI' : g.input.keyName('interact');
     const html = label ? `<b>${key}</b>${label}` : '';
     this._set(this.prompt, 'prompt', html, 'innerHTML');
     this.cross.classList.toggle('on', !!label);

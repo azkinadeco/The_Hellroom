@@ -1,6 +1,6 @@
 import { Assets } from './assets.js';
 import { Audio } from './audio.js';
-import { Input } from './input.js';
+import { Input, DEFAULT_BINDS, BIND_LABELS, keyLabel } from './input.js';
 import { HUD } from './hud.js';
 import { Game } from './game.js';
 import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VERSION, NG_CAST } from './config.js';
@@ -437,6 +437,31 @@ function buildSettings() {
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
   $('set-screen').value = s.screen; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
   $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist;
+  buildBinds();
+}
+function buildBinds() {
+  const s = save.settings, list = $('bind-list'); list.innerHTML = '';
+  const binds = { ...DEFAULT_BINDS, ...(s.binds || {}) };
+  for (const a of Object.keys(DEFAULT_BINDS)) {
+    const b = document.createElement('button');
+    b.className = 'bind'; b.innerHTML = `<span>${BIND_LABELS[a]}</span><b>${keyLabel(binds[a])}</b>`;
+    b.onclick = () => {
+      b.classList.add('wait'); b.querySelector('b').textContent = 'tekan tombol…';
+      input.capture = (code) => {
+        if (code !== 'Escape') {
+          // a key holds one action: whoever had it takes this action's old key
+          const other = Object.keys(binds).find((k) => k !== a && binds[k] === code);
+          if (other) binds[other] = binds[a];
+          binds[a] = code;
+          s.binds = binds; persist(); if (game) game.applySettings();
+        }
+        buildBinds();
+      };
+    };
+    list.appendChild(b);
+  }
+  $('bind-reset').onclick = () => { delete s.binds; persist(); if (game) game.applySettings(); buildBinds(); };
+  for (const el of document.querySelectorAll('.kb-only')) el.classList.toggle('hidden', input.touch);
 }
 function readSettings() {
   const s = save.settings;

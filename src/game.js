@@ -89,6 +89,7 @@ export class Game {
     this.input.vibrate = s.vibrate !== false;
     document.body.classList.toggle('big-text', !!s.bigText);
     if (this.state === 'menu' || !this.input.zooming()) { this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix(); }
+    this.input.setBinds(s.binds);
     this.input.sensitivity = s.sens;
     this.input.invertY = s.invertY;
     this.audio.setVolume(s.volume);
@@ -525,7 +526,7 @@ export class Game {
         p.hidden = L; p.crouched = false; p.hideT = this.time;
         p.yaw = L.viewYaw; p.pitch = h.look || 0;
         p.flashlight = false;
-        this.hud.toast(this.input.touch ? 'Tahan tombol NAPAS saat ada yang mendekat' : 'Tahan SPASI untuk menahan napas', 2.5);
+        this.hud.toast(this.input.touch ? 'Tahan tombol NAPAS saat ada yang mendekat' : `Tahan ${this.input.keyName('breath').toUpperCase()} untuk menahan napas`, 2.5);
       } else {
         p.hidden = null;
         p.pos.x = L.x + Math.sin(L.rot) * h.exit; p.pos.z = L.z + Math.cos(L.rot) * h.exit;
@@ -706,7 +707,7 @@ export class Game {
     if (!mark) return;
     this.assist = mark; this.automap.dirty = true;
     this.stats.assists = (this.stats.assists || 0) + 1;
-    this.hud.toast(this.diff.noMap ? 'Kamu merasa harus pergi ke suatu tempat…' : `Ada tanda di denahmu yang tidak kamu buat. (${this.input.touch ? 'PETA' : 'M'})`, 4.5);
+    this.hud.toast(this.diff.noMap ? 'Kamu merasa harus pergi ke suatu tempat…' : `Ada tanda di denahmu yang tidak kamu buat. (${this.input.touch ? 'PETA' : this.input.keyName('map')})`, 4.5);
     this.audio.whisper({ x: p.pos.x, y: 1.5, z: p.pos.z }, 0.25);
   }
 

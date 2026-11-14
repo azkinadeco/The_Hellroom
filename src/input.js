@@ -1,4 +1,21 @@
 // Unified input: keyboard + mouse (pointer lock) and touch (joystick + look pad + buttons).
+// Keyboard actions can be rebound (settings.binds: action -> KeyboardEvent.code).
+export const DEFAULT_BINDS = {
+  forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft', crouch: 'KeyC', interact: 'KeyE',
+  flashlight: 'KeyF', nightvision: 'KeyN', zoom: 'KeyZ', throw: 'KeyG', alarm: 'KeyQ', breath: 'Space',
+  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab',
+};
+export const BIND_LABELS = {
+  forward: 'Maju', back: 'Mundur', left: 'Kiri', right: 'Kanan', sprint: 'Lari', crouch: 'Jongkok', interact: 'Interaksi',
+  flashlight: 'Senter', nightvision: 'Mode malam', zoom: 'Zoom kamera', throw: 'Lempar penghapus', alarm: 'Pasang jam weker', breath: 'Tahan napas',
+  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan',
+};
+const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath']);
+export function keyLabel(code) {
+  if (!code) return '—';
+  return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace('ShiftLeft', 'Shift').replace('ShiftRight', 'Shift kanan')
+    .replace('ControlLeft', 'Ctrl').replace('ControlRight', 'Ctrl kanan').replace('AltLeft', 'Alt').replace('AltRight', 'Alt kanan').replace('Space', 'Spasi');
+}
 export class Input {
   constructor(canvas) {
     this.canvas = canvas;
@@ -15,21 +32,21 @@ export class Input {
     this.breathHeld = false;
     this.pad = { move: { x: 0, y: 0 }, sprint: false, zoom: false, breath: false, prev: [], edges: new Set(), seen: false };
     this.vibrate = true;
+    this.binds = { ...DEFAULT_BINDS };
+    this.capture = null;   // settings screen waiting for a key
     this._bind();
   }
 
   _bind() {
-    const map = {
-      KeyE: 'interact', KeyF: 'flashlight', KeyN: 'nightvision', KeyC: 'crouch', ControlLeft: 'crouch',
-      Escape: 'pause', KeyP: 'pause', Tab: 'objectives', Space: 'breath', KeyG: 'throw', KeyM: 'map', KeyR: 'mapfloor', KeyQ: 'alarm',
-    };
+    const fixed = { ControlLeft: 'crouch', Escape: 'pause', KeyP: 'pause' };
     addEventListener('keydown', (e) => {
-      if (e.code === 'Tab') e.preventDefault();
+      if (this.capture) { e.preventDefault(); e.stopPropagation(); const fn = this.capture; this.capture = null; fn(e.code); return; }
+      if (e.code === 'Tab' && this.enabled) e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
-      const a = map[e.code];
-      if (a) this.pressed.add(a);
-    });
+      for (const a in this.binds) if (this.binds[a] === e.code && !HELD.has(a)) this.pressed.add(a);
+      if (fixed[e.code] && !Object.values(this.binds).includes(e.code)) this.pressed.add(fixed[e.code]);
+    }, true);
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     addEventListener('mousemove', (e) => {
@@ -147,18 +164,22 @@ export class Input {
   axis() {
     let x = 0, y = 0;
     const k = this.keys;
-    if (k.has('KeyW') || k.has('ArrowUp')) y -= 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) y += 1;
-    if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
+    const b = this.binds;
+    if (k.has(b.forward) || k.has('ArrowUp')) y -= 1;
+    if (k.has(b.back) || k.has('ArrowDown')) y += 1;
+    if (k.has(b.left) || k.has('ArrowLeft')) x -= 1;
+    if (k.has(b.right) || k.has('ArrowRight')) x += 1;
     x += this.move.x + this.pad.move.x; y += this.move.y + this.pad.move.y;
     const l = Math.hypot(x, y);
     if (l > 1) { x /= l; y /= l; }
     return { x, y };
   }
-  sprint() { return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.sprintToggle || this.pad.sprint; }
-  zooming() { return this.keys.has('KeyZ') || this.zoomToggle || this.pad.zoom; }
-  holdingBreath() { return this.keys.has('Space') || this.breathHeld || this.pad.breath; }
+  setBinds(b) { this.binds = { ...DEFAULT_BINDS, ...(b || {}) }; }
+  // what to print in prompts for an action
+  keyName(a) { return keyLabel(this.binds[a]); }
+  sprint() { return this.keys.has(this.binds.sprint) || this.sprintToggle || this.pad.sprint; }
+  zooming() { return this.keys.has(this.binds.zoom) || this.zoomToggle || this.pad.zoom; }
+  holdingBreath() { return this.keys.has(this.binds.breath) || this.breathHeld || this.pad.breath; }
   consume(a) { const had = this.pressed.has(a); this.pressed.delete(a); return had; }
   endFrame() { this.pressed.clear(); this.lookDX = 0; this.lookDY = 0; }
   resetToggles() {

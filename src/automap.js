@@ -143,6 +143,6 @@ export class AutoMap {
     c.setTransform(1, 0, 0, 1, 0, 0);
     const n = this.seen.length, touch = g.input.touch;
     this.label.textContent = `DENAH — ${g.def.name} · Lantai ${k + 1}/${n}${k === g.floorK ? '' : ' (bukan lantaimu)'}`
-      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : '  ·  R: ganti lantai') : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci';
+      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci';
   }
 }

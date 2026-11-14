@@ -310,3 +310,10 @@ body.can-alarm .tbtn.alarm { display: block; }
 
 /* batch 40 */
 .ending-other { color: var(--accent); margin: 6px 0; }
+
+/* batch 41: key bindings */
+.bind-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.bind { display: flex; justify-content: space-between; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); padding: 3px 8px; font-size: 19px; }
+.bind b { font-weight: normal; color: var(--accent); }
+.bind.wait { border-color: var(--accent); }
+@media (max-width: 560px) { .bind-list { grid-template-columns: 1fr; } }
