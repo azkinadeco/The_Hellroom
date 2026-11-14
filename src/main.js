@@ -3,7 +3,7 @@ import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { HUD } from './hud.js';
 import { Game } from './game.js';
-import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VERSION } from './config.js';
+import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VERSION, NG_CAST } from './config.js';
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
 import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
+const defaults = { ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -130,7 +130,7 @@ const ui = {
       show('win');
       return;
     }
-    const key = game.def.id + ':' + game.diffKey;
+    const key = game.def.id + ':' + game.diffKey + (game.def.ng ? ':ng' : '');
     const gr = gradeRun(game);
     let newB = [];
     if (!game.def.test) {
@@ -175,6 +175,7 @@ document.addEventListener('pointerlockchange', () => {
   if (game && game.state === 'playing' && !input.touch) ui.pause();
 });
 
+const ngOn = () => !!(save.ng && save.endingSeen);
 function startLevel(index, test = null) {
   pendingLevel = index;
   pendingDef = null; pendingGod = false;
@@ -183,6 +184,9 @@ function startLevel(index, test = null) {
     const ents = test.resident === 'default' ? def.entities : test.resident === 'none' ? [] : [{ type: test.resident }];
     pendingDef = def = { ...def, entities: ents, test: true };
     pendingGod = test.god;
+  } else if (ngOn()) {
+    pendingDef = def = { ...def, ng: true, entities: [{ type: NG_CAST[index] }], lightsOff: Math.min(0.7, def.lightsOff + 0.12), batteries: Math.max(2, def.batteries - 1),
+      subtitle: 'PUTARAN KEDUA · Gedungnya sama. Penghuninya bukan yang kamu kenal.' };
   }
   $('intro-code').textContent = def.code;
   $('intro-name').textContent = def.name;
@@ -284,12 +288,18 @@ function buildLevels() {
     b.className = 'level-item';
     // levels unlock in order; every map can still be tried from Pilih Room (uji)
     b.disabled = i + 1 > save.unlocked;
-    const best = save.best[l.id + ':' + save.diff];
-    const kind = l.entities[0] && l.entities[0].type, seen = kind && save.met.includes(kind);
-    b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${save.ranks[l.id + ':' + save.diff] ? `<b class="rank" data-rank="${save.ranks[l.id + ':' + save.diff]}">${save.ranks[l.id + ':' + save.diff]}</b> ` : ''}${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;
+    const rk = l.id + ':' + save.diff + (ngOn() ? ':ng' : '');
+    const best = save.best[rk];
+    const kind = ngOn() ? NG_CAST[i] : l.entities[0] && l.entities[0].type, seen = kind && save.met.includes(kind);
+    b.innerHTML = `${portrait(kind, seen)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">${b.disabled ? 'Terkunci' : l.subtitle}</div></span><span class="best">${save.ranks[rk] ? `<b class="rank" data-rank="${save.ranks[rk]}">${save.ranks[rk]}</b> ` : ''}${best ? `${Math.floor(best / 60)}:${String(best % 60).padStart(2, '0')}` : ''}</span>`;
     b.onclick = () => startLevel(i);
     list.appendChild(b);
   });
+  const ngb = $('ng-toggle');
+  ngb.classList.toggle('hidden', !save.endingSeen);
+  ngb.textContent = `Putaran Kedua: ${ngOn() ? 'AKTIF — penghuni ditukar, lebih gelap' : 'mati'}`;
+  ngb.classList.toggle('on', ngOn());
+  ngb.onclick = () => { save.ng = !save.ng; persist(); buildLevels(); };
   const dl = $('diff-list'); dl.innerHTML = '';
   for (const [k, d] of Object.entries(DIFFICULTY)) {
     const b = document.createElement('button');

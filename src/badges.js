@@ -17,6 +17,7 @@ export const BADGES = [
   { id: 'umpan', icon: '🧽', name: 'Pengalih Perhatian', desc: 'Pancing penghuni dengan lemparan.', test: (c) => (c.g.stats.lures || 0) > 0 },
   { id: 'saksi', icon: '🕴', name: 'Ada yang Berdiri di Sana', desc: 'Tatap sosok di ujung lorong sampai ia menghilang.', test: (c) => (c.g.stats.ghosts || 0) > 0 },
   { id: 'sulit', icon: '💀', name: 'Jam Pelajaran Tambahan', desc: 'Selesaikan satu level pada kesulitan Sulit.', test: (c) => c.win && c.story && c.g.diffKey === 'sulit' },
+  { id: 'ng', icon: '🔁', name: 'Putaran Kedua', desc: 'Selesaikan satu level di Putaran Kedua.', test: (c) => c.win && c.story && !!c.g.def.ng },
   { id: 'peringkatS', icon: '🅢', name: 'Nilai Sempurna', desc: 'Raih peringkat S di satu level.', test: (c) => c.win && c.story && c.rank === 'S' },
   { id: 'kaset', icon: '📼', name: 'Kolektor Kaset', desc: 'Temukan keenam kaset rahasia.', test: (c) => c.save.tapes.length >= LEVELS.length },
   { id: 'film5', icon: '🎥', name: 'Juru Kamera', desc: 'Rekam bukti lima penghuni.', test: (c) => filmed(c.save) >= 5 },

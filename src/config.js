@@ -133,6 +133,9 @@ export const LEVELS = [
   },
 ];
 
+// Putaran Kedua (after the ending): each story level is held by another resident.
+export const NG_CAST = ['clock', 'weaver', 'echo', 'squid', 'spider', 'pale'];
+
 // Every resident that can appear (Room menu + endless mode).
 export const RESIDENTS = ['pale', 'spider', 'gaper', 'shade', 'centipede', 'eyes', 'clock', 'weaver', 'echo', 'squid'];
 

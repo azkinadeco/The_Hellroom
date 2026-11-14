@@ -303,3 +303,7 @@ body.can-alarm .tbtn.alarm { display: block; }
 /* batch 38 */
 .archive-item.stat { display: flex; justify-content: space-between; gap: 12px; }
 .archive-item.stat b { font-weight: normal; color: var(--accent); text-align: right; }
+
+/* batch 39 */
+.back.ng { margin-top: 10px; width: 100%; text-align: left; }
+.back.ng.on { border-color: var(--danger); color: #ff8a80; }
