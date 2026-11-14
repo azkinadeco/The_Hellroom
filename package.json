@@ -1,6 +1,6 @@
 {
   "name": "the-hellroom",
-  "version": "0.1.0",
+  "version": "0.35.0",
   "private": true,
   "description": "THE HELLROOM - browser horror game (Three.js)",
   "scripts": {

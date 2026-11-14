@@ -3,7 +3,7 @@ import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { HUD } from './hud.js';
 import { Game } from './game.js';
-import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS } from './config.js';
+import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VERSION } from './config.js';
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
 import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
@@ -470,6 +470,9 @@ async function boot() {
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
   if (!DEV_ROOMS) $('btn-rooms').remove();
+  $('version').textContent = 'v' + VERSION + (DEV_ROOMS ? ' · uji' : '');
+  // installable + offline where the page is served securely
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
   buildTitle();
   show('title');
   let last = performance.now();

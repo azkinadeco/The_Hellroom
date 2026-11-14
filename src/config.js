@@ -75,6 +75,7 @@ export const DIFFICULTY = {
 // Test rooms in the main menu (Pilih Room): every map playable, resident
 // override and invulnerability. Pilih Level itself stays unlocked in order. Set to false for the public release.
 export const DEV_ROOMS = true;
+export const VERSION = '0.35';
 
 // Level definitions. Every level has exactly ONE resident. Layouts are
 // generated from the seed so every run of a level is identical.

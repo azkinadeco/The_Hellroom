@@ -33,12 +33,27 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 | Level | Nama | Penghuni |
 |---|---|---|
-| LEVEL 0 | Lorong Tak Berujung | Si Pucat |
-| LEVEL 1 | Sayap Detensi | Guru Bertopeng |
-| LEVEL 2 | Lab Biologi | Si Penganga |
-| LEVEL 3 | Mal Tanpa Ujung (toko-toko kosong yang berulang, separuh gelap) | Bayang Kelas |
-| LEVEL 4 | Kolam Renang (kolam keramik putih yang bersih dan terang, air setinggi lutut) | Kelabang |
-| LEVEL 5 | Ruang Patung (backroom berwallpaper kuning penuh patung tanpa wajah, final) | Mata Papan |
+| LEVEL 0 | Sekolah Malam (dua lantai) | Si Pucat |
+| LEVEL 1 | Sayap Detensi (panoptikon tiga lantai) | Laba-Laba Kaki |
+| LEVEL 2 | Rumah Sakit (tiga lantai + hutan dalam ruangan) | Si Penganga |
+| LEVEL 3 | Mal Tanpa Ujung (tiga lantai mengelilingi atrium) | Bayang Kelas |
+| LEVEL 4 | Kolam Renang (lima lantai, perosotan air) | Kelabang |
+| LEVEL 5 | Ruang Patung (museum tiga lantai, final) | Mata Papan |
+
+Jam Kakek, Penenun Tulang, Gema Retak, dan Perempuan Gurita menghuni Mode Tanpa Ujung.
+
+## Fitur batch 26–35
+
+- **Denah (M / PETA)**: denah kertas yang tergambar sendiri saat kamu menjelajah. Hanya memuat sel yang sudah kamu lihat: dinding, pintu (yang terkunci berwarna merah), nama ruangan, tangga, lift, panel, dan pintu darurat. `R` berganti lantai. Permainan tidak berhenti saat denah terbuka.
+- **Kejadian ganjil**: saat tidak ada yang mengejarmu, gedung tetap hidup: pintu terbuka sendiri, loker bergetar, langkah atau bisikan di belakangmu, bel sekolah, kapur di papan, listrik berkedip, dan sosok tanpa wajah di ujung lorong yang hilang begitu kamu menatapnya.
+- **Rekam bukti**: tahan zoom (Z) ke arah penghuni selama 6 detik untuk membuka *rekaman lapangan* penghuni itu di Arsip.
+- **Ritme patroli**: setelah kamu lolos dari kejaran, penghuni menjauh sebentar; setelah lama sepi, patroli berikutnya berakhir di dekatmu. Lamanya mengikuti tingkat kesulitan.
+- **Peringkat & lencana**: tiap level story dinilai S/A/B/C (waktu terhadap par, berapa kali terlihat, catatan, kaset, bukti). Ada 17 lencana di menu Arsip.
+- **Mode Tanpa Ujung**: mulai lantai -2 setiap lantai punya *kutukan* (listrik sekarat, kabut tebal, lantai bergema, baterai bocor, penghuni gelisah, pemadaman bergilir, lantai angker). Run yang ditinggalkan bisa dilanjutkan dari lantai terakhir. **Kaset Harian** adalah satu bangunan tetap per hari dengan catatan waktu terbaik.
+- **Gamepad & kenyamanan**: gamepad standar didukung; getaran di HP/gamepad. Pengaturan baru: sudut pandang 60–95°, teks besar, goyangan langkah, kurangi kedip lampu, getaran.
+- **Jam weker (Q / WEKER)**: item baru. Letakkan, lima detik kemudian ia berdering sembilan detik dan memanggil penghuni ke sana.
+- **Titik simpan**: memasang sekring di kotak panel menyimpan rekaman (bukan di Sulit / Tanpa Ujung). Setelah mati kamu bisa *Lanjut dari Panel*; tiap lanjut mengurangi nilai peringkat.
+- **PWA**: `manifest.webmanifest` + `sw.js` (network-first) membuat game bisa dipasang dan dimainkan offline bila disajikan lewat HTTPS atau localhost.
 
 Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker untuk bersembunyi, dan suasana yang janggal (musik mal yang samar, tetesan air kolam, dengung lampu backroom). Di kolam, berjalan di dalam air memperlambat langkahmu dan membuat setiap langkah terdengar jauh.
 
@@ -68,16 +83,9 @@ Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker
 
 **Pengumuman pengeras suara**: sesekali bel intercom berbunyi lalu ada pengumuman. Ada yang sekadar menyeramkan, ada yang membocorkan posisimu ke penghuni (sembunyi supaya tidak terlacak), dan ada yang memadamkan listrik ±14 detik.
 
-**Penghuni sekolah** (model 3D dibuat di Blender, `blender/entities3.py`, dari konsep di `Image Aset/`)
-- **Si Pucat**: makhluk pucat yang merangkak, tanpa mata, wajahnya cuma satu sobekan vertikal penuh gigi. Ia buta tapi mendengar segalanya. Jongkok aman, sedangkan berlari di dekatnya berarti dikejar.
-- **Guru Bertopeng**: guru jangkung bertopeng putih yang membawa penggaris besi. Ia bisa melihat dan mendengar, dan memeriksa loker. Bunyi penggaris diketuk ke telapak tangan menandakan ia dekat.
-- **Si Penganga**: makhluk tanpa kulit dengan rahang menganga sampai ke dada. Ia hanya bergerak saat tidak kamu lihat, dan dalam gelap tatapanmu tidak berarti.
-- **Bayang Kelas**: asap hitam dengan banyak pasang mata menyala. Ia hanya bisa bergerak di sel yang gelap dan mundur kalau disorot senter. Saat listrik padam, ia bebas ke mana saja.
-- **Mata Papan**: gumpalan daging dengan banyak mata dan akar yang tumbuh di papan tulis dan dinding. Kalau kamu berdiri dalam pandangannya, meteran tatapan terisi dan layar mulai bergetar. Suara keras membuatnya pindah ke papan terdekat.
-- **Kelabang**: tubuh-tubuh yang menyatu menjadi satu kelabang dengan kumpulan wajah menjerit. Ia melihat ke segala arah tapi jarak pandangnya pendek.
-- Penghuni lama (Petugas Ketertiban, Guru Pengganti, Kepala Sekolah, Si Murid) masih muncul di Mode Tanpa Ujung.
+**Penghuni**: sepuluh penghuni, semuanya model Blender dari konsep di `Image Aset/` (`blender/entities3.py`–`entities5.py`). Kisah, cara bertahan, model 3D, dan rekaman lapangan tiap penghuni ada di menu **Arsip** setelah kamu menemuinya.
 
-**Tempat sembunyi**: loker (mengintip lewat celah) dan bilik toilet (kaki penghuni yang lewat terlihat dari celah bawah pintu).
+**Tempat sembunyi**: 13 jenis (loker, bilik toilet, lemari, kolong meja/ranjang, tirai, kamar pas, photo box, bilik bilas, kabin ganti, peti, troli linen, laci jenazah, lemari arsip), semuanya didefinisikan di `HIDE` (`src/config.js`).
 
 **Sistem**: penghapus papan yang bisa dilempar untuk memancing Petugas, subtitle suara berarah (berguna saat iPhone dalam mode senyap), petunjuk tutorial di awal, resolusi otomatis turun kalau FPS drop, suara langkah (jalan, lari, jongkok), pintu yang terdengar jauh, loker dengan meteran napas, baterai handycam (senter dan mode malam), stamina, lampu neon yang berkedip atau mati, catatan lore, tiga tingkat kesulitan, progres tersimpan otomatis.
 
@@ -93,6 +101,8 @@ Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker
 | Mode malam | N | MALAM |
 | Zoom kamera | tahan Z | ZOOM (toggle) |
 | Lempar penghapus | G / klik kanan | LEMPAR |
+| Pasang jam weker | Q | WEKER |
+| Denah | M (R: ganti lantai) | PETA |
 | Tahan napas (di loker) | tahan Spasi | TAHAN NAPAS |
 | Tujuan | Tab | — |
 | Jeda | Esc | ❚❚ |
@@ -101,17 +111,21 @@ Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker
 
 ```
 index.html, css/style.css     UI dan HUD
-src/main.js                   boot, menu, save (localStorage)
-src/game.js                   state game, loop, mati/menang, loker, sekring
-src/config.js                 tuning dan definisi level
-src/level/generator.js        generator denah sekolah (seeded)
-src/level/map.js              grid + dinding tipis + line-of-sight
+manifest.webmanifest, sw.js   PWA (pasang + offline)
+src/main.js                   boot, menu, save (localStorage), layar menang/mati
+src/game.js                   state game, loop, lantai, lift, titik simpan, jam weker
+src/config.js                 tuning, HIDE, definisi level, endlessDef + kutukan
+src/automap.js                denah yang tergambar saat menjelajah
+src/events.js                 kejadian ganjil
+src/badges.js                 lencana + peringkat
+src/level/building.js         mesin gedung bertingkat (lantai, tangga, lift, item)
+src/level/layouts.js          denah tulisan tangan tiap level + generator Tanpa Ujung
 src/level/builder.js          mesh dinding/lantai, prop instanced, pintu, item
-src/render/bake.js            baked lighting per-vertex (ringan untuk GPU lemah)
-src/render/vhs.js             shader handycam VHS
-src/ai/entities.js, path.js   AI ketiga penghuni + pathfinding
+src/level/*.js                mal, kolam, arsitektur, tempat sembunyi, variasi prop
+src/render/                   baked lighting, shader VHS, dressing, decal cerita
+src/ai/                       otak penghuni + pathfinding
 src/player.js, world.js       gerak, kolisi
-src/interact.js, hud.js, audio.js, story.js
+src/interact.js, hud.js, input.js (keyboard, sentuh, gamepad), audio.js, story.js
 blender/                      pipeline aset Blender
 assets/                       hasil ekspor Blender
 ```
