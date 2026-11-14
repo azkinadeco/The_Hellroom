@@ -15,6 +15,7 @@ import { randomReachableCell } from './ai/path.js';
 import { Anomalies } from './anomalies.js';
 import { AutoMap } from './automap.js';
 import { OddEvents } from './events.js';
+import { addGlass } from './level/glass.js';
 import { NOTES, TAPES, PA_LINES, PA_THEME, FILM_NEED } from './story.js';
 import { clamp, damp, angleDiff } from './util/rng.js';
 
@@ -25,7 +26,7 @@ const CUES = {
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
   hiss: 'Desisan panjang', tick: 'Detak jam kakek', chime: 'Dentang lonceng jam', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
-  whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah', alarm: 'Jam weker berdering',
+  whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah', alarm: 'Jam weker berdering', glass: 'Pecahan kaca terinjak',
 };
 
 export class Game {
@@ -155,6 +156,7 @@ export class Game {
       }
       return 0;
     });
+    for (const f of this.floors) f.glass = def.glass === 0 ? [] : addGlass(f, def, start, f.k === startFloor);
     this.setFloor(startFloor);
     this.interactor = new Interactor(this);
     this.anomalies = new Anomalies(this);
@@ -676,6 +678,18 @@ export class Game {
     this.winT = 0;
     this.audio.doorCreak({ x: this.gen.exit.x, y: 1.2, z: this.gen.exit.z }, true);
     this.audio.setAmbience(false);
+  }
+
+  // called by the player on every footfall: broken glass underfoot
+  onStep(kind) {
+    const p = this.player, f = this.floors[this.floorK];
+    const P = f && f.glass && f.glass.find((q) => Math.hypot(q.x - p.pos.x, q.z - p.pos.z) < q.r);
+    if (!P) return;
+    if (kind === 'crouch') { this.hint('glass2', 'Pelan-pelan… jongkok membuat pecahan kaca tidak berbunyi.', 3.5); return; }
+    this.audio.glassCrunch({ x: P.x, y: 0.1, z: P.z }, kind === 'sprint' ? 1 : 0.7);
+    this.emitNoise(P.x, P.z, NOISE.glass * (kind === 'sprint' ? 1.25 : 1), 'glass');
+    this.stats.glass = (this.stats.glass || 0) + 1;
+    this.hint('glass', 'Pecahan kaca! Bunyinya terdengar jauh. Jongkok untuk melewatinya, atau cari jalan memutar.', 5);
   }
 
   // ---------------------------------------------------------------- assist

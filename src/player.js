@@ -144,6 +144,7 @@ export class Player {
       if (this.stepDist >= stride) {
         this.stepDist = 0;
         const kind = this.crouched ? 'crouch' : sprinting ? 'sprint' : 'walk';
+        if (game.onStep) game.onStep(kind);
         if (this.wading) {
           // wading is loud: every step splashes, crouching only softens it
           game.audio.splash(kind === 'crouch' ? 0.4 : kind === 'sprint' ? 1 : 0.7);

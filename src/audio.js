@@ -340,6 +340,16 @@ export class Audio {
     g.gain.setValueAtTime(0.06, t + 2.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
     o.start(t); mod.start(t); o.stop(t + 2.7); mod.stop(t + 2.7);
   }
+  // boots on broken glass: a few bright crackles
+  glassCrunch(pos, vol = 0.7) {
+    if (!this.ready) return;
+    this._cue('glass', pos);
+    for (let i = 0; i < 4; i++) {
+      const t = this.t + i * 0.035 + Math.random() * 0.02, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+      const f = this._filter('bandpass', 3200 + Math.random() * 3500, 5), g = this._out(pos, 0.3);
+      src.connect(f).connect(g); this._env(g, t, 0.001, 0.45 * vol * (1 - i * 0.15), 0.05 + Math.random() * 0.05); src.start(t, Math.random()); src.stop(t + 0.14);
+    }
+  }
   // wind-up alarm clock: a hard, fast double bell
   alarmRing(pos, dur = 0.75) {
     if (!this.ready) return;
