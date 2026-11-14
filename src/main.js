@@ -472,7 +472,7 @@ async function boot() {
   if (!DEV_ROOMS) $('btn-rooms').remove();
   $('version').textContent = 'v' + VERSION + (DEV_ROOMS ? ' · uji' : '');
   // installable + offline where the page is served securely
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  try { if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (_) { /* sandboxed frames refuse service workers */ }
   buildTitle();
   show('title');
   let last = performance.now();
