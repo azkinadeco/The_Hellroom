@@ -42,6 +42,17 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 115–127
+
+- **Kecepatan pengejar**: 8% lebih lambat, mulai 68% lalu naik dalam 2,2 detik, melambat 1,5 detik tiap 5–8 detik (ada bunyi dan ikon mata menyipit), dari jarak dekat hanya 3% lebih cepat dari larimu, melambat di tikungan tajam.
+- **Jumpscare**: hentakan wajah ke lensa, guncangan keras, frame merah/negatif, dentuman bass, kilasan wajah; gaya per penghuni (menerjang, jatuh dari atas, diam lalu menghantam); intensitas bisa diatur (Penuh/Lembut/Tenang).
+- **Saat dikejar**: warna memudar, tepi layar merah berdenyut mengikuti detak jantung, pandangan menyempit, nada naik makin dekat, guncangan langkah.
+- **Lolos**: napas lega dan teks "lolos". **Nyaris**: penghuni lewat di sebelahmu tanpa melihat.
+- **Pintu diganjal** jadi petunjuk: setelah didobrak, semua tempat sembunyi di ruangan itu digeledah.
+- **Menyerah lebih cepat** kalau kamu sudah jauh (>12 m / >18 m).
+- **Menyimak**: jongkok diam 1 detik meredam suara bangunan dan menonjolkan langkah.
+- **Lencana**: Nyaris, Lari Terus, Ketahuan dari Ganjal (38 lencana).
+
 ## Batch 105–114
 
 - **Garis di layar**: retakan prosedural (terbaca seperti goresan) dihapus; hujan di dekat lensa memudar; tracking band dan getaran baris mode VHS dihaluskan.
