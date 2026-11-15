@@ -320,6 +320,17 @@ export class Monitor extends Entity {
       case 'patrol': {
         this.checkLockers(dt);
         if (this.state !== 'patrol') break;
+        // now and then it stops dead and listens: hearing far sharper for a few seconds
+        if (this.listenT > 0) {
+          this.listenT -= dt; this.velocity = 0; this.yaw += Math.sin(g.time * 1.3) * dt * 0.6;
+          break;
+        }
+        if (this.hears !== false && g.time > (this.nextListen ?? (this.nextListen = g.time + 15 + Math.random() * 20)) && this.distTo(p.pos) < 26) {
+          this.nextListen = g.time + 22 + Math.random() * 25; this.listenT = 3; this.velocity = 0;
+          g.audio.sniff({ x: this.pos.x, y: 1.5, z: this.pos.z }); g.stats.listens = (g.stats.listens || 0) + 1;
+          if (this.distTo(p.pos) < 16) g.hint('listen', 'Penghuni berhenti dan mengendus: saat itu pendengarannya jauh lebih tajam. Diam dulu sampai ia bergerak lagi.', 5);
+          break;
+        }
         if ((this.awareness || 0) > 0.18 && this.glimpse && g.time - this.glimpse.t < 1.5) {   // something there? stop and look
           this.velocity = 0; this.faceToward(this.glimpse.x, this.glimpse.z, dt, 3); this.waitT = Math.max(this.waitT || 0, 0.6); break;
         }

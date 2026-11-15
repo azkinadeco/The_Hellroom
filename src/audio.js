@@ -370,6 +370,16 @@ export class Audio {
     const f = this._filter('lowpass', 350), g = this._out(pos, 0.6);
     src.connect(f).connect(g); this._env(g, t, 0.003, vol, 0.25); src.start(t, Math.random()); src.stop(t + 0.35);
   }
+  // a resident sniffing the air
+  sniff(pos) {
+    if (!this.ready) return;
+    this._cue('sniff', pos);
+    for (let i = 0; i < 3; i++) {
+      const t = this.t + i * 0.24, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+      const f = this._filter('bandpass', 1600 + i * 200, 2), g = this._out(pos, 0.3);
+      src.connect(f).connect(g); this._env(g, t, 0.04, 0.16, 0.14); src.start(t, Math.random()); src.stop(t + 0.22);
+    }
+  }
   // knuckles on a wall: three dull knocks
   knock(pos) {
     if (!this.ready) return;

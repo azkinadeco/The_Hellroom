@@ -25,7 +25,7 @@ import { clamp, damp, angleDiff } from './util/rng.js';
 // residents throw shadows in the flashlight beam
 function shadowCaster(obj) { if (obj) obj.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; }); }
 
-const CUES = {
+const CUES = { sniff: 'Sesuatu mengendus udara',
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
   hiss: 'Desisan panjang', tick: 'Detak jam kakek', chime: 'Dentang lonceng jam', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
@@ -492,7 +492,7 @@ export class Game {
     const m = this.map, rr = radius * this.diff.hearing * (type === 'step' ? (this.def.noiseMul || 1) * (this.inRain ? 0.55 : 1) : 1);
     let cost = null;
     for (const e of this.entities) {
-      let d = Math.hypot(e.pos.x - x, e.pos.z - z), r = rr;
+      let d = Math.hypot(e.pos.x - x, e.pos.z - z), r = rr * (e.listenT > 0 ? 1.8 : 1);
       if (d >= r) continue;
       // out of sight the sound has to find its way round: through doorways (a closed door muffles it), along halls
       if (!this.world.los(e.pos.x, e.pos.z, x, z)) {
@@ -1385,7 +1385,7 @@ export class Game {
     // sound ring: an arc round the crosshair pointing at the sound (red for the residents' own noises)
     if (this.settings.soundRing && !((kind === 'door' || kind === 'locker' || kind === 'glass') && d < 3)) {
       const rel = angleDiff(Math.atan2(-Math.sin(p.yaw), -Math.cos(p.yaw)), Math.atan2(dx, dz));
-      this.hud.ping(-rel, Math.max(0.25, 1 - d / 32), ['step', 'whistle', 'hiss', 'chorus', 'scream', 'bones', 'squelch', 'tick', 'chime', 'whisper', 'scrape'].includes(kind));
+      this.hud.ping(-rel, Math.max(0.25, 1 - d / 32), ['step', 'whistle', 'hiss', 'chorus', 'scream', 'bones', 'squelch', 'tick', 'chime', 'whisper', 'scrape', 'sniff'].includes(kind));
     }
     if (!this.settings.subs) return;
     if ((kind === 'door' || kind === 'locker') && d < 3) return; // the player's own actions
