@@ -163,7 +163,7 @@ export class Entity {
     const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, d = Math.hypot(dx, dz);
     const open = g.openness(p.pos.x, p.pos.z), mov = Math.min(p.moving || 0, 1.5);
     // how much of you there is to see
-    let vis = g.world.isLit(p.pos.x, p.pos.z) ? 1 : 0.45;
+    let vis = g.world.isLit(p.pos.x, p.pos.z) || this.darkSight ? 1 : 0.45;   // some see as well in the dark
     if (p.flashlight) {
       vis += 0.45;
       // the beam pointed straight at it gives you away from far off
@@ -544,7 +544,7 @@ export class Monitor extends Entity {
     this.printT = (this.printT || 0) - dt;
     if (this.printT > 0) return;
     this.printT = 0.6;
-    const q = P.near(g.floorK, this.pos.x, this.pos.z, 7, 30);
+    const q = P.near(g.floorK, this.pos.x, this.pos.z, this.keenNose ? 11 : 7, this.keenNose ? 40 : 30);
     if (!q || q === this.lastPrint) return;
     const dx = q.x - this.pos.x, dz = q.z - this.pos.z;
     if (Math.hypot(dx, dz) > 1.2 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) > 1.2) return;

@@ -37,7 +37,7 @@ export const ENTITY_INFO = {
     lore: 'Murid-murid yang tidak pernah pulang dari pelajaran renang. Mereka sekarang merayap bersama sebagai satu tubuh di kolam putih yang tak berujung, dan semua wajahnya masih menjerit.',
     name: 'Kelabang Murid',
     death: 'Kelabang Murid menangkapmu. Wajah-wajahnya melihat ke segala arah. Kamu tidak bisa menyelinap di belakangnya, jadi putuskan garis pandangnya dengan pintu dan dinding.',
-    hint: 'Kelabang Murid melihat ke segala arah, tapi jarak pandangnya pendek. Gunakan dinding dan loker untuk memutus pandangannya.',
+    hint: 'Kelabang Murid melihat ke segala arah, tapi jarak pandangnya pendek. Ia mencium jejak kaki basah dari jauh: keringkan sepatumu sebelum masuk ruangan.',
   },
   spider: {
     lore: 'Tubuh laba-laba sebesar lemari, berjalan dengan empat kaki manusia yang lututnya menekuk ke atas. Di bawah perutnya tergantung seorang perempuan, terbalik, mulutnya selalu terbuka. Jeritannya terdengar sebelum langkahnya.',
@@ -49,13 +49,13 @@ export const ENTITY_INFO = {
     lore: 'Jam kakek tua dari ruang kepala sekolah yang suatu malam berdiri di atas dua kaki. Detaknya terdengar dari ujung lorong. Di dalam pintunya, di samping bandul, menggantung sebuah lidah.',
     name: 'Jam Berlidah',
     death: 'Jam Berlidah menangkapmu. Dengarkan detaknya: makin keras, makin dekat. Saat lonceng berdentang, ia sudah melihatmu.',
-    hint: 'Detak jam = Jam Berlidah di dekatmu. Ia lambat berjalan tapi tidak pernah berhenti mengejar selama masih melihatmu.',
+    hint: 'Detak jam = Jam Berlidah di dekatmu. Ia lambat berjalan tapi tidak pernah berhenti mengejar selama masih melihatmu. Kalau detaknya tiba-tiba berhenti, ia sedang diam mendengarkan.',
   },
   weaver: {
     lore: 'Seorang perempuan tanpa kulit yang dililit tulang punggungnya sendiri. Di sepanjang tulang itu tumbuh mata-mata biru dan tangan-tangan kecil. Ia menyeret tumpukan tulang di bawah tubuhnya ke mana pun ia pergi.',
     name: 'Penenun Tulang',
     death: 'Penenun Tulang menangkapmu. Mata di tulang punggungnya melihat ke segala arah, tapi tidak jauh. Jaga jarak dan putuskan pandangannya dengan dinding.',
-    hint: 'Penenun Tulang melihat ke segala arah dalam jarak dekat. Ia lambat. Jangan biarkan ia mendekat tanpa kamu sadari: dengarkan bunyi basahnya.',
+    hint: 'Penenun Tulang melihat ke segala arah dalam jarak dekat, dan gelap tidak menyembunyikanmu darinya. Ia lambat. Dengarkan bunyi basahnya.',
   },
   echo: {
     lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.\n\nDi Museum Bisu ia tidak berjalan di lorong. Ia masuk ke dalam patung dan menunggu di arah yang kamu tuju, berpindah hanya saat kamu tidak melihat. Kalau kamu berdiri terlalu dekat, patungnya berderak selama dua detik lalu pecah. Ia berdiri diam sejenak sebelum mengejar. Kalau kehilangan jejakmu ia menunggu, berjalan pergi perlahan, lalu hilang ke patung lain.',
@@ -67,7 +67,7 @@ export const ENTITY_INFO = {
     lore: 'Seorang perempuan berambut basah yang pinggangnya berubah menjadi tentakel gurita. Ia berbisik dari ujung lorong supaya kamu mendekat. Organ-organnya terlihat di balik kain yang robek.',
     name: 'Sang Pembisik',
     death: 'Sang Pembisik menangkapmu. Bisikannya memancingmu mendekat. Begitu ia melihatmu, larilah dan putuskan pandangannya.',
-    hint: 'Kalau terdengar bisikan, Sang Pembisik ada di dekat sana. Pendengarannya tajam: jalan pelan dan jongkok.',
+    hint: 'Kalau terdengar bisikan, Sang Pembisik ada di dekat sana. Pendengarannya tajam, dan ia meniru ketukan di dinding untuk memancingmu.',
   },
 };
 
@@ -107,6 +107,7 @@ class Centipede extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'centipede', { walk: 1.15, run: 3.8, sight: [12, 360, 28, 360], stepEvery: 0.45, stepVol: [0.1, 0.2], radius: 0.6 });
     this.reach = 0.6;
+    this.keenNose = true;   // it follows wet prints from further and for longer
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
 }
@@ -138,7 +139,9 @@ class Clock extends Monitor {
   chaseSound() { const a = this.game.audio; a.chime(this.pos); this.game.schedule(0.9, () => a.chime(this.pos)); }
   update(dt) {
     this.tickT -= dt;
-    if (this.tickT <= 0) { this.tickT = this.state === 'chase' ? 0.5 : 1.0; if (this.distTo(this.game.player.pos) < 26) this.game.audio.tick(this.pos, this.state === 'chase' ? 0.9 : 0.6); }
+    // the ticking stops while it waits or listens: silence from a clock is the dangerous sound
+    const quiet = this.state === 'wait' || this.listenT > 0;
+    if (this.tickT <= 0) { this.tickT = this.state === 'chase' ? 0.5 : (this.awareness || 0) > 0.45 ? 0.7 : 1.0; if (!quiet && this.distTo(this.game.player.pos) < 26) this.game.audio.tick(this.pos, this.state === 'chase' ? 0.9 : 0.6); }
     super.update(dt);
   }
 }
@@ -149,6 +152,7 @@ class Weaver extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'weaver', { walk: 1.0, run: 3.7, sight: [11, 360, 26, 360], stepEvery: 0.9, stepVol: [0.1, 0.2], radius: 0.6 });
     this.reach = 0.35;
+    this.darkSight = true;   // the eyes along its spine see as well in the dark
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
   update(dt) {
@@ -171,6 +175,9 @@ class Squid extends Monitor {
   update(dt) {
     this.lureT -= dt;
     if (this.lureT <= 0) { this.lureT = 5 + Math.random() * 5; const d = this.distTo(this.game.player.pos); if (d < 24 && this.state !== 'chase') this.game.audio.whisper(this.pos, 0.6); }
+    // it has learnt the player's trick: now and then it knocks on a wall itself, so a knock is no longer proof of a friend
+    this.knockT = (this.knockT ?? 20 + Math.random() * 15) - dt;
+    if (this.knockT <= 0) { this.knockT = 25 + Math.random() * 20; if (this.state !== 'chase' && this.distTo(this.game.player.pos) < 22) { this.game.audio.knock({ x: this.pos.x, y: 1.3, z: this.pos.z }); this.game.stats.fakeKnocks = (this.game.stats.fakeKnocks || 0) + 1; } }
     if ((this.velocity || 0) > 0.2) { this.wetT = (this.wetT || 1) - dt; if (this.wetT <= 0) { this.wetT = 0.9; this.game.audio.squelch(this.pos, 0.3); } }
     super.update(dt);
   }
