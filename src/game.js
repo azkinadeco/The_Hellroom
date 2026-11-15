@@ -634,6 +634,21 @@ export class Game {
     return true;
   }
 
+  // a closed door right in front of the player, for peeking through its keyhole
+  keyholeDoor() {
+    const p = this.player;
+    if (!this.built || p.hidden || !p.alive) return null;
+    const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw);
+    let best = null, bd = 1.15;
+    for (const d of this.built.doors) {
+      if (d.openAmount > 0.05 || d.target) continue;
+      const dx = d.x - p.pos.x, dz = d.z - p.pos.z, dist = Math.hypot(dx, dz);
+      if (dist > bd || (dx * fx + dz * fz) / Math.max(dist, 1e-3) < 0.6) continue;
+      best = d; bd = dist;
+    }
+    return best;
+  }
+
   // the wall straight in front of the player, if there is one within reach
   wallAhead() {
     const p = this.player;

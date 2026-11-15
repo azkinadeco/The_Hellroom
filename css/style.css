@@ -465,3 +465,9 @@ body.can-knock .tbtn.knock { display: flex; }
 .archive-item.hist span { display: flex; flex-direction: column; }
 .archive-item.hist small { font-size: 12px; }
 .archive-item.hist b.dead { color: #ff8a80; }
+
+/* batch 85: keyhole */
+.keyhole-mask { position: absolute; inset: 0; width: 100%; height: 100%; display: none; pointer-events: none; }
+.keyhole-mask path { fill: #000; }
+body.keyhole .keyhole-mask { display: block; filter: drop-shadow(0 0 18px #000); }
+body.keyhole .crosshair, body.keyhole .prompt { display: none; }

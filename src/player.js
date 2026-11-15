@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { PLAYER, NOISE, hideOf } from './config.js';
 import { clamp, damp } from './util/rng.js';
 
+const angleWrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
+
 export class Player {
   constructor(camera, scene) {
     this.camera = camera;
@@ -109,6 +111,19 @@ export class Player {
     }
 
     // ----- movement -----
+    // keyhole: lean at a closed door and you look through it instead (the body stays put)
+    const lw = input.lean ? input.lean() : 0;
+    const kd = lw ? game.keyholeDoor() : null;
+    if (kd && !this.peekDoor) { this.peekDoor = kd; this.peekBase = this.yaw; game.stats.keyholes = (game.stats.keyholes || 0) + 1; game.audio.click(); }
+    if (!kd && this.peekDoor) { this.peekDoor = null; this.yaw = this.peekBase; }
+    document.body.classList.toggle('keyhole', !!this.peekDoor);
+    if (this.peekDoor) {
+      this.yaw = this.peekBase + clamp(angleWrap(this.yaw - this.peekBase), -0.45, 0.45);
+      this.pitch = clamp(this.pitch, -0.3, 0.25);
+      this.vel.set(0, 0); this.moving = 0; this.lean = 0;
+      this._applyCamera(dt);
+      return;
+    }
     const ax = input.axis();
     // lean round a corner: the head moves out, the body stays behind the wall
     const want = input.lean ? input.lean() : 0;
@@ -178,6 +193,12 @@ export class Player {
     const by = Math.abs(Math.sin(this.bob)) * bobAmt;
     const bx = Math.cos(this.bob) * bobAmt * 0.5;
     const c = this.camera;
+    if (this.peekDoor) {   // the eye at the keyhole, on the far side of the leaf
+      const d = this.peekDoor, nx = d.kind === 'v' ? Math.sign(d.x - this.pos.x) || 1 : 0, nz = d.kind === 'h' ? Math.sign(d.z - this.pos.z) || 1 : 0;
+      c.position.set(d.x + nx * 0.14, (this.y || 0) + 1.02, d.z + nz * 0.14);
+      c.rotation.set(this.pitch, this.yaw, 0);
+      return;
+    }
     if (this.hidden) {
       c.position.set(this.hidden.camX, this.eye, this.hidden.camZ);
     } else {
