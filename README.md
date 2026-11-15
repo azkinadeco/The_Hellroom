@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 105–114
+
+- **Garis di layar**: retakan prosedural (terbaca seperti goresan) dihapus; hujan di dekat lensa memudar; tracking band dan getaran baris mode VHS dihaluskan.
+- **Pengejaran prediktif**: saat kehilanganmu, pengejar berlari ke perkiraan posisimu 1,6 detik kemudian.
+- **Pencarian per ruangan**: memeriksa ruangan terdekat dari pintunya, tidak mengulang ruangan yang baru diperiksa.
+- **Pendengaran**: posisi suara diperkirakan dengan galat (lebih besar kalau samar atau lewat sudut); suara samar hanya membuatnya menoleh.
+- **Sorot senter** di dinding gelap terlihat penghuni.
+- **Belajar**: dua kali tertipu pengalih yang sama dalam semenit, yang ketiga 65% diabaikan.
+- **Fase akhir**: 40% patroli menjaga kotak panel / pintu darurat.
+- **Hati-hati**: 3,5 m terakhir ke titik yang diperiksa dilalui pelan, kepala menyapu, lebih awas.
+- **Ruang Uji**: opsi "Tampilkan otak penghuni".
+
 ## Batch 95–104
 
 - **Napas terengah** setelah stamina habis terdengar penghuni; menahan napas meredamnya (juga di luar tempat sembunyi).
