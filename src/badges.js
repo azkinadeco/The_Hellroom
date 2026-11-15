@@ -40,6 +40,9 @@ export const BADGES = [
   { id: 'halu', icon: '🌀', name: 'Tidak Nyata', desc: 'Alami halusinasi karena ketakutan terlalu lama.', test: (c) => (c.g.stats.hallucinations || 0) > 0 },
   { id: 'tahan', icon: '🤐', name: 'Napas Tertahan', desc: 'Redam napas terengahmu dengan menahan napas.', test: (c) => (c.g.stats.stifled || 0) > 0 },
   { id: 'peta', icon: '🗺', name: 'Juru Peta', desc: 'Catat sepuluh barang di denah dalam satu permainan.', test: (c) => (c.g.stats.mapped || 0) >= 10 },
+  { id: 'nyaris', icon: '😶', name: 'Nyaris', desc: 'Biarkan penghuni lewat tepat di sebelahmu tanpa melihatmu.', test: (c) => (c.g.stats.nearMisses || 0) > 0 },
+  { id: 'lolos2', icon: '💨', name: 'Lari Terus', desc: 'Lolos dari lima kejaran dalam satu bab, lalu selesaikan.', test: (c) => c.win && (c.g.stats.escapes || 0) >= 5 },
+  { id: 'gerebek', icon: '🔍', name: 'Ketahuan dari Ganjal', desc: 'Selamat saat penghuni menggeledah ruangan yang kamu ganjal.', test: (c) => c.win && (c.g.stats.roomRaids || 0) > 0 },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 
