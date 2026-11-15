@@ -533,7 +533,23 @@ export class Game {
       return null;
     }
     if (this.quietT > this.diff.quiet) { this.quietT = this.diff.quiet * 0.4; this.stats.lured = (this.stats.lured || 0) + 1; return randomReachableCell(m, Math.random, px, pz, 4, 8); }
+    // end game: once the power is back (or one fuse short), the residents start to haunt the way out
+    const guard = this.guardPatrol(e, cx, cz);
+    if (guard) return guard;
     return this.coverPatrol(e, px, pz, cx, cz);
+  }
+  guardPatrol(e, cx, cz) {
+    const late = this.powered || this.fusesInstalled >= (this.def.fuses || 0) - 1;
+    if (!late || this.def.training || Math.random() > 0.4) return null;
+    const f = this.floors[this.floorK], spot = (this.powered ? f.gen.exit : null) || f.gen.fusebox || f.gen.exit;
+    if (!spot || !spot.cell) return null;
+    const m = this.map, dist = m.bfs(spot.cell[0], spot.cell[1]), from = m.bfs(cx, cz), cand = [];
+    for (let i = 0; i < dist.length; i++) if (dist[i] >= 1 && dist[i] <= 3 && from[i] >= 0 && !(m.avoid && m.avoid[i])) cand.push(i);
+    if (!cand.length) return null;
+    const i = cand[Math.floor(Math.random() * cand.length)];
+    this.stats.guards = (this.stats.guards || 0) + 1;
+    if (Math.hypot(...m.center(i % m.W, (i / m.W) | 0).map((v, k) => v - (k ? this.player.pos.z : this.player.pos.x))) < 30) this.hint('guard', this.powered ? 'Listrik menyala, dan penghuni mulai berkeliaran di dekat pintu darurat. Tunggu ia pergi sebelum mendekat.' : 'Tinggal satu sekring: penghuni mulai berjaga di dekat kotak panel.', 6);
+    return [i % m.W, (i / m.W) | 0];
   }
   // Ordinary patrol leg: prefer rooms nobody has walked through for a while,
   // and halls the player has spent time in (an old trail, never where they stand now).
