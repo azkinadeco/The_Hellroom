@@ -233,6 +233,7 @@ export class Entity {
     this.mixAcc = (this.mixAcc || 0) + dt;
     if ((Math.hypot(cam.x - this.pos.x, cam.z - this.pos.z) < 20 && !this.culled) || this.mixAcc >= (this.culled ? 0.25 : 0.1)) { this.mixer.update(this.mixAcc); this.mixAcc = 0; }
     this.obj.position.copy(this.pos);
+    if (this.dropY) this.obj.position.y += this.dropY;
     if (this.game.stairs && this.game.stairs.length) this.obj.position.y += this.game.groundY(this.pos.x, this.pos.z);
     this.obj.rotation.y = this.yaw;
     this.bakeT -= dt;

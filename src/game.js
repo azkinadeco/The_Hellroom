@@ -787,12 +787,18 @@ export class Game {
       p.hidden = null;
       p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
     }
-    this.audio.jumpscare();
-    this.audio.impact();
-    this.input.rumble(700, 1);
-    this.schedule(0.35, () => this.input.rumble(200, 0.8)); this.schedule(1.15, () => this.input.rumble(260, 1));
-    this.audio.sting(entity.kind, entity.pos);
-    this.ui.scare && this.ui.scare(this.clear);
+    // how it gets you: most lunge, the spider drops from above, the clock and the statue stand silent first
+    this.scareStyle = entity.kind === 'spider' ? 'drop' : (entity.kind === 'clock' || entity.statue) ? 'still' : 'lunge';
+    this.scareDelay = this.scareStyle === 'still' ? 0.45 : 0;
+    const hit = () => {
+      if (this.deathT < 0) return;
+      this.audio.jumpscare(); this.audio.impact();
+      this.input.rumble(700, 1);
+      this.schedule(0.35, () => this.input.rumble(200, 0.8)); this.schedule(1.15, () => this.input.rumble(260, 1));
+      this.audio.sting(entity.kind, entity.pos);
+      this.ui.scare && this.ui.scare(this.clear);
+    };
+    if (this.scareDelay) { this.audio.setAmbience(false); this.schedule(this.scareDelay, hit); } else hit();
     this.input.resetToggles();
   }
 
@@ -1247,14 +1253,16 @@ export class Game {
     // death sequence: snap to the resident's face, FOV punch, fall, cut to static
     if (this.deathT >= 0) {
       this.deathT += dt;
-      const k = this.killer, T = this.deathT;
+      const k = this.killer, T0 = this.deathT, T = Math.max(0, T0 - (this.scareDelay || 0));   // T: time since the hit
+      const pre = T0 < (this.scareDelay || 0);   // the silent beat before a 'still' catch
+      if (this.scareStyle === 'drop') k.dropY = Math.max(0, 1.8 * (1 - T / 0.22));
       const head = k.headNode ? k.headNode.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(k.pos.x, 1.7, k.pos.z);
       const dx = k.pos.x - p.camera.position.x, dz = k.pos.z - p.camera.position.z;
       const dist = Math.hypot(dx, dz);
       // pull it right up to the lens and make it face us
       const want = { centipede: 1.0, eyes: 0.9, spider: 1.3, clock: 0.8, weaver: 0.9, echo: 1.0, squid: 0.9 }[k.kind] ?? 0.62;
       // it lunges right into the lens, then settles back a little: the face fills the frame for an instant
-      const reach = T < 0.18 ? want * 0.55 : want;
+      const reach = T0 < (this.scareDelay || 0) ? want * 1.6 : T < 0.18 ? want * 0.55 : want;
       if (dist > reach) { const step = Math.min(dist - reach, dt * (T < 0.18 ? 26 : 5)); k.pos.x -= (dx / dist) * step; k.pos.z -= (dz / dist) * step; }
       else if (T >= 0.18 && dist < want) { const step = Math.min(want - dist, dt * 1.5); k.pos.x += (dx / dist) * step; k.pos.z += (dz / dist) * step; }
       k.yaw = Math.atan2(-dx, -dz);
@@ -1262,26 +1270,26 @@ export class Game {
       const tYaw = Math.atan2(-hx, -hz);
       const tPitch = Math.atan2(head.y - p.camera.position.y, Math.hypot(hx, hz));
       let dy = tYaw - p.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
-      const snap = Math.min(1, dt * (T < 0.3 ? 30 : 10));
+      const snap = Math.min(1, dt * (T0 < (this.scareDelay || 0) ? 2.5 : T < 0.3 ? 30 : 10));
       p.yaw += dy * snap; p.pitch += (tPitch - p.pitch) * snap;
       p.lookLock = true;
       // lens punch-in, then the camcorder drops
-      const fovT = T < 0.12 ? 44 : T < 1.0 ? 50 : 50 + (T - 1.0) * 30;
+      const fovT = pre ? this.baseFov : T < 0.12 ? 44 : T < 1.0 ? 50 : 50 + (T - 1.0) * 30;
       this.camera.fov += (fovT - this.camera.fov) * Math.min(1, dt * 18); this.camera.updateProjectionMatrix();
       this.deathRoll = T > 1.0 ? Math.min(1.3, (T - 1.0) * 2.4) : 0;
       this.deathDrop = T > 1.0 ? Math.min(1.1, (T - 1.0) * 2.0) : 0;
       { // the camera is knocked about: hard at the hit, softer while it stares, again on the second flash
-        const amp = this.calm ? 0.01 : (T < 0.35 ? 0.16 * (1 - T / 0.35) + 0.04 : T > 1.12 && T < 1.3 ? 0.09 : 0.02) * (this.clear ? 0.6 : 1);
+        const amp = pre ? 0.004 : this.calm ? 0.01 : (T < 0.35 ? 0.16 * (1 - T / 0.35) + 0.04 : T > 1.12 && T < 1.3 ? 0.09 : 0.02) * (this.clear ? 0.6 : 1);
         p.camera.position.x += (Math.random() - 0.5) * amp; p.camera.position.y += (Math.random() - 0.5) * amp;
         p.camera.rotation.z += (Math.random() - 0.5) * amp * 0.8;
       }
       // flash frames: red, negative, red at the hit; a negative frame and its face once more just before the tape dies
       if (!this.calm) {
-        this.scareFrame = T < 0.05 ? 1 : T < 0.09 ? 2 : T < 0.13 ? 1 : T > 1.15 && T < 1.21 ? 2 : 0;
+        this.scareFrame = pre ? 0 : T < 0.05 ? 1 : T < 0.09 ? 2 : T < 0.13 ? 1 : T > 1.15 && T < 1.21 ? 2 : 0;
         if (T > 1.15 && !this.faceFlashed) { this.faceFlashed = true; this.audio.flashHit(); this.ui.faceFlash && this.ui.faceFlash(k.kind); }
       } else this.scareFrame = 0;
       // short tear on impact, a clean look at its face, then the tape breaks up
-      this.glitch = this.clear ? 0 : T < 0.08 ? 0.7 : T < 1.0 ? 0.04 : clamp((T - 1.0) * 1.2, 0, 1);
+      this.glitch = this.clear || pre ? 0 : T < 0.08 ? 0.7 : T < 1.0 ? 0.04 : clamp((T - 1.0) * 1.2, 0, 1);
       this.vhs.uniforms.uFade.value = clamp((T - 1.35) / 0.35, 0, 1);
       if (T > 1.75 && this.state === 'playing') {
         this.state = 'dead';
