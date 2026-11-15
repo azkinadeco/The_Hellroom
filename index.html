@@ -141,6 +141,15 @@
       <label class="row">Bantuan arah (tanda di denah saat lama buntu) <input id="set-assist" type="checkbox" /></label>
       <label class="row">Getaran (HP & gamepad) <input id="set-vib" type="checkbox" /></label>
       <label class="row">Balik sumbu Y <input id="set-inv" type="checkbox" /></label>
+      <label class="row">Tampilkan FPS <input id="set-fps" type="checkbox" /></label>
+      <h3>Data progres</h3>
+      <div class="seg wrap">
+        <button id="save-export">Salin kode progres</button>
+        <button id="save-import">Tempel kode progres</button>
+        <button id="save-reset">Hapus semua progres</button>
+      </div>
+      <textarea id="save-code" class="save-code hidden" rows="3" spellcheck="false" placeholder="Tempel kode progres di sini, lalu tekan Tempel kode progres sekali lagi"></textarea>
+      <p id="save-msg" class="dim small"></p>
       <h3 class="kb-only">Tombol keyboard</h3>
       <div id="bind-list" class="bind-list kb-only"></div>
       <button id="bind-reset" class="back kb-only">Kembalikan tombol bawaan</button>
@@ -227,6 +236,7 @@
     <div class="caption" id="caption"></div>
     <div class="louvers" id="louvers"></div>
     <div class="objectives" id="objectives"></div>
+    <div class="fps hidden" id="hud-fps"></div>
     <div class="automap" id="automap"><canvas id="automap-canvas"></canvas><div id="automap-label"></div></div>
   </div>
 
@@ -275,6 +285,7 @@
       <p id="win-text" class="win-text"></p>
       <nav class="menu row-menu">
         <button id="btn-next" class="primary">Level Berikutnya</button>
+        <button id="btn-share" class="hidden">Salin hasil</button>
         <button id="btn-win-menu">Menu</button>
       </nav>
     </div>

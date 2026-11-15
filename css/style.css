@@ -324,3 +324,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .menu button:focus-visible::before { content: '▸ '; color: var(--accent); }
 .primary:focus-visible { outline: 2px solid var(--accent) !important; }
 .primary:focus-visible::before { content: '' !important; }
+
+/* batch 44 */
+.fps { position: absolute; right: 28px; bottom: 22px; font-size: 18px; color: var(--dim); }
+.save-code { width: 100%; margin-top: 8px; background: #0c0d0c; color: var(--ink); border: 1px solid var(--line); font: 14px ui-monospace, Menlo, monospace; padding: 6px; user-select: text; -webkit-user-select: text; }

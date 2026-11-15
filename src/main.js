@@ -124,6 +124,7 @@ const ui = {
     hud.show(false); $('touch-layer').classList.add('hidden');
     const t = Math.floor(game.time);
     countRun('win'); lastDeath = null;
+    $('btn-share').classList.add('hidden');
     if (game.def.daily) {
       const prev = save.daily[game.def.daily], isBest = !prev || t < prev;
       save.daily = { [game.def.daily]: isBest ? t : prev };   // only today is kept
@@ -135,6 +136,7 @@ const ui = {
         .map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
       $('win-text').textContent = 'Besok bangunannya berbeda. Hari ini kamu masih bisa mencoba lebih cepat.' + badgeLine(newB);
       $('btn-next').textContent = 'Coba Lebih Cepat';
+      $('btn-share').classList.remove('hidden'); $('btn-share').textContent = 'Salin hasil';
       show('win');
       return;
     }
@@ -458,9 +460,44 @@ function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
   $('set-screen').value = s.screen; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
-  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist;
+  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps;
+  $('save-msg').textContent = ''; $('save-code').classList.add('hidden'); resetArmed = false; $('save-reset').textContent = 'Hapus semua progres';
   buildBinds();
 }
+// ---- progress as a code: copy it out, paste it in on another device
+let resetArmed = false;
+const encodeSave = () => btoa(unescape(encodeURIComponent(JSON.stringify(save))));
+function copyText(text) {
+  try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => true, () => false); } catch (_) { /* fall through */ }
+  return Promise.resolve(false);
+}
+$('save-export').onclick = async () => {
+  const code = encodeSave(), ok = await copyText(code);
+  const ta = $('save-code'); ta.classList.remove('hidden'); ta.value = code; ta.select();
+  $('save-msg').textContent = ok ? 'Kode progres disalin. Simpan di tempat aman.' : 'Salin kode di atas secara manual.';
+};
+$('save-import').onclick = () => {
+  const ta = $('save-code');
+  if (ta.classList.contains('hidden') || !ta.value.trim()) { ta.classList.remove('hidden'); ta.value = ''; ta.focus(); $('save-msg').textContent = 'Tempel kodenya, lalu tekan tombol ini sekali lagi.'; return; }
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob(ta.value.trim()))));
+    if (!data || typeof data !== 'object' || !data.settings || !Array.isArray(data.met)) throw new Error('bentuk');
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    $('save-msg').textContent = 'Progres dimuat. Memuat ulang…';
+    setTimeout(() => location.reload(), 600);
+  } catch (_) { $('save-msg').textContent = 'Kode tidak valid. Progresmu tidak diubah.'; }
+};
+$('save-reset').onclick = () => {
+  if (!resetArmed) { resetArmed = true; $('save-reset').textContent = 'Yakin? Tekan sekali lagi'; $('save-msg').textContent = 'Semua level, arsip, lencana, dan rekor akan hilang. Pengaturan tetap.'; return; }
+  const keep = save.settings;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...structuredClone(defaults), settings: keep })); } catch (_) { /* ignore */ }
+  location.reload();
+};
+$('btn-share').onclick = async () => {
+  const d = String(game.def.daily), t = save.daily[game.def.daily];
+  const text = `THE HELLROOM · Kaset Harian ${d.slice(6)}/${d.slice(4, 6)}/${d.slice(0, 4)}\n${game.def.name} — ${fmt(t)} (${DIFFICULTY[game.diffKey].label}, terlihat ${game.stats.spotted}×)`;
+  $('btn-share').textContent = (await copyText(text)) ? 'Tersalin ✓' : 'Gagal menyalin';
+};
 function buildBinds() {
   const s = save.settings, list = $('bind-list'); list.innerHTML = '';
   const binds = { ...DEFAULT_BINDS, ...(s.binds || {}) };
@@ -489,11 +526,11 @@ function readSettings() {
   const s = save.settings;
   s.sens = +$('set-sens').value; s.volume = +$('set-vol').value; s.quality = $('set-quality').value;
   s.screen = $('set-screen').value; s.invertY = $('set-inv').checked; s.subs = $('set-subs').checked;
-  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked;
+  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked;
   persist();
   if (game) game.applySettings();
 }
-for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist']) $(id).addEventListener('input', readSettings);
+for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps']) $(id).addEventListener('input', readSettings);
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');

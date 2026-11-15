@@ -8,7 +8,7 @@ export class HUD {
     this.batt = $('hud-batt'); this.battPct = $('hud-batt-pct'); this.mode = $('hud-mode');
     this.obj = $('hud-obj');
     this.prompt = $('prompt'); this.cross = $('crosshair');
-    this.stam = $('m-stamina'); this.breath = $('m-breath'); this.gaze = $('m-gaze'); this.film = $('m-film');
+    this.stam = $('m-stamina'); this.breath = $('m-breath'); this.gaze = $('m-gaze'); this.film = $('m-film'); this.fps = $('hud-fps'); this.fpsT = 0;
     this.toastEl = $('toast'); this.toastT = 0;
     this.louvers = $('louvers');
     this.objectives = $('objectives'); this.objT = 0;
@@ -69,6 +69,9 @@ export class HUD {
     this.gaze.classList.toggle('show', gz > 0.02);
     this.gaze.classList.toggle('warn', gz > 0.6);
     this.gaze.querySelector('i').style.width = (gz * 100) + '%';
+    const showFps = !!g.settings.fps;
+    if (this._last.fpsOn !== showFps) { this._last.fpsOn = showFps; this.fps.classList.toggle('hidden', !showFps); }
+    if (showFps && (this.fpsT -= dt) <= 0) { this.fpsT = 0.5; this.fps.textContent = `${Math.round(1 / Math.max(g.frameEma, 1e-3))} FPS · ${Math.round(g.vhs.scale * 100)}%`; }
     const fm = g.filmFx;
     this.film.classList.toggle('show', !!fm);
     if (fm) this.film.querySelector('i').style.width = (fm.f * 100) + '%';
