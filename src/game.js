@@ -44,6 +44,7 @@ export class Game {
     this.player = new Player(this.camera, this.scene);
     this.ambient = new THREE.AmbientLight(0xd8e0d0, 0.05);
     this.scene.add(this.ambient);
+    this.audio.occlude = (pos) => this.occlusion(pos);
     this.dust = new Dust(260);
     this.scene.add(this.dust.points);
     // haze in the torch beam, mist on the floor, an uneven lens
@@ -560,6 +561,25 @@ export class Game {
     if (room && room.type === 'forest') return 'carpet';
     if (this.def.layout === 'hospital' || (room && ['restroom', 'lapangan', 'stairs', 'lift'].includes(room.type))) return 'tile';
     return 'wood';
+  }
+
+  // How clearly the player hears a sound at pos: 1 in plain view, lower the further the sound has
+  // to travel round walls (closed doors count extra), about 0.15 when it only gets through stone.
+  occlusion(pos) {
+    const m = this.map, cam = this.camera;
+    if (!m || this.state !== 'playing') return 1;
+    if (pos.y !== undefined && Math.abs(pos.y - cam.position.y) > 2.6) return this.openness(pos.x, pos.z) ? 0.7 : 0.3;   // another storey
+    const lx = cam.position.x, lz = cam.position.z;
+    if (m.los(lx, lz, pos.x, pos.z)) return 1;
+    const [cx, cz] = m.cellOf(lx, lz);
+    if (!this._occ || this._occ.k !== cx + cz * m.W || this._occ.map !== m || this.time - this._occ.t > 0.25) {
+      this._occ = { k: cx + cz * m.W, map: m, t: this.time, cost: Float32Array.from(m.soundCost(cx, cz, 14)) };
+    }
+    const [sx, sz] = m.cellOf(pos.x, pos.z);
+    if (!m.inside(sx, sz)) return 0.5;
+    const c = this._occ.cost[sx + sz * m.W], d = Math.hypot(pos.x - lx, pos.z - lz);
+    if (!isFinite(c)) return 0.18;
+    return Math.max(0.2, Math.min(0.8, 0.8 - (Math.max(0, (c - 0.5) * CELL - d)) / 30));
   }
 
   // 2 = under the open sky (courtyard, forest hall, roofless), 1 = an atrium or void several storeys high, 0 = indoors

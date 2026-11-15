@@ -65,12 +65,19 @@ export class Audio {
     const g = this.ctx.createGain();
     let node = g;
     if (pos) {
+      // behind walls the sound comes round through doorways: duller and quieter (game sets this.occlude)
+      const k = this.occlude ? this.occlude(pos) : 1;
+      if (k < 0.98) {
+        const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500 + k * k * 9000; lp.Q.value = 0.5;
+        const og = this.ctx.createGain(); og.gain.value = 0.35 + 0.65 * k;
+        g.connect(lp).connect(og); node = og;
+      }
       const p = this.ctx.createPanner();
       p.panningModel = 'HRTF'; p.distanceModel = 'inverse';
       p.refDistance = 2.0; p.maxDistance = 60; p.rolloffFactor = 1.4;
       if (p.positionX) { p.positionX.value = pos.x; p.positionY.value = pos.y ?? 1.5; p.positionZ.value = pos.z; }
       else p.setPosition(pos.x, pos.y ?? 1.5, pos.z);
-      g.connect(p); node = p;
+      node.connect(p); node = p;
     }
     node.connect(this.sfx);
     if (wet > 0) { const w = this.ctx.createGain(); w.gain.value = wet; node.connect(w).connect(this.verbIn); }
