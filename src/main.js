@@ -117,6 +117,7 @@ const ui = {
     $('dead-cause').textContent = cause;
     $('btn-checkpoint').classList.toggle('hidden', !game.checkpoint);
     if (game.checkpoint) $('btn-checkpoint').textContent = `Lanjut dari Panel (${game.checkpoint.fusesInstalled}/${game.def.fuses})`;
+    $('dead-map').classList.toggle('hidden', !(game.def && !game.def.noMap && !game.diff.noMap && game.drawDebrief($('dead-map'))));
     show('dead');
   },
   showWin() {

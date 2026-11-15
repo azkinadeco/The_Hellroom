@@ -483,3 +483,7 @@ body.panting .tbtn.breath { display: flex; }
 @media (max-width: 560px) { .perk-pick { grid-template-columns: 1fr; } }
 .row-menu button { font-size: 19px; white-space: nowrap; }
 .primary:disabled { opacity: 0.35 !important; cursor: default; }
+
+/* batch 99: death debrief */
+.dead-map { display: block; margin: 0 auto 18px; max-width: min(520px, 86vw); max-height: 34vh; background: #e6dfc8; box-shadow: 0 6px 30px #000; transform: rotate(-0.8deg); }
+.dead-map.hidden { display: none; }

@@ -60,12 +60,12 @@ export class AutoMap {
     if (this.open && this.dirty) this.draw();
   }
 
-  draw() {
-    this.dirty = false;
-    const g = this.game, k = this.view, f = g.floors[k];
+  draw(cv = this.canvas, overlay = null) {
+    if (cv === this.canvas) this.dirty = false;
+    const g = this.game, k = overlay ? g.floorK : this.view, f = g.floors[k];
     if (!f) return;
     const p = g.player; this.lastX = p.pos.x; this.lastZ = p.pos.z; this.lastYaw = p.yaw;
-    const m = f.map, s = this.seen[k], cv = this.canvas, c = cv.getContext('2d');
+    const m = f.map, s = this.seen[k], c = cv.getContext('2d');
     const u = Math.max(6, Math.floor(Math.min(620 / m.W, 400 / m.H)));
     const pad = 10, w = m.W * u + pad * 2, h = m.H * u + pad * 2;
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
@@ -158,7 +158,9 @@ export class AutoMap {
       c.moveTo(px + fx * r, pz + fz * r); c.lineTo(px - fx * r * 0.6 - fz * r * 0.6, pz - fz * r * 0.6 + fx * r * 0.6); c.lineTo(px - fx * r * 0.6 + fz * r * 0.6, pz - fz * r * 0.6 - fx * r * 0.6);
       c.closePath(); c.fill();
     }
+    if (overlay) overlay(c, u, (x, z) => [(x / CELL) * u, (z / CELL) * u]);
     c.setTransform(1, 0, 0, 1, 0, 0);
+    if (cv !== this.canvas) return;
     const n = this.seen.length, touch = g.input.touch;
     this.label.textContent = `DENAH — ${g.def.name} · Lantai ${k + 1}/${n}${k === g.floorK ? '' : ' (bukan lantaimu)'}`
       + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci  ! kamu terlihat  ◷ weker  s sekring  k kunci  b baterai';

@@ -261,6 +261,7 @@ export class Game {
     p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: def.startAlarms || 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
     this.alarms = [];
     this.trainDone = null; this.trainFinished = false;
+    this.trace = null;
     if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
     this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
     this.projectiles = [];
@@ -1025,6 +1026,16 @@ export class Game {
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
     this.prints.update(dt);
+    { // trails for the death debrief: the last 20 s of you and of every resident on this floor
+      this.traceT = (this.traceT || 0) - dt;
+      if (this.traceT <= 0) {
+        this.traceT = 0.5;
+        const T = this.trace || (this.trace = { k: this.floorK, p: [], e: new Map() });
+        if (T.k !== this.floorK) { T.k = this.floorK; T.p = []; T.e.clear(); }
+        T.p.push([this.player.pos.x, this.player.pos.z]); if (T.p.length > 40) T.p.shift();
+        for (const e of this.entities) { const a = T.e.get(e) || []; a.push([e.pos.x, e.pos.z]); if (a.length > 40) a.shift(); T.e.set(e, a); }
+      }
+    }
     if (this.def.training) this.updateTraining();
     { // rain: loudness from open sky round the player; standing in it soaks your shoes
       const R = this.rain, m = this.map, p = this.player;
@@ -1499,6 +1510,36 @@ export class Game {
     } else lines.push('■ Listrik menyala');
     lines.push(this.powered ? '□ Keluar lewat pintu darurat' : '□ Pintu darurat (terkunci)');
     return lines.join('\n');
+  }
+
+  // the floor plan with how it ended: your path (dark), the resident's (red, dotted), an X where it caught you
+  drawDebrief(cv) {
+    const T = this.trace, killer = this.killer;
+    if (!T || !this.automap || T.k !== this.floorK) return false;
+    const P = this.player;
+    // make sure the last stretch is on the paper even if you never looked at it
+    const s = this.automap.seen[this.floorK], m = this.map;
+    for (const [x, z] of [...T.p, ...((killer && T.e.get(killer)) || [])]) { const [cx, cz] = m.cellOf(x, z); if (m.inside(cx, cz)) s[cx + cz * m.W] = 1; }
+    const off = document.createElement('canvas'); let box = null, uu = 8;
+    this.automap.draw(off, (c, u, at) => {
+      uu = u; box = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const [x, z] of [...T.p, ...((killer && T.e.get(killer)) || [])]) { const [a, b] = at(x, z); box[0] = Math.min(box[0], a); box[1] = Math.min(box[1], b); box[2] = Math.max(box[2], a); box[3] = Math.max(box[3], b); }
+      const line = (pts, col, dash, w) => { if (pts.length < 2) return; c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash); c.beginPath(); pts.forEach(([x, z], i) => { const [a, b] = at(x, z); i ? c.lineTo(a, b) : c.moveTo(a, b); }); c.stroke(); c.setLineDash([]); };
+      line(T.p, 'rgba(42,38,30,0.85)', [], 2.5);
+      for (const [e, pts] of T.e) line(pts, e === killer ? '#b3261e' : 'rgba(179,38,30,0.45)', [5, 4], e === killer ? 3 : 2);
+      const [x, z] = at(P.pos.x, P.pos.z), r = Math.max(5, u * 0.6);
+      c.strokeStyle = '#b3261e'; c.lineWidth = 3; c.beginPath(); c.moveTo(x - r, z - r); c.lineTo(x + r, z + r); c.moveTo(x + r, z - r); c.lineTo(x - r, z + r); c.stroke();
+    });
+    if (!box) return false;
+    // crop to the chase, at least 7 cells across, padded by two
+    const pad = 10, mg = uu * 2, cx = (box[0] + box[2]) / 2 + pad, cz = (box[1] + box[3]) / 2 + pad;
+    const w = Math.max(box[2] - box[0] + mg * 2, uu * 7), hgt = Math.max(box[3] - box[1] + mg * 2, uu * 5);
+    const W = Math.max(w, hgt * 1.4), H = W / 1.4;
+    const sc = Math.min(3, 480 / W);
+    cv.width = Math.round(W * sc); cv.height = Math.round(H * sc);
+    const c2 = cv.getContext('2d'); c2.fillStyle = '#e6dfc8'; c2.fillRect(0, 0, cv.width, cv.height); c2.imageSmoothingEnabled = true;
+    c2.drawImage(off, cx - W / 2, cz - H / 2, W, H, 0, 0, cv.width, cv.height);
+    return true;
   }
 
   deathCause(k) {
