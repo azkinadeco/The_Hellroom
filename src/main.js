@@ -331,6 +331,7 @@ function buildLevels() {
     b.onclick = () => { save.diff = k; persist(); buildLevels(); };
     dl.appendChild(b);
   }
+  $('diff-desc').textContent = (DIFFICULTY[save.diff] || {}).desc || '';
 }
 function buildArchive() {
   const list = $('archive-list'); list.innerHTML = '';

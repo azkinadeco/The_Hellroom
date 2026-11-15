@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Kakek, Penenun Tulang, Gema Retak, dan Perempuan Gurita menghuni Mode Tanpa Ujung.
 
+## Fitur batch 36–45
+
+- **Bantuan arah**: kalau lama tidak ada kemajuan, tanda `?` merah muncul di denah pada ruangan yang menyimpan hal berikutnya yang kamu butuhkan (bisa dimatikan).
+- **Pengumuman per gedung** (detensi, rumah sakit, mal, kolam, museum, backroom) dan **tips** di kartu level.
+- **Jejak kematian**: saat mengulang level, baterai kamera lamamu tertinggal di tempat kamu mati. Arsip punya bagian **Statistik**.
+- **Putaran Kedua** (setelah ending): gedung yang sama dihuni penghuni lain (`NG_CAST`), lebih gelap; rekor dan peringkat terpisah.
+- **Akhir yang sebenarnya**: tamatkan LEVEL 5 dengan keenam kaset rahasia dan bukti enam penghuni.
+- **Atur ulang tombol keyboard** (16 aksi) dan **menu tanpa mouse** (panah/d-pad, Enter/A, B kembali).
+- **Pecahan kaca** (`src/level/glass.js`): berbunyi keras kalau diinjak; jongkok atau memutar.
+- **Data progres**: salin/tempel kode progres, hapus progres, penghitung FPS, salin hasil Kaset Harian.
+- **Kesulitan Mimpi Buruk**: tanpa denah, titik simpan, dan bantuan.
+
 ## Fitur batch 26–35
 
 - **Denah (M / PETA)**: denah kertas yang tergambar sendiri saat kamu menjelajah. Hanya memuat sel yang sudah kamu lihat: dinding, pintu (yang terkunci berwarna merah), nama ruangan, tangga, lift, panel, dan pintu darurat. `R` berganti lantai. Permainan tidak berhenti saat denah terbuka.

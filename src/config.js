@@ -67,15 +67,16 @@ export const hideOf = (L) => HIDE[(L && L.kind) || 'locker'] || HIDE.locker;
 export const DIFFICULTY = {
   // quiet: seconds without any threat before a patrol drifts towards you
   // grace: seconds after an escape during which patrols drift away from you
-  mudah:  { label: 'Mudah',  speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150 },
-  normal: { label: 'Normal', speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24 },
-  sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420 },
+  mudah:  { label: 'Mudah',  speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150, desc: 'Penghuni lebih lambat dan kurang awas, baterai lebih banyak, bantuan arah datang lebih cepat.' },
+  normal: { label: 'Normal', speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24, desc: 'Seperti yang dimaksudkan. Kotak panel menyimpan rekamanmu.' },
+  sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420, noCheckpoint: true, desc: 'Penghuni lebih cepat dan lebih awas, baterai sedikit, tanpa titik simpan.' },
+  mimpi:  { label: 'Mimpi Buruk', speed: 1.18, sight: 1.35, hearing: 1.45, batteries: 0.5, quiet: 25, grace: 8, noCheckpoint: true, noMap: true, noAssist: true, desc: 'Tanpa denah, tanpa titik simpan, tanpa bantuan. Penghuni hampir tidak pernah jauh darimu.' },
 };
 
 // Test rooms in the main menu (Pilih Room): every map playable, resident
 // override and invulnerability. Pilih Level itself stays unlocked in order. Set to false for the public release.
 export const DEV_ROOMS = true;
-export const VERSION = '0.35';
+export const VERSION = '0.45';
 
 // Level definitions. Every level has exactly ONE resident. Layouts are
 // generated from the seed so every run of a level is identical.

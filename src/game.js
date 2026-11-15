@@ -632,7 +632,7 @@ export class Game {
 
   // ---------------------------------------------------------------- checkpoint
   // Seating fuses in the panel saves the run (not on Sulit, not in endless).
-  canCheckpoint() { return this.diffKey !== 'sulit' && !this.def.endless; }
+  canCheckpoint() { return !this.diff.noCheckpoint && !this.def.endless; }
   snapshot() {
     const p = this.player, fb = this.fuseFloor.gen.fusebox;
     return {
@@ -768,7 +768,8 @@ export class Game {
     // the floor plan: M opens it, R (or PETA again on touch) leafs through the floors
     if (input.consume('map')) {
       const a = this.automap;
-      if (!a.open) { if (p.alive) { a.setOpen(true); this.hint('map', 'Denah hanya memuat tempat yang sudah kamu lihat. Permainan TIDAK berhenti saat denah terbuka.', 5); } }
+      if (this.diff.noMap) this.hud.toast('Tidak ada denah di Mimpi Buruk.', 2);
+      else if (!a.open) { if (p.alive) { a.setOpen(true); this.hint('map', 'Denah hanya memuat tempat yang sudah kamu lihat. Permainan TIDAK berhenti saat denah terbuka.', 5); } }
       else if (input.touch && a.seen.length > 1 && (a.view + 1) % a.seen.length !== this.floorK) a.cycle();
       else a.setOpen(false);
     }
