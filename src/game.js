@@ -7,6 +7,7 @@ import { bakeUniforms } from './render/bake.js';
 import { VHS } from './render/vhs.js';
 import { Dust } from './render/dressing.js';
 import { Beam, Mist, buildWebs, flashlightCookie } from './render/ambience.js';
+import { Footprints } from './footprints.js';
 import { updateSkyEyes, resetSkyEyes } from './render/skyeye.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -253,6 +254,7 @@ export class Game {
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0 };
     this.alarms = [];
+    if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
     this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
     this.projectiles = [];
     this.hintT = 0;
@@ -932,6 +934,7 @@ export class Game {
     if (input.consume('mapfloor') && this.automap.open) this.automap.cycle();
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
+    this.prints.update(dt);
 
     // camcorder zoom: narrower FOV, slower look, small battery cost
     const zoom = input.zooming() && p.alive && p.battery > 0;
@@ -1081,6 +1084,7 @@ export class Game {
   }
 
   render(t) {
+    if (this.prints && this.map) this.prints.render();
     const u = this.vhs.uniforms;
     if (this.deathT >= 0 && this.deathRoll) {
       this.camera.rotation.z += this.deathRoll * 0.9;

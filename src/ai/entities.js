@@ -279,6 +279,7 @@ export class Monitor extends Entity {
       else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
       if (this.awareness >= 1) see = 1;
       this.checkDoors(dt);
+      this.checkPrints(dt);
     }
     if (see > 0) {
       this.suspicion = Math.min(1.2, this.suspicion + see * dt * (this.distTo(p.pos) < 4 ? 6 : 1.9));
@@ -468,6 +469,26 @@ export class Monitor extends Entity {
       g.stats.doorsNoticed = (g.stats.doorsNoticed || 0) + 1;
       break;
     }
+  }
+
+  // Wet footprints: a fresh trail in front of it is followed to its newest end.
+  checkPrints(dt) {
+    const g = this.game, P = g.prints;
+    if (!P || !P.list.length || this.state === 'locker') return;
+    this.printT = (this.printT || 0) - dt;
+    if (this.printT > 0) return;
+    this.printT = 0.6;
+    const q = P.near(g.floorK, this.pos.x, this.pos.z, 7, 30);
+    if (!q || q === this.lastPrint) return;
+    const dx = q.x - this.pos.x, dz = q.z - this.pos.z;
+    if (Math.hypot(dx, dz) > 1.2 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) > 1.2) return;
+    if (!g.world.los(this.pos.x, this.pos.z, q.x, q.z)) return;
+    const end = P.trailEnd(q, 14);
+    this.lastPrint = end;
+    if (end === q && Math.hypot(dx, dz) < 1.5) return;   // standing on the last print already
+    this.awareness = Math.max(this.awareness || 0, 0.55);
+    this.glimpse = { x: end.x, z: end.z, t: g.time };
+    g.stats.printsFollowed = (g.stats.printsFollowed || 0) + 1;
   }
 
   // Where to look after losing them: ahead along the way they were running,
