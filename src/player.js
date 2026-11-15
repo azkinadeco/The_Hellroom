@@ -70,7 +70,7 @@ export class Player {
 
     // ----- toggles -----
     if (input.consume('flashlight') && this.alive) {
-      if (this.battery > 0) { this.flashlight = !this.flashlight; game.audio.click(); }
+      if (this.battery > 0) { this.flashlight = !this.flashlight; game.audio.click(); if (this.flashlight && this.hidden) game.hint('leak', 'Cahaya senter bocor dari celah tempat sembunyi: penghuni yang lewat akan melihatnya. Matikan lagi kalau ada yang mendekat.', 5); }
       else game.hud.toast('Baterai habis');
     }
     if (input.consume('nightvision') && this.alive) {

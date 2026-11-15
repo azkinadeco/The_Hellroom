@@ -1499,6 +1499,7 @@ export class Game {
   deathCause(k) {
     const why = this.lockerReason; this.lockerReason = null;
     if (why === 'seen') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihatmu masuk ke ${hideOf(k.lockerTarget).label}. Bersembunyilah saat tidak sedang terlihat.`;
+    if (why === 'light') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihat cahaya senter dari celah ${hideOf(k.lockerTarget).label}. Matikan senter sebelum bersembunyi.`;
     if (why === 'breath') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} mendengar napasmu. Saat ada yang mendekati tempat persembunyianmu, tahan napas (${this.input.touch ? 'tombol NAPAS' : 'SPASI'}) sampai langkahnya pergi.`;
     if (this.blackoutT > 0 && !k.statue && (k.kind === 'echo' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
     return k.deathText || (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';

@@ -435,7 +435,7 @@ export class Monitor extends Entity {
           // only a breath it can actually hear for a while gives you away
           if (p.hidden === L && this.inspectT > 0.6 && !p.holdingBreath && this.game.time - (p.hideT || 0) > 1.0) this.breathHeard += dt;
           const caught = this.lockerSure || this.breathHeard > 1.3;
-          if (caught && p.hidden === L) { this.game.lockerReason = this.lockerSure ? 'seen' : 'breath'; this.attack(L); break; }
+          if (caught && p.hidden === L) { this.game.lockerReason = this.lightLeak ? 'light' : this.lockerSure ? 'seen' : 'breath'; this.attack(L); break; }
           if (this.inspectT > 3.4) { if (p.hidden === L) g.stats.inspected = (g.stats.inspected || 0) + 1; this.inspectT = 0; this.setState('patrol'); this.waitT = 1; this.suspicion = 0.3; g.onChaseEnd(this); }
         }
         break;
@@ -465,6 +465,14 @@ export class Monitor extends Entity {
     const p = this.game.player;
     if (!p.hidden || !this.lockers) return;
     const L = p.hidden;
+    // a lit torch inside a hiding spot shows through every gap: in view and within 10 m, it knows
+    if (p.flashlight && this.state !== 'locker') {
+      const fd = hideOf(L).front + 0.3, fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd, dl = Math.hypot(fx - this.pos.x, fz - this.pos.z);
+      if (dl < 10 && Math.abs(angleDiff(this.yaw, Math.atan2(fx - this.pos.x, fz - this.pos.z))) < 1.3 && this.game.world.los(this.pos.x, this.pos.z, fx, fz)) {
+        this.game.stats.lightLeaks = (this.game.stats.lightLeaks || 0) + 1;
+        this.targetLocker(L, true); this.lightLeak = true; return;
+      }
+    }
     const d = Math.hypot(L.x - this.pos.x, L.z - this.pos.z);
     const fd = hideOf(L).front + 0.3;
     if (d > 4.5 || !this.game.world.los(this.pos.x, this.pos.z, L.x + Math.sin(L.rot) * fd, L.z + Math.cos(L.rot) * fd)) return;
@@ -580,7 +588,7 @@ export class Monitor extends Entity {
   }
 
   targetLocker(L, sure) {
-    this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0; this.breathHeard = 0;
+    this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0; this.breathHeard = 0; this.lightLeak = false;
     this.setState('locker');
     this.lockerPt = this.lockerPoint(L);
     this.goToWorld(this.lockerPt.x, this.lockerPt.z);
