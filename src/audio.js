@@ -55,6 +55,23 @@ export class Audio {
     }
     this.watchLv = 0;
   }
+  // rain: a filtered noise bed, louder the more open sky is round the listener
+  setRain(v, dt) {
+    if (!this.ready) return;
+    if (!this.rain) {
+      const ctx = this.ctx, src = ctx.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500;
+      this.rain = ctx.createGain(); this.rain.gain.value = 0; this.rainLP = lp;
+      src.connect(hp).connect(lp).connect(this.rain).connect(this.master); src.start();
+      // big drops on the roof: brown noise, low
+      const s2 = ctx.createBufferSource(); s2.buffer = this.brownBuf; s2.loop = true; const g2 = ctx.createGain(); g2.gain.value = 0.6; s2.connect(g2).connect(this.rain); s2.start();
+      this.rainLv = 0;
+    }
+    this.rainLv += (v - this.rainLv) * Math.min(1, dt * 1.5);
+    this.rain.gain.setTargetAtTime(this.rainLv * 0.11, this.t, 0.2);
+    this.rainLP.frequency.setTargetAtTime(1800 + this.rainLv * 5000, this.t, 0.3);   // muffled from indoors
+  }
   // 0..1: how close the most alert resident is to noticing you (the chase bed takes over at 1)
   setWatch(w, chase, dt) {
     if (!this.ready || !this.tension) return;

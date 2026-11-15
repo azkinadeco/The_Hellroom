@@ -8,6 +8,7 @@ import { VHS } from './render/vhs.js';
 import { Dust } from './render/dressing.js';
 import { Beam, Mist, buildWebs, flashlightCookie } from './render/ambience.js';
 import { Footprints } from './footprints.js';
+import { Rain } from './render/rain.js';
 import { updateSkyEyes, resetSkyEyes } from './render/skyeye.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -50,6 +51,7 @@ export class Game {
     this.scene.add(this.dust.points);
     // haze in the torch beam, mist on the floor, an uneven lens
     this.beam = new Beam(this.player.light); this.camera.add(this.beam.mesh);
+    this.rain = new Rain(); this.scene.add(this.rain.lines);
     this.mist = new Mist();   // settings holder; the mist itself is drawn by the post pass
     this.player.light.map = flashlightCookie();
     this.state = 'menu';
@@ -322,6 +324,7 @@ export class Game {
     if (this.player) this.player.water = f.gen.water;
     this.gen = f.gen; this.map = f.map; this.built = f.built; this.world = f.world; this.field = f.field; this.doorSys = f.doorSys;
     this.levelRoot = f.built.root;
+    if (this.rain) this.rain.setFloor(this.floors, k);
     for (const o of this.floors) {
       o.built.root.position.y = (o.k - k) * FH;
       o.built.root.updateMatrixWorld(true);
@@ -485,7 +488,7 @@ export class Game {
 
   // ------------------------------------------------------------------ events
   emitNoise(x, z, radius, type) {
-    const m = this.map, rr = radius * this.diff.hearing * (type === 'step' ? this.def.noiseMul || 1 : 1);
+    const m = this.map, rr = radius * this.diff.hearing * (type === 'step' ? (this.def.noiseMul || 1) * (this.inRain ? 0.55 : 1) : 1);
     let cost = null;
     for (const e of this.entities) {
       let d = Math.hypot(e.pos.x - x, e.pos.z - z), r = rr;
@@ -997,6 +1000,18 @@ export class Game {
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
     this.prints.update(dt);
+    { // rain: loudness from open sky round the player; standing in it soaks your shoes
+      const R = this.rain, m = this.map, p = this.player;
+      let lv = 0;
+      if (R.cells && m) {
+        const [cx, cz] = m.cellOf(p.pos.x, p.pos.z);
+        for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) { const x = cx + dx, z = cz + dz; if (m.inside(x, z) && R.open[x + z * m.W]) lv += dx === 0 && dz === 0 ? 8 : 1; }
+        lv = Math.min(1, lv / 14);
+        this.inRain = m.inside(cx, cz) && !!R.open[cx + cz * m.W] && !p.hidden;
+        if (this.inRain) { this.prints.wetT = Math.max(this.prints.wetT, 18); this.hint('rain', 'Hujan menyamarkan langkahmu, tapi sepatumu basah: jejakmu akan tertinggal di lantai dalam.', 6); }
+      } else this.inRain = false;
+      this.audio.setRain(lv, dt);
+    }
 
     // camcorder zoom: narrower FOV, slower look, small battery cost
     const zoom = input.zooming() && p.alive && p.battery > 0;
@@ -1179,6 +1194,7 @@ export class Game {
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
     this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);
+    if (this.rain.cells) this.rain.update(this.camera, t, 0.35 + 0.65 * bakeUniforms.uPower.value + (this.flashT > 0 ? 2 : 0));
     { const fl = Math.min(1, this.player.light.intensity / 9), rdt = Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t)));
       this.beam.update(t, fl, this.fxQ ? this.haze : 0);
       const V = this.vhs.uniforms, on = this.fxQ > 0 && !this.mistOff && this.state !== 'menu' && !!this.map && !this.player.nightVision;
