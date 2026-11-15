@@ -526,6 +526,11 @@ export class Game {
   }
   // Ordinary patrol leg: prefer rooms nobody has walked through for a while,
   // and halls the player has spent time in (an old trail, never where they stand now).
+  // a hiding spot the player keeps going back to, worth a look now and then
+  favouriteHide(e) {
+    const L = (this.built.lockers || []).filter((q) => (q.used || 0) >= 2 && this.time - (q.checkedT ?? -1e9) > 60).sort((a, b) => b.used - a.used)[0];
+    return L && Math.random() < 0.3 + 0.1 * Math.min(4, L.used - 2) ? L : null;
+  }
   coverPatrol(e, px, pz, cx, cz) {
     const f = this.floors[this.floorK], m = this.map;
     if (!f || !f.heat) return null;
@@ -749,6 +754,7 @@ export class Game {
         const lat = h.lat || 0;
         L.camX = L.x + Math.sin(L.rot) * h.cam + Math.cos(L.rot) * lat; L.camZ = L.z + Math.cos(L.rot) * h.cam - Math.sin(L.rot) * lat;
         p.hidden = L; p.crouched = false; p.hideT = this.time;
+        L.used = (L.used || 0) + 1; L.usedFloor = this.floorK;   // residents learn favourite hiding spots
         p.yaw = L.viewYaw; p.pitch = h.look || 0;
         p.flashlight = false;
         this.hud.toast(this.input.touch ? 'Tahan tombol NAPAS saat ada yang mendekat' : `Tahan ${this.input.keyName('breath').toUpperCase()} untuk menahan napas`, 2.5);

@@ -329,6 +329,9 @@ export class Monitor extends Entity {
           this.onIdle(dt);
           if (this.waitT <= 0) {
             const [cx, cz] = this.cell();
+            // now and then it goes to look at the spot you keep hiding in
+            const fav = this.lockers && g.favouriteHide && g.favouriteHide(this);
+            if (fav) { fav.checkedT = g.time; this.searchPts = [{ L: fav }]; this.peek = null; this.peekNext = null; this.path = null; this.setState('search'); g.stats.favChecks = (g.stats.favChecks || 0) + 1; break; }
             const t = (g.pickPatrol && g.pickPatrol(this)) || randomReachableCell(g.map, Math.random, cx, cz, 4, 18);
             if (t) this.goTo(...t);
           }
