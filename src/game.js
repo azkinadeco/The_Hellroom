@@ -257,6 +257,7 @@ export class Game {
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
     this.alarms = [];
+    this.trainDone = null; this.trainFinished = false;
     if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
     this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
     this.projectiles = [];
@@ -705,7 +706,7 @@ export class Game {
       return;
     }
     if (this.godMode) { // test rooms: shrug the hit off and throw the resident back
-      this.hud.toast(`Mode kebal: serangan ${(ENTITY_INFO[entity.kind] || {}).name || ''} diabaikan`, 2);
+      this.hud.toast(this.def.training ? 'Tertangkap! Di ruang latihan kamu tidak mati. Coba lagi: putuskan pandangannya, lalu sembunyi.' : `Mode kebal: serangan ${(ENTITY_INFO[entity.kind] || {}).name || ''} diabaikan`, this.def.training ? 3 : 2);
       this.audio.stinger();
       const [cx, cz] = entity.cell();
       const t = randomReachableCell(this.map, Math.random, cx, cz, 6, 12);
@@ -1006,6 +1007,7 @@ export class Game {
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
     this.prints.update(dt);
+    if (this.def.training) this.updateTraining();
     { // rain: loudness from open sky round the player; standing in it soaks your shoes
       const R = this.rain, m = this.map, p = this.player;
       let lv = 0;
@@ -1437,7 +1439,38 @@ export class Game {
     this.frameEma += (this.realDt - this.frameEma) * 0.05;
   }
 
+  // training: steps ticked off as the player does them
+  trainingSteps() {
+    const p = this.player, st = this.stats, inp = this.input, T = inp.touch;
+    const k = (a) => (T ? '' : ` [${inp.keyName(a)}]`);
+    return [
+      ['crouch', `Jongkok${k('crouch')}`, () => p.crouched],
+      ['lean', `Condong ke kiri atau kanan${T ? '' : ` [${inp.keyName('leanLeft')}/${inp.keyName('leanRight')}]`}`, () => (st.leans || 0) > 0],
+      ['knock', `Ketuk dinding${k('knock')}`, () => (st.knocks || 0) > 0],
+      ['hide', `Sembunyi di loker dan tahan napas${k('breath')}`, () => !!p.hidden && p.holdingBreath],
+      ['wedge', 'Ganjal pintu (jongkok + interaksi di pintu tertutup)', () => (st.wedges || 0) > 0],
+      ['escape', 'Lolos sekali dari kejaran Jam Berlidah', () => (st.escapes || 0) > 0],
+    ];
+  }
+  updateTraining() {
+    if (this.hud.objT < 1) { this.hud.objT = 1; this.hud.objectives.classList.add('show'); }   // the checklist stays up
+    const done = this.trainDone || (this.trainDone = new Set());
+    for (const [id, text, test] of this.trainingSteps()) {
+      if (done.has(id) || !test()) continue;
+      done.add(id); this.audio.click();
+      this.hud.toast(`✓ ${text}`, 1.8); this.hud.showObjectives(this.objectiveText(), 3);
+    }
+    if (done.size === this.trainingSteps().length && !this.trainFinished) {
+      this.trainFinished = true;
+      this.schedule(2, () => this.hud.toast('Latihan selesai. Kamu siap merekam. Kembali ke menu…', 4));
+      if (this.onTrainingDone) this.onTrainingDone();
+    }
+  }
   objectiveText() {
+    if (this.def && this.def.training) {
+      const done = this.trainDone || new Set();
+      return ['LATIHAN — Ruang Latihan', ...this.trainingSteps().map(([id, text]) => `${done.has(id) ? '■' : '□'} ${text}`)].join('\n');
+    }
     const p = this.player;
     const lines = [`${this.def.code} — ${this.def.name}`];
     if (!this.powered) {

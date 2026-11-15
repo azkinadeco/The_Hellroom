@@ -229,7 +229,7 @@ function startEndless(floor, seed = null) {
   save.endlessRun = { seed, floor }; persist();
   pendingLevel = -1;
   pendingDef = endlessDef(floor, seed); pendingDef.runSeed = seed; pendingGod = false;
-  $('intro-code').textContent = 'MODE TANPA UJUNG · ' + pendingDef.code;
+  $('intro-code').textContent = 'JURANG · ' + pendingDef.code;
   $('intro-name').textContent = pendingDef.name;
   $('intro-sub').textContent = pendingDef.subtitle;
   $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : tipLine(), modText(pendingDef)].filter(Boolean).join('\n\n');
@@ -240,12 +240,26 @@ const today = () => { const d = new Date(); return d.getFullYear() * 10000 + (d.
 function startDaily() {
   const date = today(), floor = 3 + (date % 4);
   pendingLevel = -1; pendingGod = false;
-  pendingDef = { ...endlessDef(floor, date % 999983), daily: date, code: 'KASET HARIAN', subtitle: `${String(date).slice(6)}/${String(date).slice(4, 6)}/${String(date).slice(0, 4)} · bangunan yang sama untuk semua orang hari ini.` };
+  pendingDef = { ...endlessDef(floor, date % 999983), daily: date, code: 'REKAMAN HARIAN', subtitle: `${String(date).slice(6)}/${String(date).slice(4, 6)}/${String(date).slice(0, 4)} · bangunan yang sama untuk semua orang hari ini.` };
   const rec = save.daily[date];
-  $('intro-code').textContent = 'KASET HARIAN';
+  $('intro-code').textContent = 'REKAMAN HARIAN';
   $('intro-name').textContent = pendingDef.name;
   $('intro-sub').textContent = pendingDef.subtitle;
   $('intro-text').textContent = [rec ? `Waktu terbaikmu hari ini: ${fmt(rec)}` : 'Keluar secepat mungkin. Waktu terbaikmu hari ini akan dicatat.', modText(pendingDef)].filter(Boolean).join('\n\n');
+  show('intro');
+}
+
+// Ruang Latihan: a small floor with a slow resident that cannot kill you, and a list of
+// things to try (crouch, lean, knock, hide and hold your breath, wedge a door, escape)
+function startTraining() {
+  pendingLevel = -1; pendingGod = true;
+  const base = endlessDef(1, 4711);
+  pendingDef = { ...base, id: 'training', training: true, test: true, endless: false, code: 'LATIHAN', name: 'Ruang Latihan', mods: [], odd: 0,
+    subtitle: 'Tidak ada yang bisa mati di sini. Belum.', entities: [{ type: 'clock' }], fuses: 1, keys: 0, wedges: 2, lightsOff: 0.1, flicker: 0.05 };
+  $('intro-code').textContent = 'LATIHAN';
+  $('intro-name').textContent = pendingDef.name;
+  $('intro-sub').textContent = pendingDef.subtitle;
+  $('intro-text').textContent = 'Jam Berlidah berpatroli di lantai ini, tapi tangkapannya tidak membunuhmu.\nIkuti daftar di kanan atas: jongkok, mengintip, mengetuk, bersembunyi, mengganjal pintu, dan lolos dari kejaran.';
   show('intro');
 }
 
@@ -549,6 +563,7 @@ document.addEventListener('click', (e) => {
   if (go === 'play') { startLevel(save.unlocked - 1); return; }
   if (go === 'endless') { const r = save.endlessRun; if (r && r.floor > 1) startEndless(r.floor, r.seed); else startEndless(1); return; }
   if (go === 'daily') { startDaily(); return; }
+  if (go === 'training') { startTraining(); return; }
   if (go === 'modes') buildTitle();
   if (go === 'archive') buildArchive();
   if (go === 'levels') buildLevels();
@@ -656,6 +671,7 @@ async function boot() {
   game.onMeet = (kind) => { if (save.met.includes(kind)) return false; save.met.push(kind); persist(); return true; };
   game.film = save.film;
   game.onFilm = () => persist();
+  game.onTrainingDone = () => { save.trained = true; persist(); setTimeout(() => { if (game.def && game.def.training) quitToMenu(); }, 5000); };
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
   if (!DEV_ROOMS) $('btn-rooms').remove();
