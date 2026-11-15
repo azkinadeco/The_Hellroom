@@ -272,7 +272,7 @@ export class Monitor extends Entity {
 
   setState(s) {
     if (this.state === s) return;
-    this.state = s; this.stateT = 0;
+    this.state = s; this.stateT = 0; this.cautious = false;
     if (s === 'chase') {
       if (this.whistleCd <= 0) { this.chaseSound(); this.whistleCd = 12; }
       this.game.onChaseStart(this);
@@ -313,7 +313,7 @@ export class Monitor extends Entity {
     let see = 0;
     if (hunting) see = this.sense();
     else {
-      const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : 1) * (g.def.awareMul || 1);
+      const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : this.cautious ? 1.25 : 1) * (g.def.awareMul || 1);
       if (gain > 0) { this.awareness = Math.min(1.2, (this.awareness || 0) + gain * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }
       else if (this.spotsLight !== false && g.beamSpot && this.seesSpot(g.beamSpot)) {
         // your light moving on a dark wall: it comes to see where it is coming from (never past half-aware on light alone)
@@ -385,8 +385,14 @@ export class Monitor extends Entity {
       }
       case 'investigate': {
         speed = (this.intercept ? this.run * 0.8 : this.suspicion > 0.6 ? this.walk * 1.6 : this.walk * 1.15) * this.speedMul;
+        // the last few metres to whatever it heard or glimpsed: slow, head sweeping, eyes sharper
+        const ip = this.investigatePt, close = !this.intercept && ip && Math.hypot(ip.x - this.pos.x, ip.z - this.pos.z) < 3.5;
+        this.cautious = !!close;
+        if (close) speed *= 0.55;
         if (see > 0 && this.stateT > 0.5) { this.goToWorld(p.pos.x, p.pos.z); this.stateT = 0; }
-        if (this.followPath(dt, speed)) {
+        const arrived = this.followPath(dt, speed);
+        if (this.cautious && !arrived) this.yaw += Math.sin(g.time * 2.3) * dt * 1.4;
+        if (arrived) {
           this.velocity = 0;
           if (!this.lookT) this.lookT = 2.5;
           this.lookT -= dt;
