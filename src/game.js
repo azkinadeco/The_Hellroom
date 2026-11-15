@@ -1069,6 +1069,11 @@ export class Game {
 
     this.audio.updateListener(this.camera);
     this.audio.update(dt, p.fear, chase, p.pos);
+    { let w = 0, who = null; for (const e of this.entities) if ((e.awareness || 0) > w) { w = e.awareness; who = e; }
+      this.audio.setWatch(Math.min(1, w), chase, dt);
+      // first time something half-notices you: say what the eye means
+      if (w > 0.35 && !chase && who) this.hint('watch', 'Ikon mata terisi: penghuni mulai menyadarimu. Jongkok, matikan senter, menjauh dari pandangannya, atau berlindung di balik meja sebelum matanya penuh.', 6);
+      if (p.crouched && w > 0.05 && !chase) this.hint('crouch_cover', 'Saat jongkok di balik meja, peti, atau bangku, penghuni tidak bisa melihatmu. ' + (this.input.touch ? 'Tahan tombol condong' : 'Tahan ' + this.input.keyName('leanLeft') + ' / ' + this.input.keyName('leanRight')) + ' untuk mengintip dari balik sudut.', 6); }
     this.hud.update(dt, this);
     input.endFrame();
   }

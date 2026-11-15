@@ -31,8 +31,38 @@ export class Audio {
     this.brownBuf = this._noise(4, 'brown');
     this._startAmbience();
     this._startChaseBed();
+    this._startTension();
     this.ready = true;
     if (this._themeWanted !== undefined) this.setTheme(this._themeWanted);
+  }
+
+  // A held cluster under everything: silent while nobody has noticed you, a low beating
+  // drone as a resident starts to, a thin high string on top when it is about to.
+  _startTension() {
+    const ctx = this.ctx;
+    this.tension = ctx.createGain(); this.tension.gain.value = 0; this.tension.connect(this.master);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.connect(this.tension);
+    this.tensionLP = lp;
+    for (const [f, type, v] of [[55, 'sawtooth', 0.22], [55 * 1.0595, 'sawtooth', 0.16], [82.4, 'triangle', 0.2]]) {   // a semitone rub
+      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
+      const g = ctx.createGain(); g.gain.value = v; o.connect(g).connect(lp); o.start();
+    }
+    this.tensionHi = ctx.createGain(); this.tensionHi.gain.value = 0; this.tensionHi.connect(this.master);
+    for (const f of [1244.5, 1318.5]) {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5.5 + Math.random(); lg.gain.value = 6; lfo.connect(lg).connect(o.frequency); lfo.start();
+      const g = ctx.createGain(); g.gain.value = 0.5; o.connect(g).connect(this.tensionHi); o.start();
+    }
+    this.watchLv = 0;
+  }
+  // 0..1: how close the most alert resident is to noticing you (the chase bed takes over at 1)
+  setWatch(w, chase, dt) {
+    if (!this.ready || !this.tension) return;
+    this.watchLv += (w - this.watchLv) * Math.min(1, dt * 3);
+    const a = chase ? 0 : this.watchLv;
+    this.tension.gain.setTargetAtTime(Math.pow(a, 1.3) * 0.075, this.t, 0.25);
+    this.tensionLP.frequency.setTargetAtTime(250 + a * 1400, this.t, 0.3);
+    this.tensionHi.gain.setTargetAtTime(a > 0.55 ? (a - 0.55) / 0.45 * 0.018 : 0, this.t, 0.2);
   }
 
   setVolume(v) { this.volume = v; if (this.master) this.master.gain.value = v; }
