@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0, knocks: 0, peeks: 0, noticed: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true, bright: 1, soundRing: false, crouchMode: 'toggle', sprintMode: 'hold' } };
+const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0, knocks: 0, peeks: 0, noticed: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true, bright: 1, soundRing: false, crouchMode: 'toggle', sprintMode: 'hold', fpsCap: 0 } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -499,7 +499,7 @@ function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
   $('set-screen').value = s.screen; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
-  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps; $('set-crouch').value = s.crouchMode || 'toggle'; $('set-sprint').value = s.sprintMode || 'hold'; $('set-ring').checked = !!s.soundRing; $('set-bright').value = s.bright || 1; $('set-bright-val').textContent = Math.round((s.bright || 1) * 100) + '%'; $('set-autores').checked = s.autoRes !== false;
+  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps; $('set-cap').checked = s.fpsCap === 30; $('set-crouch').value = s.crouchMode || 'toggle'; $('set-sprint').value = s.sprintMode || 'hold'; $('set-ring').checked = !!s.soundRing; $('set-bright').value = s.bright || 1; $('set-bright-val').textContent = Math.round((s.bright || 1) * 100) + '%'; $('set-autores').checked = s.autoRes !== false;
   $('save-msg').textContent = ''; $('save-code').classList.add('hidden'); resetArmed = false; $('save-reset').textContent = 'Hapus semua progres';
   buildBinds();
 }
@@ -565,11 +565,11 @@ function readSettings() {
   const s = save.settings;
   s.sens = +$('set-sens').value; s.volume = +$('set-vol').value; s.quality = $('set-quality').value;
   s.screen = $('set-screen').value; s.invertY = $('set-inv').checked; s.subs = $('set-subs').checked;
-  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked; s.crouchMode = $('set-crouch').value; s.sprintMode = $('set-sprint').value; s.soundRing = $('set-ring').checked; s.bright = +$('set-bright').value; $('set-bright-val').textContent = Math.round(s.bright * 100) + '%'; s.autoRes = $('set-autores').checked;
+  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked; s.fpsCap = $('set-cap').checked ? 30 : 0; s.crouchMode = $('set-crouch').value; s.sprintMode = $('set-sprint').value; s.soundRing = $('set-ring').checked; s.bright = +$('set-bright').value; $('set-bright-val').textContent = Math.round(s.bright * 100) + '%'; s.autoRes = $('set-autores').checked;
   persist();
   if (game) game.applySettings();
 }
-for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps', 'set-autores', 'set-bright', 'set-ring', 'set-crouch', 'set-sprint']) $(id).addEventListener('input', readSettings);
+for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps', 'set-autores', 'set-bright', 'set-ring', 'set-crouch', 'set-sprint', 'set-cap']) $(id).addEventListener('input', readSettings);
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');
@@ -699,7 +699,10 @@ async function boot() {
   if (!save.calibrated) await calibrate();
   show('title');
   let last = performance.now();
+  let stillFrames = 0;
   const frame = (now) => {
+    // 30 fps cap (saves battery and heat on laptops and phones): skip every other display frame
+    if (save.settings.fpsCap === 30 && now - last < 1000 / 31) { requestAnimationFrame(frame); return; }
     game.realDt = Math.min(0.25, (now - last) / 1000);
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -707,7 +710,11 @@ async function boot() {
       input.poll(dt); padMenus();
       game.update(dt);
       if (game.state === 'playing') game.autoRes(game.realDt);
-      if (game.state !== 'menu') game.render(now / 1000);
+      // paused, reading a note, on the death or win screen: the picture behind does not change,
+      // so draw it a few times (to settle) and then stop drawing the 3D world altogether
+      const still = game.state === 'paused' || game.state === 'note' || game.state === 'dead' || game.state === 'won';
+      stillFrames = still ? stillFrames + 1 : 0;
+      if (game.state !== 'menu' && stillFrames < 4) game.render(now / 1000);
     } catch (e) { showError(e.stack || String(e)); game.state = 'paused'; }
     requestAnimationFrame(frame);
   };
