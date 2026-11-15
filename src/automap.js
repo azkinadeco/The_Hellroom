@@ -6,6 +6,7 @@ import { DIRS, EDGE, VOID } from './level/map.js';
 
 const SEE = 3;            // cells
 const INK = '#2a261e', RED = '#8a1c1c', GREEN = '#1f6b3a';
+const ITEM_MARK = { fuse: ['s', '#9a6a00'], key: ['k', '#5a3d8a'], battery: ['b', '#1f5a7a'], tape: ['▭', '#7a1f4a'], note: ['✎', '#555'], alarm: ['◷', '#6a4a12'] };
 
 export class AutoMap {
   constructor(game) {
@@ -47,6 +48,12 @@ export class AutoMap {
         if (!m.inside(x, z) || s[x + z * m.W] || m.reg(x, z) === -1) continue;
         const [wx, wz] = m.center(x, z);
         if ((x === cx && z === cz) || m.los(p.pos.x, p.pos.z, wx, wz)) { s[x + z * m.W] = 1; this.count++; this.dirty = true; }
+      }
+      // things you have laid eyes on are noted on the plan (until you pick them up)
+      for (const it of g.built.items || []) {
+        if (it.mapped || it.taken || !ITEM_MARK[it.type]) continue;
+        const d = Math.hypot(it.x - p.pos.x, it.z - p.pos.z);
+        if (d < 9 && m.los(p.pos.x, p.pos.z, it.x, it.z)) { it.mapped = true; this.dirty = true; }
       }
       if (this.open && (this.lastX !== p.pos.x || this.lastZ !== p.pos.z || this.lastYaw !== p.yaw || (g.marks && g.marks.length))) this.dirty = true;
     }
@@ -115,6 +122,8 @@ export class AutoMap {
     const fb = f.gen.fusebox, ex = f.gen.exit;
     if (fb && at(...fb.cell)) mark((fb.cell[0] + 0.5) * CELL, (fb.cell[1] + 0.5) * CELL, '⚡', g.powered ? GREEN : RED);
     if (ex && at(...ex.cell)) mark((ex.cell[0] + 0.5) * CELL, (ex.cell[1] + 0.5) * CELL, '✚', g.powered ? GREEN : RED);
+    // items you have seen and not taken yet
+    for (const it of f.built.items || []) if (it.mapped && !it.taken && ITEM_MARK[it.type]) mark(it.x, it.z, ITEM_MARK[it.type][0], ITEM_MARK[it.type][1]);
     // where you were seen: a red ! that fades over a minute, and your alarm clocks
     for (const M of g.marks || []) {
       const age = g.time - M.t;
@@ -152,6 +161,6 @@ export class AutoMap {
     c.setTransform(1, 0, 0, 1, 0, 0);
     const n = this.seen.length, touch = g.input.touch;
     this.label.textContent = `DENAH — ${g.def.name} · Lantai ${k + 1}/${n}${k === g.floorK ? '' : ' (bukan lantaimu)'}`
-      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci  ! kamu terlihat  ◷ weker';
+      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci  ! kamu terlihat  ◷ weker  s sekring  k kunci  b baterai';
   }
 }
