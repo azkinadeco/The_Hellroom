@@ -1011,6 +1011,22 @@ export class Game {
         if (this.inRain) { this.prints.wetT = Math.max(this.prints.wetT, 18); this.hint('rain', 'Hujan menyamarkan langkahmu, tapi sepatumu basah: jejakmu akan tertinggal di lantai dalam.', 6); }
       } else this.inRain = false;
       this.audio.setRain(lv, dt);
+      // lightning: a flicker of white down the shafts, thunder a moment later. In the flash you are
+      // as visible as in daylight to anything that looks your way, and so are they to you.
+      this.flashT = Math.max(0, (this.flashT || 0) - dt);
+      if (R.cells && this.def.thunder !== false) {
+        this.boltT = (this.boltT ?? 15 + Math.random() * 20) - dt;
+        if (this.boltT <= 0) {
+          this.boltT = 25 + Math.random() * 40;
+          const k = Math.max(0.25, lv);
+          this.flashT = 0.55; this.flashK = k;
+          this.schedule(0.4 + Math.random() * 1.6, () => this.audio.thunder(0.4 + 0.6 * k));
+          if (k > 0.5) this.input.rumble(300, 0.3 * k);
+        }
+      }
+      const fl = this.flashT > 0 ? (this.flashT > 0.42 || (this.flashT > 0.18 && this.flashT < 0.28) ? 1 : 0.15) * (this.flashK || 1) : 0;
+      this.ambient.color.setRGB(0.85 + fl * 0.1, 0.9 + fl * 0.05, 1);
+      this.lightning = fl;
     }
 
     // camcorder zoom: narrower FOV, slower look, small battery cost
@@ -1120,7 +1136,7 @@ export class Game {
       const k = 0.15 + 0.85 * bakeUniforms.uPower.value * (this.world.blackout ? 0.15 : 1) + (p.nightVision ? 0.4 : 0);
       for (const pm of this.built.poolMats) pm.color.copy(pm.userData.base).multiplyScalar(Math.min(1.2, k));
     }
-    this.ambient.intensity = p.nightVision ? 0.4 : 0.05;
+    this.ambient.intensity = (p.nightVision ? 0.4 : 0.05) + (this.lightning || 0) * 1.4;
 
     // death sequence: snap to the resident's face, FOV punch, fall, cut to static
     if (this.deathT >= 0) {

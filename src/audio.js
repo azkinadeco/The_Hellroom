@@ -55,6 +55,15 @@ export class Audio {
     }
     this.watchLv = 0;
   }
+  // thunder: a crack and a long low roll
+  thunder(vol = 1) {
+    if (!this.ready) return;
+    const ctx = this.ctx, t = this.t, src = ctx.createBufferSource(); src.buffer = this.brownBuf;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(120, t + 4);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5 * vol, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + 5.5);
+    src.connect(lp).connect(g).connect(this.master); src.start(t, Math.random() * 2); src.stop(t + 5.6);
+    this._thud(null, t, 0.35 * vol);
+  }
   // rain: a filtered noise bed, louder the more open sky is round the listener
   setRain(v, dt) {
     if (!this.ready) return;

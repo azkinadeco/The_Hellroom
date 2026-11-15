@@ -170,6 +170,7 @@ export class Entity {
       const cd = g.camera.getWorldDirection(PV), q = (-dx * cd.x - dz * cd.z) / Math.max(d, 1e-3) / Math.max(Math.hypot(cd.x, cd.z), 1e-3);
       if (q > 0.85) vis += 0.8 * (q - 0.85) / 0.15;
     }
+    if (g.lightning > 0.5 && g.inRain) vis = Math.max(vis, 1.6 * g.lightning);   // caught in the lightning
     if (p.crouched) vis *= 0.35;
     vis *= mov < 0.1 ? 0.55 : 0.8 + mov * 0.2;
     if (p.sprinting) vis *= 1.25;
