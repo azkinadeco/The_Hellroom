@@ -128,6 +128,9 @@ export class Game {
       const built = buildLevel(gen, this.assets, def, { FH, k });
       this.scene.add(built.root);
       const world = new World(gen, built);
+      // stair shafts and lift cabins are dead ends on their own floor: residents may cross them after you, never roam into them
+      gen.map.avoid = new Uint8Array(gen.map.W * gen.map.H);
+      for (const r of gen.rooms) if (r.type === 'stairs' || r.type === 'lift') for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) gen.map.avoid[x + z * gen.map.W] = 1;
       // distance (in cells) to the nearest open space: far from any atrium the
       // other floors cannot be seen and are not drawn
       const W = gen.map.W, H = gen.map.H, near = new Uint8Array(W * H).fill(255);
@@ -397,6 +400,13 @@ export class Game {
   spawnFar(kind) {
     const [px, pz] = this.map.cellOf(this.player.pos.x, this.player.pos.z);
     const c = randomReachableCell(this.map, Math.random, px, pz, 9, 40) || randomReachableCell(this.map, Math.random, px, pz, 4, 60);
+    // never lose the resident: if nothing is reachable from where the player stands, take the walkable cell furthest away
+    if (!c) {
+      const m = this.map; let best = null, bd = -1;
+      for (let i = 0; i < m.region.length; i++) { if (m.region[i] < 0 || (m.avoid && m.avoid[i])) continue; const x = i % m.W, z = (i / m.W) | 0, d = Math.abs(x - px) + Math.abs(z - pz); if (d > bd) { bd = d; best = [x, z]; } }
+      if (best) { this.entities.push(spawnEntity(this, kind, best)); shadowCaster(this.entities[this.entities.length - 1].obj); }
+      return;
+    }
     if (c) { this.entities.push(spawnEntity(this, kind, c)); shadowCaster(this.entities[this.entities.length - 1].obj); }
   }
 

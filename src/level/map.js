@@ -105,7 +105,8 @@ export class LevelMap {
   }
 
   // Line of sight in world XZ. Walls and closed doors block. Returns true if clear.
-  los(x0, z0, x1, z1) {
+  // walk = true: can a body go along the line (railings, glass and open drops block too)
+  los(x0, z0, x1, z1, walk = false) {
     let cx = Math.floor(x0 / CELL), cz = Math.floor(z0 / CELL);
     const tx = Math.floor(x1 / CELL), tz = Math.floor(z1 / CELL);
     const dx = x1 - x0, dz = z1 - z0;
@@ -122,6 +123,7 @@ export class LevelMap {
       if (t > 1) break;
       const e = this.edge(cx, cz, d);
       if (e === EDGE.WALL || e === EDGE.NONE) return false;
+      if (walk && (e === EDGE.RAIL || e === EDGE.GLASS)) return false;
       if (e === EDGE.DOOR) {
         const door = this.doorAt(cx, cz, d);
         if (!door || door.openAmount < 0.5) return false;
@@ -131,7 +133,7 @@ export class LevelMap {
         if (Math.abs(off) > DOOR_W / 2) return false;
       }
       cx += d.dx; cz += d.dz;
-      if (this.reg(cx, cz) === -1) return false;
+      if (this.reg(cx, cz) === -1 || (walk && this.reg(cx, cz) < 0)) return false;
     }
     return true;
   }

@@ -96,7 +96,7 @@ export class Entity {
     if (d < tol) { this.velocity = 0; return true; }
     const step = Math.min(d, speed * dt);
     let nx = this.pos.x + (dx / d) * step, nz = this.pos.z + (dz / d) * step;
-    if (collide) [nx, nz] = this.game.world.collide(nx, nz, this.radius);
+    if (collide) [nx, nz] = this.game.world.collide(nx, nz, Math.min(this.radius, 0.4));   // doorways are 1.1 m: a wider body would wedge in them
     this.velocity = Math.hypot(nx - this.pos.x, nz - this.pos.z) / Math.max(dt, 1e-4);
     this.pos.x = nx; this.pos.z = nz;
     this.faceToward(x, z, dt, 8);
@@ -105,6 +105,25 @@ export class Entity {
   faceToward(x, z, dt, rate = 6) {
     const target = Math.atan2(x - this.pos.x, z - this.pos.z);
     this.yaw += angleDiff(this.yaw, target) * Math.min(1, rate * dt);
+  }
+
+  // is a straight run to (x, z) free for the whole body, not just its centre line?
+  clearRun(x, z, half = 0.45) {
+    const w = this.game.map, dx = x - this.pos.x, dz = z - this.pos.z, d = Math.hypot(dx, dz);
+    if (d < 0.6) return true;
+    const ox = (-dz / d) * half, oz = (dx / d) * half;
+    return w.los(this.pos.x, this.pos.z, x, z, true) && w.los(this.pos.x + ox, this.pos.z + oz, x + ox, z + oz, true) && w.los(this.pos.x - ox, this.pos.z - oz, x - ox, z - oz, true);
+  }
+  // where to stand to inspect a hiding spot: the furthest point in front of it that is real floor in view of its door
+  lockerPoint(L) {
+    const h = hideOf(L), m = this.game.map;
+    const at = (f) => [L.x + Math.sin(L.rot) * f, L.z + Math.cos(L.rot) * f];
+    const [ox, oz] = at(h.front + 0.25);
+    for (const f of [h.inspect + (this.reach || 0), h.inspect, h.front + 0.5]) {
+      const [x, z] = at(f), [cx, cz] = m.cellOf(x, z);
+      if (m.reg(cx, cz) >= 0 && m.los(ox, oz, x, z)) return { x, z };
+    }
+    return { x: ox, z: oz };
   }
 
   // can this entity see the player? returns 0..1 strength
@@ -246,8 +265,21 @@ export class Monitor extends Entity {
         // saw them climb into the locker? then it knows exactly where they are
         if (p.hidden && this.lastSeen && g.time - this.lastSeen.t < 1.2) { this.targetLocker(p.hidden, true); break; }
         if (see > 0 && !p.hidden) {
-          this.moveToward(p.pos.x, p.pos.z, dt, speed, 0.1, true);
-          this.path = null;
+          // run straight at them only when the whole body fits; otherwise go round by the cells
+          this.detourT = (this.detourT || 0) - dt;
+          let direct = this.detourT <= 0 && this.clearRun(p.pos.x, p.pos.z);
+          if (!direct) {
+            this.repathT = (this.repathT || 0) - dt;
+            if (this.repathT <= 0 || !this.path) { this.repathT = 0.35; this.finalPoint = null; this.goTo(...g.map.cellOf(p.pos.x, p.pos.z)); }
+            if (!this.path || this.followPath(dt, speed)) direct = true;
+          }
+          if (direct) {
+            this.moveToward(p.pos.x, p.pos.z, dt, speed, 0.1, true);
+            this.path = null;
+            // pressed against a corner or a prop: stop pushing and path round it
+            this.stuckT = (this.velocity || 0) < speed * 0.3 && d > 1.3 ? (this.stuckT || 0) + dt : 0;
+            if (this.stuckT > 0.3) { this.stuckT = 0; this.detourT = 1.4; this.repathT = 0; }
+          }
           if (d < 1.25) { this.attack(); break; }
         } else {
           this.lostT += dt;
@@ -274,10 +306,14 @@ export class Monitor extends Entity {
       case 'locker': { // walking to / inspecting a locker
         const L = this.lockerTarget;
         speed = (this.lockerSure ? this.run : this.walk * 1.2) * this.speedMul;
-        const fd = hideOf(L).inspect + (this.reach || 0);   // long bodies stop further back so the head stays outside
-        const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
-        const arrived = this.path && this.pathIdx < this.path.length ? this.followPath(dt, speed) : this.moveToward(fx, fz, dt, speed, 0.25, true);
-        if (arrived || this.distTo({ x: fx, z: fz }) < 0.35) {
+        const { x: fx, z: fz } = this.lockerPt || (this.lockerPt = this.lockerPoint(L));   // long bodies stop further back so the head stays outside
+        let arrived = (this.path && this.pathIdx < this.path.length) || this.finalPoint ? this.followPath(dt, speed) : this.moveToward(fx, fz, dt, speed, 0.25, false);
+        // cannot get there (no way round, or wedged): close enough with the door in view counts, otherwise give up
+        if (!arrived && !this.inspectT && this.stateT > 10) {
+          if (this.distTo(L) < 3 && g.world.los(this.pos.x, this.pos.z, fx, fz)) arrived = true;
+          else { this.setState('patrol'); this.waitT = 1; this.suspicion = 0.3; this.path = null; g.onChaseEnd(this); break; }
+        }
+        if (arrived || this.inspectT > 0 || this.distTo({ x: fx, z: fz }) < 0.35) {
           this.velocity = 0;
           this.faceToward(L.x, L.z, dt, 10);
           this.inspectT = (this.inspectT || 0) + dt;
@@ -325,9 +361,8 @@ export class Monitor extends Entity {
   targetLocker(L, sure) {
     this.lockerTarget = L; this.lockerSure = sure; this.inspectT = 0; this.breathHeard = 0;
     this.setState('locker');
-    const fd = hideOf(L).inspect + (this.reach || 0);   // long bodies stop further back so the head stays outside
-    const fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd;
-    this.goToWorld(fx, fz);
+    this.lockerPt = this.lockerPoint(L);
+    this.goToWorld(this.lockerPt.x, this.lockerPt.z);
     if (!sure) this.game.hud.toast(`Ada yang mendekati ${hideOf(L).label}mu… tahan napas!`, 2.5);
   }
 

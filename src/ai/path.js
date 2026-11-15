@@ -31,7 +31,7 @@ export function randomReachableCell(map, rng, fromX, fromZ, minD, maxD, preferHa
   const dist = map.bfs(fromX, fromZ);
   const cand = [];
   for (let i = 0; i < dist.length; i++) {
-    if (dist[i] < minD || dist[i] > maxD) continue;
+    if (dist[i] < minD || dist[i] > maxD || (map.avoid && map.avoid[i])) continue;
     const x = i % map.W, z = (i / map.W) | 0;
     const r = map.region[i];
     const w = preferHall && r === 0 ? 3 : 1;
