@@ -42,6 +42,17 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 75–84
+
+- **Kecerahan**: penggeser di Pengaturan dan layar kalibrasi saat pertama kali dibuka.
+- **Indikator arah suara** (Pengaturan): busur di sekitar bidikan menunjuk asal suara, merah untuk suara penghuni.
+- **Ganjal pintu**: jongkok + interaksi di pintu tertutup; penghuni harus mendobrak ±3 detik.
+- **Hujan dan petir** di kolom langit terbuka (taman rumah sakit, rotunda museum, atrium Jurang): hujan menyamarkan langkah dan membasahi sepatu; petir membuatmu terlihat.
+- **Ruang Latihan** di Mode Lain: daftar latihan, penghuni tidak bisa membunuh.
+- **Ingatan persembunyian**: tempat yang sering kamu pakai diperiksa penghuni.
+- **Silau senter**: sorotan tepat ke wajah dari dekat menghentikan pengejar 0,9 detik (sekali tiap 15 detik).
+- **Riwayat rekaman** 12 permainan terakhir di Arsip.
+
 ## Siluman lanjutan (batch 64–74)
 
 - **Intro ONIX Studio** sebelum menu (batch 64).
