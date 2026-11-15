@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0, knocks: 0, peeks: 0, noticed: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true } };
+const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0, knocks: 0, peeks: 0, noticed: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true, bright: 1 } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -469,7 +469,7 @@ function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
   $('set-screen').value = s.screen; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
-  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps; $('set-autores').checked = s.autoRes !== false;
+  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps; $('set-bright').value = s.bright || 1; $('set-bright-val').textContent = Math.round((s.bright || 1) * 100) + '%'; $('set-autores').checked = s.autoRes !== false;
   $('save-msg').textContent = ''; $('save-code').classList.add('hidden'); resetArmed = false; $('save-reset').textContent = 'Hapus semua progres';
   buildBinds();
 }
@@ -535,11 +535,11 @@ function readSettings() {
   const s = save.settings;
   s.sens = +$('set-sens').value; s.volume = +$('set-vol').value; s.quality = $('set-quality').value;
   s.screen = $('set-screen').value; s.invertY = $('set-inv').checked; s.subs = $('set-subs').checked;
-  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked; s.autoRes = $('set-autores').checked;
+  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked; s.bright = +$('set-bright').value; $('set-bright-val').textContent = Math.round(s.bright * 100) + '%'; s.autoRes = $('set-autores').checked;
   persist();
   if (game) game.applySettings();
 }
-for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps', 'set-autores']) $(id).addEventListener('input', readSettings);
+for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps', 'set-autores', 'set-bright']) $(id).addEventListener('input', readSettings);
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');
@@ -595,7 +595,7 @@ function padMenus() {
   if (current === 'pause' && (e.has(9) || e.has(1))) { ui.resume(); return; }
   const af = document.activeElement;
   if (e.has(0) && af && focusables().includes(af) && af.tagName !== 'SELECT' && af.type !== 'range') { af.click(); return; }
-  if (e.has(0)) click({ title: '#title [data-go="play"]', intro: '#intro-go', note: '#note-close', dead: '#btn-retry', win: '#btn-next', ending: '#btn-end-menu' }[current] || '.none');
+  if (e.has(0)) click({ title: '#title [data-go="play"]', calib: '#calib-ok', intro: '#intro-go', note: '#note-close', dead: '#btn-retry', win: '#btn-next', ending: '#btn-end-menu' }[current] || '.none');
   else if (e.has(1)) click(`#${current} .back[data-go], #btn-dead-menu, #btn-win-menu`.replace('#btn-dead-menu', current === 'dead' ? '#btn-dead-menu' : '.none').replace('#btn-win-menu', current === 'win' ? '#btn-win-menu' : '.none'));
 }
 
@@ -623,6 +623,29 @@ function endSplash() {
   });
 }
 
+// First launch: a brightness test card drawn through the game's own tone curve
+function calibrate() {
+  return new Promise((resolve) => {
+    const cv = $('calib-canvas'), c = cv.getContext('2d'), sl = $('calib-bright');
+    sl.value = save.settings.bright || 1;
+    const draw = () => {
+      const b = +sl.value, tone = (v) => Math.round(255 * Math.pow(v, 1 / b));
+      c.fillStyle = '#000'; c.fillRect(0, 0, cv.width, cv.height);
+      // the faint symbol (should be barely visible) and the clear one
+      for (const [x, v] of [[140, 0.035], [340, 0.16]]) {
+        const t = tone(v); c.fillStyle = `rgb(${t},${t},${t})`;
+        c.beginPath(); c.ellipse(x, 62, 26, 34, 0, 0, Math.PI * 2); c.fill();
+        c.fillRect(x - 34, 92, 68, 48);
+        c.fillStyle = '#000'; c.beginPath(); c.arc(x - 9, 58, 5, 0, 7); c.arc(x + 9, 58, 5, 0, 7); c.fill();
+      }
+      $('calib-val').textContent = Math.round(b * 100) + '%';
+    };
+    sl.oninput = draw; draw();
+    show('calib');
+    $('calib-ok').onclick = () => { save.settings.bright = +sl.value; save.calibrated = true; persist(); game.settings = save.settings; game.applySettings(); resolve(); };
+  });
+}
+
 async function boot() {
   await assets.load((f) => { $('load-bar').style.width = (f * 100).toFixed(0) + '%'; });
   game = new Game({ canvas: $('game'), assets, audio, input, hud, settings: save.settings, ui });
@@ -641,6 +664,7 @@ async function boot() {
   try { if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (_) { /* sandboxed frames refuse service workers */ }
   buildTitle();
   await endSplash();
+  if (!save.calibrated) await calibrate();
   show('title');
   let last = performance.now();
   const frame = (now) => {

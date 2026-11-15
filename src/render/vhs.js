@@ -14,6 +14,7 @@ uniform float uFxOn;
 uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery, uClean;
 uniform vec2 uRes, uTexel;
 uniform vec3 uGrade;
+uniform float uBright;   // player's brightness setting: a gamma lift of the shadows
 varying vec2 vUv;
 uniform mat4 uCamWorld;
 uniform vec3 uCamDir, uMistCol, uMistLamp;
@@ -44,7 +45,9 @@ vec3 grade(vec3 c){
   c += vec3(0.006, 0.008, 0.016) * (1.0 - smoothstep(0.0, 0.3, l));
   vec3 s = c * c * (3.0 - 2.0 * c);
   c = mix(c, s, 0.35);
-  return clamp(c, 0.0, 1.0) * uGrade;
+  c = clamp(c, 0.0, 1.0);
+  c = pow(c, vec3(1.0 / uBright));
+  return c * uGrade;
 }
 // cheap single-pass glow: two rings of taps, only the bright part counts
 vec3 bloom(vec2 uv){
@@ -229,7 +232,7 @@ export class VHS {
       uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uClean: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
       uTexel: { value: new THREE.Vector2(0.001, 0.001) }, uGrade: { value: new THREE.Vector3(1, 1, 1) },
       tDepth: { value: null }, uNear: { value: 0.1 }, uFar: { value: 100 }, uAO: { value: 0 }, uSharp: { value: 0 }, uProj: { value: new THREE.Vector2(1, 1) }, uTaps: { value: 6 },
-      tFx: { value: null }, uFxOn: { value: 0 },
+      tFx: { value: null }, uFxOn: { value: 0 }, uBright: { value: 1 },
       uCamWorld: { value: new THREE.Matrix4() }, uCamDir: { value: new THREE.Vector3() }, uMistCol: { value: new THREE.Color(0.2, 0.2, 0.2) }, uMistLamp: { value: new THREE.Color(0.55, 0.5, 0.42) },
       uMist: { value: 0 }, uGround: { value: 0 }, uMistLight: { value: 0 }, uNoiseTex: { value: noiseTex() },
     };

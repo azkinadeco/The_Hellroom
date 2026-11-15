@@ -450,3 +450,7 @@ body.clear-screen #splash.tear .splash-logo, .reduce-motion #splash.tear .splash
 @media (max-height: 420px) { .tlean { bottom: 168px; } }
 .tbtn.knock { display: none; }
 body.can-knock .tbtn.knock { display: flex; }
+
+/* batch 75: brightness calibration */
+.calib canvas { display: block; width: 100%; max-width: 480px; margin: 10px auto; background: #000; border: 1px solid var(--line); }
+.calib .primary { margin-top: 14px; }
