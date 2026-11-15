@@ -430,6 +430,7 @@ export class Monitor extends Entity {
             else { this.setState('patrol'); this.waitT = 1; }
           }
           else if (n.L) { const q = this.lockerPoint(n.L); if (this.goToWorld(q.x, q.z)) this.peekNext = n.L; else this.finalPoint = null; }
+          else if (n.room) { (this.roomsSearched || (this.roomsSearched = new Map())).set(n.room, g.time); if (this.goTo(...n.c)) this.peekNext = n.look; g.stats.roomsSwept = (g.stats.roomsSwept || 0) + 1; }
           else this.goTo(...n);
           const [cx, cz] = this.cell(); (this.searched || (this.searched = new Map())).set(cx + cz * g.map.W, g.time);
         } else this.followPath(dt, speed);
@@ -631,10 +632,20 @@ export class Monitor extends Entity {
     const spots = (g.built.lockers || []).filter((L) => { const [cx, cz] = m.cellOf(L.x, L.z), i = cx + cz * m.W; return dist[i] >= 0 && dist[i] <= 6 && Math.hypot(L.x - ls.x, L.z - ls.z) < 12; })
       .sort((a, b) => Math.hypot(a.x - at.x, a.z - at.z) - Math.hypot(b.x - at.x, b.z - at.z)).slice(0, 3);
     for (const L of spots.slice(0, Math.random() < 0.5 ? 1 : 2)) if (this.lockers) pts.push({ L });
-    // 3. somewhere close it has not looked yet
+    // 3. the nearest rooms off the spot, in order, each looked into from its doorway (not ones searched lately)
+    { const roomAt = new Map();
+      for (let i = 0; i < dist.length; i++) { const r = m.region[i]; if (r <= 0 || dist[i] < 0 || dist[i] > 8 || (m.avoid && m.avoid[i])) continue; const cur = roomAt.get(r); if (!cur || dist[i] < dist[cur]) roomAt.set(r, i); }
+      const rooms = [...roomAt.entries()].filter(([r]) => !this.roomsSearched || !(g.time - (this.roomsSearched.get(r) ?? -1e9) < 45)).sort((a, b) => dist[a[1]] - dist[b[1]]).slice(0, 2);
+      for (const [r, i] of rooms) {
+        const room = g.gen.rooms.find((q) => q.id === r);
+        const look = room ? { x: (room.x0 + room.x1 + 1) * CELL / 2, z: (room.z0 + room.z1 + 1) * CELL / 2 } : { x: m.center(i % m.W, (i / m.W) | 0)[0], z: m.center(i % m.W, (i / m.W) | 0)[1] };
+        pts.push({ room: r, c: [i % m.W, (i / m.W) | 0], look });
+      }
+    }
+    // 4. somewhere close it has not looked yet
     const [cx, cz] = this.cell();
     for (let k = 0; k < 4; k++) { const c = randomReachableCell(m, Math.random, cx, cz, 1, 4); if (c && fresh(c[0] + c[1] * m.W)) { pts.push(c); break; } }
-    return pts;
+    return pts.slice(0, 5);
   }
 
   targetLocker(L, sure) {
