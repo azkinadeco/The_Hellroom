@@ -252,7 +252,7 @@ export class Monitor extends Entity {
     this.lastSeen = null;
     this.lostT = 0;
     this.searchPts = [];
-    this.walk = o.walk ?? 1.55; this.run = o.run ?? 4.35;
+    this.walk = o.walk ?? 1.55; this.run = (o.run ?? 4.35) * 0.92;   // a step slower than before: you can outrun them for a while
     this.sight = o.sight ?? [16, 120, 30, 360];   // range, fov, chase range, chase fov (360: once it has you it tracks you all round)
     this.lockers = o.lockers ?? true;
     this.stepEvery = o.stepEvery ?? 1.1;
@@ -403,7 +403,7 @@ export class Monitor extends Entity {
         break;
       }
       case 'chase': {
-        speed = this.run * this.speedMul;
+        speed = this.run * this.speedMul * this.chasePace(dt);
         // the torch full in its face from close by: it flinches for a moment (not the blind, and only now and then)
         if (this.stunT > 0) { this.stunT -= dt; this.velocity = 0; this.faceToward(p.pos.x, p.pos.z, dt, 2); break; }
         if (p.flashlight && !p.hidden && this.kind !== 'pale' && g.time > (this.dazzleCd || 0)) {
@@ -617,6 +617,27 @@ export class Monitor extends Entity {
     this.investigatePt = { x: tx, z: tz }; this.intercept = true;
     this.setState('investigate'); this.lookT = 0; this.goToWorld(tx, tz);
     return true;
+  }
+
+  // How hard it is running right now, as a share of its top speed. A chase starts slower (a
+  // head start), then every 5-8 s it falters for 1.5 s - it pants, hisses or stumbles, you can
+  // hear it - and close behind a sprinting player it only just gains on them.
+  chasePace(dt) {
+    const g = this.game, p = g.player;
+    if (this.stateT < 0.05) { this.lullT = 0; this.nextLull = 4 + Math.random() * 3; }
+    let k = Math.min(1, 0.68 + this.stateT / 2.2 * 0.32);
+    this.nextLull -= dt;
+    if (this.nextLull <= 0 && this.lullT <= 0) {
+      this.lullT = 1.5; this.nextLull = 5 + Math.random() * 3;
+      g.audio.sniff && g.audio.sniff({ x: this.pos.x, y: 1.4, z: this.pos.z });
+      g.stats.lulls = (g.stats.lulls || 0) + 1;
+      if (this.distTo(p.pos) < 18) g.hint('lull', 'Pengejar sesekali melambat sebentar dan terengah: itu kesempatanmu memutus pandangannya.', 5);
+    }
+    if (this.lullT > 0) { this.lullT -= dt; k *= 0.55; }
+    // close behind a sprinting player: barely faster than them, never a sudden burst
+    const d = this.distTo(p.pos), ps = Math.hypot(p.vel.x, p.vel.y);
+    if (d < 4 && ps > 3) k = Math.min(k, (ps * 1.03) / Math.max(0.1, this.run * this.speedMul));
+    return k;
   }
 
   // Dead reckoning from the trail of sightings: the walkable cell nearest to where the
