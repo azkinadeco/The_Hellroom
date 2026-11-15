@@ -403,6 +403,7 @@ class Shade extends Entity {
     super(game, 'shade', cell);
     this.radius = 0.4;
     this.walk = 1.0; this.stalkSpeed = 3.3;
+    this.noSmooth = true;   // its paths keep to dark cells: never cut a corner through the light
     this.state = 'lurk';
     this.burn = 0; this.calmT = 0; this.whisperT = 2; this.lostT = 0;
     this.target = null;

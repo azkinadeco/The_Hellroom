@@ -69,6 +69,15 @@ export class Entity {
       }
       return true;
     }
+    // string-pull: cut straight to a later cell on the path when the whole body fits (no zig-zag across open floor)
+    this.smoothT = (this.smoothT || 0) - dt;
+    if (this.smoothT <= 0 && !this.noSmooth && this.pathIdx < this.path.length - 1) {
+      this.smoothT = 0.25;
+      for (let k = Math.min(this.pathIdx + 5, this.path.length - 1); k > this.pathIdx; k--) {
+        const [kx, kz] = this.game.map.center(...this.path[k]);
+        if (this.clearRun(kx, kz, Math.min(this.radius, 0.4))) { this.pathIdx = k; break; }
+      }
+    }
     const [cx, cz] = this.path[this.pathIdx];
     const [wx, wz] = this.game.map.center(cx, cz);
     // open doors on the way
