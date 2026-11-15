@@ -154,6 +154,14 @@ export class Entity {
     return clamp((1 - d / r) * 1.4 + 0.15, 0, 1) * Math.min(1.3, vis);
   }
 
+  // is a spot on the floor plan in front of it, near enough and in plain view?
+  seesSpot(q) {
+    const dx = q.x - this.pos.x, dz = q.z - this.pos.z, d = Math.hypot(dx, dz);
+    if (d > 16 || d < 1) return false;
+    if (this.sight[1] < 360 && Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) * 360 / Math.PI > this.sight[1]) return false;
+    return this.game.world.los(this.pos.x, this.pos.z, q.x, q.z);
+  }
+
   // How fast this resident is noticing the player right now (awareness per second, 0 = not at all).
   // A sight cone with a narrow sharp centre and a short blurry edge that only catches movement;
   // light, crouching, standing still, the torch pointed at it, low cover and open sky all count.
@@ -296,6 +304,12 @@ export class Monitor extends Entity {
     else {
       const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : 1) * (g.def.awareMul || 1);
       if (gain > 0) { this.awareness = Math.min(1.2, (this.awareness || 0) + gain * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }
+      else if (this.spotsLight !== false && g.beamSpot && this.seesSpot(g.beamSpot)) {
+        // your light moving on a dark wall: it comes to see where it is coming from (never past half-aware on light alone)
+        if ((this.awareness || 0) < 0.6) this.awareness = Math.min(0.6, (this.awareness || 0) + 0.45 * dt);
+        this.glimpse = { x: (g.beamSpot.x + p.pos.x) / 2, z: (g.beamSpot.z + p.pos.z) / 2, t: g.time };
+        g.stats.beamSpotted = (g.stats.beamSpotted || 0) + dt;
+      }
       else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
       if (this.awareness >= 1) see = 1;
       this.checkDoors(dt);

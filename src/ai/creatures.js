@@ -80,6 +80,7 @@ class Pale extends Monitor {
   }
   chaseSound() { this.game.audio.hiss(this.pos); }
   perceive() { return this.sense() * 8; }   // blind: it 'sees' only what it hears and feels close by
+  get spotsLight() { return false; }
   sense() {
     const p = this.game.player;
     if (p.hidden || !p.alive) return 0;

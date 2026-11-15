@@ -1032,6 +1032,17 @@ export class Game {
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
     this.prints.update(dt);
+    { // where the torch beam lands: residents that cannot see you may still see your light on a dark wall
+      this.beamT = (this.beamT || 0) - dt;
+      if (this.beamT <= 0) {
+        this.beamT = 0.25; this.beamSpot = null;
+        const p = this.player, c = this.camera.position;
+        if (p.flashlight && !p.hidden && p.alive && this.map) {
+          const d = this.camera.getWorldDirection(this._bd || (this._bd = new THREE.Vector3())), h = Math.hypot(d.x, d.z);
+          if (h > 0.25) for (let r = 1; r <= 12; r += 0.5) { const x = c.x + d.x / h * r, z = c.z + d.z / h * r; if (!this.map.los(c.x, c.z, x, z)) { const q = { x: c.x + d.x / h * (r - 0.6), z: c.z + d.z / h * (r - 0.6) }; if (!this.world.isLit(q.x, q.z)) this.beamSpot = q; break; } }
+        }
+      }
+    }
     { // trails for the death debrief: the last 20 s of you and of every resident on this floor
       this.traceT = (this.traceT || 0) - dt;
       if (this.traceT <= 0) {
