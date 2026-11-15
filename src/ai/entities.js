@@ -325,14 +325,14 @@ export class Monitor extends Entity {
         break;
       }
       case 'investigate': {
-        speed = (this.suspicion > 0.6 ? this.walk * 1.6 : this.walk * 1.15) * this.speedMul;
+        speed = (this.intercept ? this.run * 0.8 : this.suspicion > 0.6 ? this.walk * 1.6 : this.walk * 1.15) * this.speedMul;
         if (see > 0 && this.stateT > 0.5) { this.goToWorld(p.pos.x, p.pos.z); this.stateT = 0; }
         if (this.followPath(dt, speed)) {
           this.velocity = 0;
           if (!this.lookT) this.lookT = 2.5;
           this.lookT -= dt;
           this.yaw += dt * 1.6;
-          if (this.lookT <= 0) { this.lookT = 0; this.setState('patrol'); this.waitT = 0.5; }
+          if (this.lookT <= 0) { this.lookT = 0; this.intercept = false; this.setState('patrol'); this.waitT = 0.5; }
         }
         this.checkLockers(dt);
         break;
@@ -489,6 +489,29 @@ export class Monitor extends Entity {
     this.awareness = Math.max(this.awareness || 0, 0.55);
     this.glimpse = { x: end.x, z: end.z, t: g.time };
     g.stats.printsFollowed = (g.stats.printsFollowed || 0) + 1;
+  }
+
+  // Another resident is chasing the player and calls out where they are. Instead of
+  // running after the same back it heads for the far side, to cut the player off.
+  receiveCall(lkp, from) {
+    const g = this.game, m = g.map;
+    if (this.state === 'chase' || this.state === 'attack' || this.state === 'locker' || this.form === 'statue') return false;
+    let dx = lkp.x - from.pos.x, dz = lkp.z - from.pos.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+    // the walkable cell nearest to a point 5 m beyond the player, reachable from here
+    const [cx, cz] = this.cell(), dist = m.bfs(cx, cz), ax = lkp.x + dx * 5, az = lkp.z + dz * 5;
+    let best = -1, bd = Infinity;
+    for (let i = 0; i < dist.length; i++) {
+      if (dist[i] < 0 || (m.avoid && m.avoid[i])) continue;
+      const [x, z] = m.center(i % m.W, (i / m.W) | 0), q = Math.hypot(x - ax, z - az);
+      if (q < bd && Math.hypot(x - lkp.x, z - lkp.z) < 9) { bd = q; best = i; }
+    }
+    if (best < 0) return false;
+    const [tx, tz] = m.center(best % m.W, (best / m.W) | 0);
+    this.awareness = Math.max(this.awareness || 0, 0.6);
+    this.suspicion = Math.max(this.suspicion, 0.9);
+    this.investigatePt = { x: tx, z: tz }; this.intercept = true;
+    this.setState('investigate'); this.lookT = 0; this.goToWorld(tx, tz);
+    return true;
   }
 
   // Where to look after losing them: ahead along the way they were running,

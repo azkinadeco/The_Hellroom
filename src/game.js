@@ -995,6 +995,23 @@ export class Game {
     this.danger = damp(this.danger, danger, 3, dt);
     if (this.graceT > 0) this.graceT -= dt;
     this.direct(dt, danger, chase);
+    // residents sharing a floor call each other: the hunter gives away where you are, the others cut you off
+    if (this.entities.length > 1 && chase) {
+      this.callT = (this.callT || 0) - dt;
+      if (this.callT <= 0) {
+        this.callT = 1.5;
+        for (const A of this.chasers) {
+          if (!A.lastSeen || this.time - A.lastSeen.t > 2) continue;
+          for (const B of this.entities) {
+            if (B === A || !B.receiveCall || Math.hypot(B.pos.x - A.lastSeen.x, B.pos.z - A.lastSeen.z) > 45) continue;
+            if (B.receiveCall({ x: A.lastSeen.x, z: A.lastSeen.z }, A)) {
+              this.stats.calls = (this.stats.calls || 0) + 1;
+              this.hint('duo', 'Dua penghuni di lantai ini saling memanggil: saat satu mengejarmu, yang lain berlari menghadang dari depan.', 6);
+            }
+          }
+        }
+      }
+    }
     this.updateTrail(dt);
     if (danger > 0.25 || chase || p.hidden) this.quietT = Math.max(0, this.quietT - dt * 4); else this.quietT += dt;
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);

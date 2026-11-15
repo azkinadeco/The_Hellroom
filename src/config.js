@@ -171,6 +171,9 @@ export function endlessDef(floor, seed) {
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   // one resident per floor, a different one each time
   const entities = [{ type: RESIDENTS[(seed + f * 7) % RESIDENTS.length] }];
+  // from floor -8 down two hunters share the floor, and they call each other
+  const HUNTERS = ['pale', 'spider', 'centipede', 'clock', 'weaver', 'squid'];
+  if (f >= 8) { const pool = HUNTERS.filter((k) => k !== entities[0].type); entities.push({ type: pool[(seed + f * 13) % pool.length] }); }
   const style = ENDLESS_STYLE_ORDER[(seed + f - 1) % ENDLESS_STYLE_ORDER.length];
   const band = [ri(3, 4), ri(3, 4)];
   const aw = Math.min(10, 4 + ri(0, Math.min(6, f))), ah = Math.min(8, 4 + ri(0, Math.min(4, f)));
@@ -179,7 +182,7 @@ export function endlessDef(floor, seed) {
     id: 'endless', endless: true, floor: f,
     code: `LANTAI ${-f}`,
     name: ENDLESS_NAMES[(seed + f) % ENDLESS_NAMES.length],
-    subtitle: f === 1 ? 'Tangganya hanya mengarah ke bawah.' : `Kamu sudah turun ${f - 1} lantai.`,
+    subtitle: (f === 1 ? 'Tangganya hanya mengarah ke bawah.' : `Kamu sudah turun ${f - 1} lantai.`) + (f >= 8 ? ' Ada dua langkah berbeda di lantai ini.' : ''),
     seed: seed + f * 7919,
     layout: 'endless', style, band, atrium: ri(0, 3), floors, seeAll: true, seeNear: 1,
     size: [aw + band[0] * 2 + 4, ah + band[1] * 2 + 4],
