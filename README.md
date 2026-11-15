@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 85–94
+
+- **Lubang kunci**: condong di depan pintu tertutup untuk mengintip ke baliknya tanpa terlihat.
+- **Cahaya bocor**: senter yang dinyalakan di tempat sembunyi terlihat penghuni dalam 10 m.
+- **Mengendus**: penghuni berhenti 3 detik dan pendengarannya 1,8× lebih jauh.
+- **Pura-pura pergi**: 35% pencarian berakhir dengan penghuni menunggu diam 8–12 detik.
+- **Kutukan Jurang baru**: Penghuni Waspada, Pintu Berderit, Tanpa Ganjal, Senter Redup.
+- **Kontrol**: jongkok tahan/tekan, lari tahan/tekan (keyboard).
+- **Getaran detak jantung** di gamepad dan HP saat takut.
+- **Petir** menerangi seluruh layar.
+- **Lencana**: Siap Merekam, Lubang Kunci, Tiga Detik Berharga, Silau, Terkutuk.
+
 ## Batch 75–84
 
 - **Kecerahan**: penggeser di Pengaturan dan layar kalibrasi saat pertama kali dibuka.
