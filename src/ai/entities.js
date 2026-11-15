@@ -288,7 +288,7 @@ export class Monitor extends Entity {
     let see = 0;
     if (hunting) see = this.sense();
     else {
-      const gain = this.perceive(this.sight[0], this.sight[1]);
+      const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : 1);
       if (gain > 0) { this.awareness = Math.min(1.2, (this.awareness || 0) + gain * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }
       else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
       if (this.awareness >= 1) see = 1;
@@ -421,12 +421,28 @@ export class Monitor extends Entity {
         } else if ((!this.path || this.pathIdx >= this.path.length) && !this.finalPoint) {
           if (this.peekNext) { this.peek = this.peekNext; this.peekNext = null; this.peekT = 1.3; break; }
           const n = this.searchPts.shift();
-          if (!n) { this.setState('patrol'); this.waitT = 1; this.suspicion = 0.2; this.awareness = 0.3; g.onChaseEnd(this); }
+          if (!n) {
+            g.onChaseEnd(this);
+            this.suspicion = 0.2; this.awareness = 0.3;
+            // sometimes it only pretends to give up: it stands stock-still near the spot, watching, then leaves
+            if (!this.statue && this.lastSeen && Math.random() < 0.35) { this.setState('wait'); this.lurkT = 8 + Math.random() * 4; this.velocity = 0; g.stats.lurks = (g.stats.lurks || 0) + 1; }
+            else { this.setState('patrol'); this.waitT = 1; }
+          }
           else if (n.L) { const q = this.lockerPoint(n.L); if (this.goToWorld(q.x, q.z)) this.peekNext = n.L; else this.finalPoint = null; }
           else this.goTo(...n);
           const [cx, cz] = this.cell(); (this.searched || (this.searched = new Map())).set(cx + cz * g.map.W, g.time);
         } else this.followPath(dt, speed);
         this.checkLockers(dt);
+        break;
+      }
+      case 'wait': {   // silent, still, watching where it lost you
+        this.velocity = 0;
+        if (this.lastSeen) this.faceToward(this.lastSeen.x, this.lastSeen.z, dt, 1.2);
+        this.yaw += Math.sin(g.time * 0.5) * dt * 0.25;
+        this.checkLockers(dt);
+        if (this.state !== 'wait') break;
+        this.lurkT -= dt;
+        if (this.lurkT <= 0) { this.setState('patrol'); this.waitT = 0.5; }
         break;
       }
       case 'locker': { // walking to / inspecting a locker
