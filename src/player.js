@@ -93,7 +93,8 @@ export class Player {
     // dying-battery stutter
     let flash = this.flashlight ? 1 : 0;
     if (this.flashlight && this.battery < 15) flash *= Math.random() < 0.06 ? 0.15 : 0.85 + Math.random() * 0.15;
-    this.light.intensity = flash * 11;
+    this.light.intensity = flash * 11 * (game.def.torchMul || 1);
+    this.light.distance = 22 * (game.def.torchMul || 1);
 
     // ----- breath (only meaningful while hidden) -----
     const holding = this.hidden && input.holdingBreath() && this.breath > 0;

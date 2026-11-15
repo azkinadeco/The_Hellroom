@@ -163,6 +163,10 @@ export const ENDLESS_MODS = {
   gelisah: { name: 'Penghuni Gelisah', desc: 'Penghuni bergerak lebih cepat.', def: { speedMul: 1.15 } },
   padam:  { name: 'Pemadaman Bergilir', desc: 'Listrik padam berkali-kali.', def: { paBlackout: true } },
   angker: { name: 'Lantai Angker', desc: 'Hal-hal ganjil terjadi jauh lebih sering.', def: { odd: 3 } },
+  waspada: { name: 'Penghuni Waspada', desc: 'Penghuni menyadarimu jauh lebih cepat.', def: { awareMul: 1.45 } },
+  berderit: { name: 'Pintu Berderit', desc: 'Setiap pintu yang kamu buka atau tutup terdengar dua kali lebih jauh.', def: { doorNoise: 2 } },
+  tanpaganjal: { name: 'Tanpa Ganjal', desc: 'Tidak ada ganjal pintu di lantai ini.', def: { wedges: 0 } },
+  redup: { name: 'Senter Redup', desc: 'Senter hanya menerangi setengah jarak biasanya.', def: { torchMul: 0.55 } },
 };
 export function endlessDef(floor, seed) {
   const f = floor;

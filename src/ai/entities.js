@@ -288,7 +288,7 @@ export class Monitor extends Entity {
     let see = 0;
     if (hunting) see = this.sense();
     else {
-      const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : 1);
+      const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : 1) * (g.def.awareMul || 1);
       if (gain > 0) { this.awareness = Math.min(1.2, (this.awareness || 0) + gain * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }
       else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
       if (this.awareness >= 1) see = 1;
