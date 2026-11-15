@@ -48,7 +48,7 @@ export class AutoMap {
         const [wx, wz] = m.center(x, z);
         if ((x === cx && z === cz) || m.los(p.pos.x, p.pos.z, wx, wz)) { s[x + z * m.W] = 1; this.count++; this.dirty = true; }
       }
-      if (this.open && (this.lastX !== p.pos.x || this.lastZ !== p.pos.z || this.lastYaw !== p.yaw)) this.dirty = true;
+      if (this.open && (this.lastX !== p.pos.x || this.lastZ !== p.pos.z || this.lastYaw !== p.yaw || (g.marks && g.marks.length))) this.dirty = true;
     }
     if (this.open && this.dirty) this.draw();
   }
@@ -115,6 +115,15 @@ export class AutoMap {
     const fb = f.gen.fusebox, ex = f.gen.exit;
     if (fb && at(...fb.cell)) mark((fb.cell[0] + 0.5) * CELL, (fb.cell[1] + 0.5) * CELL, '⚡', g.powered ? GREEN : RED);
     if (ex && at(...ex.cell)) mark((ex.cell[0] + 0.5) * CELL, (ex.cell[1] + 0.5) * CELL, '✚', g.powered ? GREEN : RED);
+    // where you were seen: a red ! that fades over a minute, and your alarm clocks
+    for (const M of g.marks || []) {
+      const age = g.time - M.t;
+      if (M.k !== k || age > 60) continue;
+      c.globalAlpha = Math.max(0.15, 1 - age / 60);
+      mark(M.x, M.z, '!', RED);
+      c.globalAlpha = 1;
+    }
+    for (const A of g.alarms || []) if (A.floor === k) mark(A.x, A.z, '◷', '#6a4a12');
     // the mark you did not draw
     const A = g.assist;
     if (A && A.k === k) {
@@ -143,6 +152,6 @@ export class AutoMap {
     c.setTransform(1, 0, 0, 1, 0, 0);
     const n = this.seen.length, touch = g.input.touch;
     this.label.textContent = `DENAH — ${g.def.name} · Lantai ${k + 1}/${n}${k === g.floorK ? '' : ' (bukan lantaimu)'}`
-      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci';
+      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci  ! kamu terlihat  ◷ weker';
   }
 }

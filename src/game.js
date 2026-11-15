@@ -253,6 +253,7 @@ export class Game {
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0 };
     this.alarms = [];
+    this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
     this.projectiles = [];
     this.hintT = 0;
     this.timers = [];
@@ -501,6 +502,7 @@ export class Game {
     for (const e of this.entities) if (e !== src && Math.hypot(e.pos.x - x, e.pos.z - z) < 48) e.onNoise(x, z, 1, 'alert');
   }
   onChaseStart(e) {
+    if (!this.chasers.has(e) && this.player.alive) { this.marks.push({ k: this.floorK, x: this.player.pos.x, z: this.player.pos.z, t: this.time, kind: e.kind }); if (this.marks.length > 12) this.marks.shift(); if (this.automap) this.automap.dirty = true; }
     if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); this.input.rumble(180, 0.7); }
   }
   onChaseEnd(e) { if (this.chasers.delete(e) && this.player.alive) { this.graceT = this.diff.grace; this.quietT = 0; this.stats.escapes = (this.stats.escapes || 0) + 1; } }
