@@ -788,6 +788,7 @@ export class Game {
       p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
     }
     // how it gets you: most lunge, the spider drops from above, the clock and the statue stand silent first
+    this.scareLv = this.calm ? 'tenang' : this.settings.scare || 'penuh';
     this.scareStyle = entity.kind === 'spider' ? 'drop' : (entity.kind === 'clock' || entity.statue) ? 'still' : 'lunge';
     this.scareDelay = this.scareStyle === 'still' ? 0.45 : 0;
     const hit = () => {
@@ -796,7 +797,7 @@ export class Game {
       this.input.rumble(700, 1);
       this.schedule(0.35, () => this.input.rumble(200, 0.8)); this.schedule(1.15, () => this.input.rumble(260, 1));
       this.audio.sting(entity.kind, entity.pos);
-      this.ui.scare && this.ui.scare(this.clear);
+      this.ui.scare && this.ui.scare(this.clear || this.scareLv !== 'penuh');
     };
     if (this.scareDelay) { this.audio.setAmbience(false); this.schedule(this.scareDelay, hit); } else hit();
     this.input.resetToggles();
@@ -1300,12 +1301,13 @@ export class Game {
       this.deathRoll = T > 1.0 ? Math.min(1.3, (T - 1.0) * 2.4) : 0;
       this.deathDrop = T > 1.0 ? Math.min(1.1, (T - 1.0) * 2.0) : 0;
       { // the camera is knocked about: hard at the hit, softer while it stares, again on the second flash
-        const amp = pre ? 0.004 : this.calm ? 0.01 : (T < 0.35 ? 0.16 * (1 - T / 0.35) + 0.04 : T > 1.12 && T < 1.3 ? 0.09 : 0.02) * (this.clear ? 0.6 : 1);
+        const amp = pre ? 0.004 : this.scareLv === 'tenang' ? 0.01 : (this.scareLv === 'lembut' ? 0.5 : 1) * (T < 0.35 ? 0.16 * (1 - T / 0.35) + 0.04 : T > 1.12 && T < 1.3 ? 0.09 : 0.02) * (this.clear ? 0.6 : 1);
         p.camera.position.x += (Math.random() - 0.5) * amp; p.camera.position.y += (Math.random() - 0.5) * amp;
         p.camera.rotation.z += (Math.random() - 0.5) * amp * 0.8;
       }
       // flash frames: red, negative, red at the hit; a negative frame and its face once more just before the tape dies
-      if (!this.calm) {
+      if (this.scareLv === 'lembut') this.scareFrame = !pre && T < 0.06 ? 1 : 0;
+      else if (this.scareLv === 'penuh') {
         this.scareFrame = pre ? 0 : T < 0.05 ? 1 : T < 0.09 ? 2 : T < 0.13 ? 1 : T > 1.15 && T < 1.21 ? 2 : 0;
         if (T > 1.15 && !this.faceFlashed) { this.faceFlashed = true; this.audio.flashHit(); this.ui.faceFlash && this.ui.faceFlash(k.kind); }
       } else this.scareFrame = 0;

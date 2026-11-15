@@ -647,6 +647,10 @@ export class Monitor extends Entity {
       if (this.distTo(p.pos) < 18) g.hint('lull', 'Pengejar sesekali melambat sebentar dan terengah: itu kesempatanmu memutus pandangannya.', 5);
     }
     if (this.lullT > 0) { this.lullT -= dt; k *= 0.55; }
+    // a big body takes corners badly: a sharp turn costs it speed for a moment
+    const turn = Math.abs(angleDiff(this.prevYaw ?? this.yaw, this.yaw)) / Math.max(dt, 1e-3); this.prevYaw = this.yaw;
+    this.cornerT = turn > 2.6 ? 0.45 : Math.max(0, (this.cornerT || 0) - dt);
+    if (this.cornerT > 0) k *= 0.72 - Math.min(0.12, (this.radius || 0.4) * 0.15);
     // close behind a sprinting player: barely faster than them, never a sudden burst
     const d = this.distTo(p.pos), ps = Math.hypot(p.vel.x, p.vel.y);
     if (d < 4 && ps > 3) k = Math.min(k, (ps * 1.03) / Math.max(0.1, this.run * this.speedMul));
