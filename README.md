@@ -38,7 +38,7 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 | LEVEL 2 | Rumah Sakit (tiga lantai + hutan dalam ruangan) | Si Penganga |
 | LEVEL 3 | Mal Tanpa Ujung (tiga lantai mengelilingi atrium) | Bayang Kelas |
 | LEVEL 4 | Kolam Renang (lima lantai, perosotan air) | Kelabang |
-| LEVEL 5 | Ruang Patung (museum tiga lantai, final) | Gema Retak (bersembunyi di dalam patung) |
+| LEVEL 5 | Ruang Patung (museum tiga lantai, final) | Gema Retak (bersembunyi di dalam patung; patung berderak 2 detik sebelum pecah) |
 
 Jam Kakek, Penenun Tulang, Mata Papan, dan Perempuan Gurita menghuni Mode Tanpa Ujung dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 

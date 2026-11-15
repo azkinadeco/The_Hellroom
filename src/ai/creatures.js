@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CELL } from '../config.js';
 import { DIRS, EDGE } from '../level/map.js';
 import { Entity, Monitor, Substitute } from './entities.js';
-import { findPath } from './path.js';
+import { findPath, randomReachableCell } from './path.js';
 
 // Names, death screens and first-encounter tips for every resident.
 export const ENTITY_INFO = {
@@ -58,7 +58,7 @@ export const ENTITY_INFO = {
     hint: 'Penenun Tulang melihat ke segala arah dalam jarak dekat. Ia lambat. Jangan biarkan ia mendekat tanpa kamu sadari: dengarkan bunyi basahnya.',
   },
   echo: {
-    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.\n\nDi Ruang Patung ia tidak berjalan di lorong. Ia masuk ke dalam patung, berpindah dari satu patung ke patung lain mengikuti langkahmu, dan baru menunjukkan wujudnya saat kamu lewat terlalu dekat.',
+    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.\n\nDi Ruang Patung ia tidak berjalan di lorong. Ia masuk ke dalam patung dan menunggu di arah yang kamu tuju, berpindah hanya saat kamu tidak melihat. Kalau kamu berdiri terlalu dekat, patungnya berderak selama dua detik lalu pecah. Ia berdiri diam sejenak sebelum mengejar. Kalau kehilangan jejakmu ia menunggu, berjalan pergi perlahan, lalu hilang ke patung lain.',
     name: 'Gema Retak',
     death: 'Kamu berpaling dari Gema Retak. Selama kamu menatapnya ia membeku, tapi begitu kamu berkedip atau lampu padam, ia sudah di depanmu.',
     hint: 'Gema Retak hanya bergerak saat tidak kamu lihat. Mundurlah sambil terus menatapnya, dan nyalakan senter saat gelap.',
@@ -189,18 +189,40 @@ class Echo extends Substitute {
 // there; it hunts like any hunter until the player is lost or hidden, then it
 // vanishes into a statue again.
 const hostable = (f) => f.s <= 1.3 && !f.hidden;
+const SPOT = new THREE.Vector3();
+// a walkable cell some way off, further from (px, pz) than from here
+function randomFarCell(map, cx, cz, px, pz) {
+  let best = null, bd = -1;
+  for (let i = 0; i < 8; i++) {
+    const c = randomReachableCell(map, Math.random, cx, cz, 5, 12);
+    if (!c) continue;
+    const d = Math.hypot(c[0] - px, c[1] - pz);
+    if (d > bd) { bd = d; best = c; }
+  }
+  return best;
+}
 class StatueEcho extends Monitor {
   constructor(game, cell, emerged = false) {
     super(game, cell, 'echo', { walk: 1.6, run: 4.55, sight: [14, 150, 30, 360], stepEvery: 0.55, stepVol: [0.1, 0.22], radius: 0.45 });
     this.reach = 0.3;
     this.statue = true;
-    this.hintText = 'Gema Retak bersembunyi di dalam salah satu patung di dekatmu, dan berpindah patung saat kamu berjalan. Patung yang selalu menghadapmu dan berbisik: jangan lewat di dekatnya.';
-    this.deathText = 'Gema Retak keluar dari patung di sebelahmu. Ia selalu berada di salah satu patung terdekat: dengarkan bisikannya, perhatikan patung yang menghadapmu, dan lewatlah sejauh mungkin dari patung. Kalau ia sudah keluar, putuskan pandangannya dan sembunyi.';
-    this.form = 'free'; this.host = null; this.hopT = 0; this.armT = 0; this.tellT = 2;
+    this.baseWalk = this.walk;
+    this.hintText = 'Gema Retak bersembunyi di dalam salah satu patung, biasanya di arah yang kamu tuju. Patungnya berbisik dan menghadapmu saat kamu tidak melihat. Kalau sebuah patung mulai bergetar dan berderak, mundur: butuh sekitar dua detik sebelum ia pecah.';
+    this.deathText = 'Gema Retak keluar dari patung di dekatmu. Patung yang bergetar dan berderak adalah peringatannya: menjauh sebelum ia pecah, dan ia akan tenang lagi. Kalau ia sudah keluar, ia diam sebentar sebelum mengejar. Pakai waktu itu untuk lari, putuskan pandangannya, lalu sembunyi.';
+    this.form = 'free'; this.host = null; this.hostRot = 0; this.hopT = 0; this.armT = 0; this.tellT = 2; this.faceT = 0;
+    this.wake = 0; this.crackT = 0; this.lastP = null;
     if (!emerged) this.enter(this.pickHost(this.pos.x, this.pos.z, 0), true);
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
   figs() { return (this.game.built.figures || []).filter(hostable); }
+  // is the spot on the player's screen with nothing in between?
+  seenSpot(x, z) {
+    const g = this.game, cam = g.camera;
+    if (Math.hypot(x - cam.position.x, z - cam.position.z) > 24) return false;
+    SPOT.set(x, 1.2, z).project(cam);
+    if (!(SPOT.z < 1 && Math.abs(SPOT.x) < 1.05 && Math.abs(SPOT.y) < 1.05)) return false;
+    return g.world.los(cam.position.x, cam.position.z, x, z);
+  }
   // one of the three statues nearest to (x, z), not closer than `minD` to the player
   pickHost(x, z, minD = 6.3) {
     const p = this.game.player.pos;
@@ -211,81 +233,161 @@ class StatueEcho extends Monitor {
     const pool = others.length && Math.random() < 0.8 ? others : c;
     return pool[Math.floor(Math.random() * pool.length)].f;
   }
+  // where to wait next: a statue the player cannot see right now, a room or a
+  // corner away, preferably in the direction they are heading
+  pickAmbush() {
+    const p = this.game.player, fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw);
+    let best = null, bs = Infinity;
+    for (const f of this.figs()) {
+      if (f === this.host) continue;
+      const dx = f.x - p.pos.x, dz = f.z - p.pos.z, d = Math.hypot(dx, dz);
+      if (d < 5.5 || d > 17 || this.seenSpot(f.x, f.z)) continue;
+      const s = d - ((dx * fx + dz * fz) / d) * 4 + Math.random() * 5;
+      if (s < bs) { bs = s; best = f; }
+    }
+    return best;
+  }
+  facePlayer(f) {
+    const p = this.game.player.pos;
+    this.hostRot = Math.atan2(p.x - f.x, p.z - f.z);
+    f.set(this.hostRot);
+  }
   setHost(f) {
     if (!f) return;
-    this.host = f;
+    if (this.host && this.host !== f && !this.host.hidden) this.host.set(this.hostRot);
+    this.host = f; this.wake = 0;
     this.pos.set(f.x, 0, f.z);
-    const p = this.game.player.pos;
-    f.set(Math.atan2(p.x - f.x, p.z - f.z));          // the one tell you can see: it is the statue facing you
+    this.facePlayer(f);
   }
   // vanish into a statue
   enter(f, silent = false) {
     const g = this.game;
+    this.walk = this.baseWalk;
     if (!f) { this.form = 'free'; return; }            // no statue on this floor: it stays a plain hunter
     if (this.emptied) { this.emptied.show(true); this.emptied = null; }
-    this.form = 'statue'; this.state = 'patrol'; this.path = null; this.finalPoint = null; this.velocity = 0; this.suspicion = 0;
+    this.form = 'statue'; this.state = 'patrol'; this.path = null; this.finalPoint = null; this.velocity = 0; this.suspicion = 0; this.waitT = 0;
     if (!silent) { g.audio.whisper(this.pos, 0.5); if (g.isSeenByPlayer(this) && !g.clear) { g.glitch = Math.max(g.glitch, 0.35); g.schedule(0.3, () => { g.glitch = 0; }); } }
     this.obj.visible = false;
     this.setHost(f);
-    this.armT = silent ? 2 : 7; this.hopT = 2.5;
+    this.armT = silent ? 3 : 9; this.hopT = 3;
     g.onChaseEnd(this);
   }
+  // the statue breaks; it stands there for a moment before it comes
   emerge() {
     const g = this.game, p = g.player, f = this.host;
-    this.form = 'emerge'; this.emergeT = 0.7;
-    if (f) { f.show(false); this.emptied = f; this.pos.set(f.x, 0, f.z); }
+    this.form = 'emerge'; this.emergeT = 1.4; this.wake = 0;
+    this.sawAt = { x: p.pos.x, z: p.pos.z };
+    if (f) { f.set(this.hostRot); f.show(false); this.emptied = f; this.pos.set(f.x, 0, f.z); }
     this.host = null;
     this.obj.visible = true;
     this.yaw = Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z);
     this.play(this.actions.Pose2 ? 'Pose2' : 'Idle', 0.05, true);
-    g.audio.crack(this.pos); g.audio.stinger();
+    g.audio.crack(this.pos); g.audio.bones(this.pos); g.audio.stinger();
     if (!g.clear) { g.glitch = Math.max(g.glitch, 0.5); g.schedule(0.25, () => { g.glitch = 0; }); }
     g.input.rumble(250, 0.9);
     g.stats.emerged = (g.stats.emerged || 0) + 1;
   }
+  // lost them: stand and look for a few seconds, then walk off slowly and fade into a statue once far enough
+  startBack() {
+    this.form = 'back'; this.backT = 0; this.lingerT = 3 + Math.random() * 1.5; this.retreating = false;
+    this.path = null; this.finalPoint = null; this.waitT = 99;
+    this.walk = this.baseWalk * 0.6;
+  }
+  retreatGoal() {
+    const p = this.game.player.pos;
+    let best = null, bd = Infinity;
+    for (const f of this.figs()) {
+      if (Math.hypot(f.x - p.x, f.z - p.z) < 11) continue;
+      const d = Math.hypot(f.x - this.pos.x, f.z - this.pos.z);
+      if (d < bd) { bd = d; best = f; }
+    }
+    return best;
+  }
   onNoise(x, z, strength, type) {
-    if (this.form === 'free') { super.onNoise(x, z, strength, type); return; }
+    if (this.form === 'free' || this.form === 'back') { super.onNoise(x, z, strength, type); return; }
     if (this.form !== 'statue' || !this.host) return;
-    const p = this.game.player;
-    // a loud noise right next to its statue brings it out; anything else just draws it to a statue over there
-    if (!p.hidden && this.armT <= 0 && Math.hypot(p.pos.x - this.host.x, p.pos.z - this.host.z) < 6.5 && Math.hypot(x - this.host.x, z - this.host.z) < 7 && strength > 0.35) { this.emerge(); return; }
-    if (type === 'alert' || type === 'throw' || strength > 0.5) { this.setHost(this.pickHost(x, z, 0)); this.hopT = 5; }
+    const g = this.game, p = g.player, h = this.host;
+    // a loud noise right in front of its statue cracks it faster; anything else just draws it to a statue over there
+    if (strength > 0.35 && Math.hypot(x - h.x, z - h.z) < 6) {
+      if (!p.hidden && this.armT <= 0 && Math.hypot(p.pos.x - h.x, p.pos.z - h.z) < 6 && g.world.los(h.x, h.z, p.pos.x, p.pos.z)) this.wake = Math.min(0.95, this.wake + 0.4);
+      return;
+    }
+    if ((type === 'alert' || type === 'throw' || strength > 0.5) && this.wake <= 0) { const f = this.pickHost(x, z, 5); if (f) { this.setHost(f); this.hopT = 6; } }
   }
   update(dt) {
     const g = this.game, p = g.player;
     if (this.form === 'statue') {
-      this.velocity = 0; this.armT -= dt; this.hopT -= dt; this.tellT -= dt;
+      this.velocity = 0; this.armT -= dt; this.hopT -= dt; this.tellT -= dt; this.faceT -= dt;
       const h = this.host;
       if (!h || h.hidden) { this.enter(this.pickHost(p.pos.x, p.pos.z), true); return; }
       const d = Math.hypot(p.pos.x - h.x, p.pos.z - h.z);
-      const reach = 4.3 * (0.75 + 0.25 * g.diff.sight) * (p.crouched ? 0.8 : 1);
-      if (p.alive && !p.hidden && this.armT <= 0 && d < reach && g.world.los(h.x, h.z, p.pos.x, p.pos.z)) { this.emerge(); return; }
-      // keep to the statues round the player: the further they walk from this one, the sooner it moves
+      const moved = this.lastP ? Math.hypot(p.pos.x - this.lastP.x, p.pos.z - this.lastP.z) / Math.max(dt, 1e-3) : 0;
+      this.lastP = { x: p.pos.x, z: p.pos.z };
+      const reach = 3.7 * (0.75 + 0.25 * g.diff.sight) * (p.crouched ? 0.8 : 1);
+      const los = d < reach * 1.7 && g.world.los(h.x, h.z, p.pos.x, p.pos.z);
+      // cracking: two seconds of warning (less if you run past, more if you creep), and it settles if you back off
+      if (p.alive && !p.hidden && this.armT <= 0 && d < reach && los) {
+        if (this.wake <= 0) g.audio.scrape({ x: h.x, y: 1.2, z: h.z }, 0.35, 0.3);
+        this.wake += dt / (moved > 4.2 ? 1.3 : p.crouched ? 3 : 2);
+        if (this.wake >= 1) { this.emerge(); return; }
+      } else if (this.wake > 0) {
+        this.wake -= dt / (los ? 2.2 : 1);
+        if (this.wake <= 0) { this.wake = 0; h.set(this.hostRot); this.armT = Math.max(this.armT, 2.5); this.hopT = Math.max(this.hopT, 2); }
+      }
+      if (this.wake > 0) {
+        h.set(this.hostRot + Math.sin(g.time * 41) * 0.07 * this.wake);
+        h.rot = this.hostRot;
+        this.crackT -= dt;
+        if (this.crackT <= 0) { this.crackT = 0.5 - 0.36 * this.wake; g.audio.scrape({ x: h.x, y: 1.2, z: h.z }, 0.12, 0.12 + 0.3 * this.wake); if (this.wake > 0.5) g.audio.crack({ x: h.x, y: 1.4, z: h.z }); }
+        return;
+      }
+      const seen = this.seenSpot(h.x, h.z);
+      // it only moves, and only turns, while you are not looking at it
+      if (this.faceT <= 0 && !seen) { this.faceT = 0.4; this.facePlayer(h); }
       if (this.hopT <= 0) {
-        this.hopT = d > 11 ? 0.8 : 1.6 + Math.random() * 2.2;
-        const near = this.figs().map((f) => Math.hypot(f.x - p.pos.x, f.z - p.pos.z)).sort((a, b) => a - b);
-        if (d > (near[2] ?? near[near.length - 1] ?? 0) + 0.5 || Math.random() < 0.35) { const f = this.pickHost(p.pos.x, p.pos.z); if (f && f !== h) { this.setHost(f); this.armT = Math.max(this.armT, 1.5); } }
+        this.hopT = 2 + Math.random() * 2.5;
+        if (!seen && (d > 12 || Math.random() < 0.3)) { const f = this.pickAmbush(); if (f) { this.setHost(f); this.armT = Math.max(this.armT, 1.5); } }
       }
       if (this.tellT <= 0) { this.tellT = 3.5 + Math.random() * 3.5; if (d < 13) g.audio.whisper({ x: h.x, y: 1.4, z: h.z }, 0.3); }
       return;
     }
     if (this.form === 'emerge') {
       this.emergeT -= dt; this.velocity = 0;
-      this.faceToward(p.pos.x, p.pos.z, dt, 14);
+      this.faceToward(p.pos.x, p.pos.z, dt, 5);
       this.updateCommon(dt);
       if (this.emergeT <= 0) {
         this.form = 'free'; this.state = 'patrol';
-        this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time }; this.suspicion = 1.2; this.lostT = 0; this.waitT = 0;
+        const sees = !p.hidden && g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z);
+        this.lastSeen = { x: sees ? p.pos.x : this.sawAt.x, z: sees ? p.pos.z : this.sawAt.z, t: sees ? g.time : g.time - 2 };
+        this.suspicion = 1.2; this.lostT = 0; this.waitT = 0; this.path = null;
         this.setState('chase');
+      }
+      return;
+    }
+    if (this.form === 'back') {
+      this.backT += dt;
+      if (!this.retreating) {
+        this.waitT = 99;
+        if (this.backT >= this.lingerT) {
+          this.retreating = true; this.waitT = 0;
+          const f = this.retreatGoal();
+          if (f) this.goToWorld(f.x, f.z);
+          else { const [cx, cz] = this.cell(), [px, pz] = g.map.cellOf(p.pos.x, p.pos.z); const t = randomFarCell(g.map, cx, cz, px, pz); if (t) this.goTo(...t); }
+        }
+      }
+      super.update(dt);
+      if (this.state !== 'patrol') { this.form = 'free'; this.walk = this.baseWalk; return; }   // it noticed something
+      if (this.retreating) {
+        const since = this.backT - this.lingerT, d = this.distTo(p.pos);
+        if ((d > 8.5 && since > 2) || this.waitT > 0 || since > 18) this.enter(this.pickHost(this.pos.x, this.pos.z));
       }
       return;
     }
     super.update(dt);
     if (this.state !== 'attack' && (this.velocity || 0) > this.walk * 1.7 && !this.actions.Run) { this.play('Walk'); if (this.current) this.current.timeScale = 1.9; }
-    // lost them, or they are hidden: back into the nearest statue
-    if (this.state === 'patrol' && p.alive) this.enter(this.pickHost(this.pos.x, this.pos.z, 0));
+    if (this.state === 'patrol' && p.alive) this.startBack();
   }
-  remove() { if (this.emptied) this.emptied.show(true); super.remove(); }
+  remove() { if (this.emptied) this.emptied.show(true); if (this.host && !this.host.hidden) this.host.set(this.hostRot); super.remove(); }
 }
 
 // ----------------------------------------------------------- Si Penganga ----

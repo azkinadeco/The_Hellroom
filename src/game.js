@@ -840,7 +840,7 @@ export class Game {
       const d = Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z);
       near = Math.min(near, d);
       const los = d < 18 && this.world.los(e.pos.x, e.pos.z, p.pos.x, p.pos.z);
-      danger = Math.max(danger, clamp(1 - d / (los ? 16 : 9), 0, 1) * (los ? 1 : 0.6) * (e.form === 'statue' ? 0.45 : 1));
+      danger = Math.max(danger, clamp(1 - d / (los ? 16 : 9), 0, 1) * (los ? 1 : 0.6) * (e.form === 'statue' ? 0.3 + 0.7 * (e.wake || 0) : 1));
     }
     const chase = this.chasers.size > 0 ? 1 : 0;
     danger = Math.max(danger, chase * 0.55);
