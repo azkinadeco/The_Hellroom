@@ -102,7 +102,7 @@ export class Player {
     this.light.distance = 22 * (game.def.torchMul || 1);
 
     // ----- breath (only meaningful while hidden) -----
-    const holding = this.hidden && input.holdingBreath() && this.breath > 0;
+    const holding = (this.hidden || this.exhausted) && input.holdingBreath() && this.breath > 0;   // also to stifle panting after a run
     this.holdingBreath = holding;
     if (holding) {
       this.breath -= PLAYER.breathDrain * dt;
@@ -158,6 +158,14 @@ export class Player {
     } else {
       this.stamina = Math.min(PLAYER.staminaMax, this.stamina + PLAYER.staminaRegen * dt * (sp < 0.2 ? 1.5 : 1));
       if (this.exhausted && this.stamina > 35) this.exhausted = false;
+    }
+    // out of breath: every few steps of panting can be heard nearby, unless you hold your breath (it costs breath)
+    if (this.exhausted && !this.hidden) {
+      this.pantT = (this.pantT || 0) - dt;
+      if (this.pantT <= 0) {
+        this.pantT = 1.1;
+        if (!this.holdingBreath) { game.audio.gasp(); game.emitNoise(this.pos.x, this.pos.z, NOISE.pant, 'pant'); game.hint('pant', 'Napasmu terengah setelah berlari, dan penghuni di dekatmu bisa mendengarnya. Tahan napas (' + (input.touch ? 'tombol napas' : input.keyName('breath')) + ') atau jangan berlari sampai habis.', 6); }
+      }
     }
     const nx = this.pos.x + this.vel.x * dt, nz = this.pos.z + this.vel.y * dt;
     const [cx, cz] = world.collide(nx, nz, PLAYER.radius);

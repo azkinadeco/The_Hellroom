@@ -471,3 +471,4 @@ body.can-knock .tbtn.knock { display: flex; }
 .keyhole-mask path { fill: #000; }
 body.keyhole .keyhole-mask { display: block; filter: drop-shadow(0 0 18px #000); }
 body.keyhole .crosshair, body.keyhole .prompt { display: none; }
+body.panting .tbtn.breath { display: flex; }
