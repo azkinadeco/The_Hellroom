@@ -38,9 +38,9 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 | LEVEL 2 | Rumah Sakit (tiga lantai + hutan dalam ruangan) | Si Penganga |
 | LEVEL 3 | Mal Tanpa Ujung (tiga lantai mengelilingi atrium) | Bayang Kelas |
 | LEVEL 4 | Kolam Renang (lima lantai, perosotan air) | Kelabang |
-| LEVEL 5 | Ruang Patung (museum tiga lantai, final) | Mata Papan |
+| LEVEL 5 | Ruang Patung (museum tiga lantai, final) | Gema Retak (bersembunyi di dalam patung) |
 
-Jam Kakek, Penenun Tulang, Gema Retak, dan Perempuan Gurita menghuni Mode Tanpa Ujung.
+Jam Kakek, Penenun Tulang, Mata Papan, dan Perempuan Gurita menghuni Mode Tanpa Ujung dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
 ## Fitur batch 36–45
 
@@ -89,7 +89,7 @@ Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker
 
 **Lab Biologi**: level 2 kini dipenuhi ruang lab berisi meja praktikum, rak toples spesimen, dan rangka anatomi (aset Blender baru di `blender/props3.py`).
 
-**Meteran tatapan**: saat Mata Papan menatapmu, muncul meteran 👁 DITATAP dan layar memerah. Kalau meterannya penuh, kamu mati.
+**Meteran tatapan**: saat Mata Papan (Mode Tanpa Ujung / Putaran Kedua) menatapmu, muncul meteran 👁 DITATAP dan layar memerah. Kalau meterannya penuh, kamu mati.
 
 **Kaset rahasia & Arsip**: tiap level story menyimpan satu kaset VHS di salah satu ruangan terjauh. Kaset dan catatan yang sudah ditemukan bisa dibaca ulang di menu **Arsip**.
 

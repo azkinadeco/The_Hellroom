@@ -76,7 +76,7 @@ export const DIFFICULTY = {
 // Test rooms in the main menu (Pilih Room): every map playable, resident
 // override and invulnerability. Pilih Level itself stays unlocked in order. Set to false for the public release.
 export const DEV_ROOMS = true;
-export const VERSION = '0.45';
+export const VERSION = '0.48';
 
 // Level definitions. Every level has exactly ONE resident. Layouts are
 // generated from the seed so every run of a level is identical.
@@ -125,17 +125,17 @@ export const LEVELS = [
   },
   {
     id: 6, code: 'LEVEL 5', name: 'Ruang Patung',
-    subtitle: 'Museum tiga lantai. Mereka tidak bergerak. Mereka hanya menunggu.',
+    subtitle: 'Museum tiga lantai. Salah satu patung di dekatmu bukan patung.',
     tint: [1.06, 0.94, 0.78], fogColor: 0x0a0705, grade: [1.05, 0.99, 0.92], seed: 1313, layout: 'museum', arch: 'museum', size: [30, 26], floors: 3, rail: 'parapet', railColor: 0xd9d4c8, railCap: 0x6b5a3e, seeAll: true,
     textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'],
     lightsOff: 0.22, flicker: 0.2, fog: 0.05,
     fuses: 4, keys: 2, batteries: 5, notes: 3, erasers: 6, clean: true,
-    entities: [{ type: 'eyes' }], hallTheme: 'hall',
+    entities: [{ type: 'echo' }], hallTheme: 'hall',
   },
 ];
 
 // Putaran Kedua (after the ending): each story level is held by another resident.
-export const NG_CAST = ['clock', 'weaver', 'echo', 'squid', 'spider', 'pale'];
+export const NG_CAST = ['clock', 'weaver', 'squid', 'echo', 'spider', 'eyes'];
 
 // Every resident that can appear (Room menu + endless mode).
 export const RESIDENTS = ['pale', 'spider', 'gaper', 'shade', 'centipede', 'eyes', 'clock', 'weaver', 'echo', 'squid'];

@@ -58,7 +58,7 @@ export const ENTITY_INFO = {
     hint: 'Penenun Tulang melihat ke segala arah dalam jarak dekat. Ia lambat. Jangan biarkan ia mendekat tanpa kamu sadari: dengarkan bunyi basahnya.',
   },
   echo: {
-    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.',
+    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.\n\nDi Ruang Patung ia tidak berjalan di lorong. Ia masuk ke dalam patung, berpindah dari satu patung ke patung lain mengikuti langkahmu, dan baru menunjukkan wujudnya saat kamu lewat terlalu dekat.',
     name: 'Gema Retak',
     death: 'Kamu berpaling dari Gema Retak. Selama kamu menatapnya ia membeku, tapi begitu kamu berkedip atau lampu padam, ia sudah di depanmu.',
     hint: 'Gema Retak hanya bergerak saat tidak kamu lihat. Mundurlah sambil terus menatapnya, dan nyalakan senter saat gelap.',
@@ -180,6 +180,112 @@ class Squid extends Monitor {
 class Echo extends Substitute {
   constructor(game, cell) { super(game, cell, 'echo'); this.speed = 4.7; this.radius = 0.5; }
   moveSound() { this.game.audio.whisper(this.pos, 0.35); }
+}
+
+// ------------------------------------------- Gema Retak among statues ----
+// Where a floor is full of statues it does not walk the halls at all: it sits
+// inside one of the statues nearest to the player and keeps moving to another
+// as the player moves. Come close and the statue is gone and it is standing
+// there; it hunts like any hunter until the player is lost or hidden, then it
+// vanishes into a statue again.
+const hostable = (f) => f.s <= 1.3 && !f.hidden;
+class StatueEcho extends Monitor {
+  constructor(game, cell, emerged = false) {
+    super(game, cell, 'echo', { walk: 1.6, run: 4.55, sight: [14, 150, 30, 360], stepEvery: 0.55, stepVol: [0.1, 0.22], radius: 0.45 });
+    this.reach = 0.3;
+    this.statue = true;
+    this.hintText = 'Gema Retak bersembunyi di dalam salah satu patung di dekatmu, dan berpindah patung saat kamu berjalan. Patung yang selalu menghadapmu dan berbisik: jangan lewat di dekatnya.';
+    this.deathText = 'Gema Retak keluar dari patung di sebelahmu. Ia selalu berada di salah satu patung terdekat: dengarkan bisikannya, perhatikan patung yang menghadapmu, dan lewatlah sejauh mungkin dari patung. Kalau ia sudah keluar, putuskan pandangannya dan sembunyi.';
+    this.form = 'free'; this.host = null; this.hopT = 0; this.armT = 0; this.tellT = 2;
+    if (!emerged) this.enter(this.pickHost(this.pos.x, this.pos.z, 0), true);
+  }
+  chaseSound() { this.game.audio.chorus(this.pos); }
+  figs() { return (this.game.built.figures || []).filter(hostable); }
+  // one of the three statues nearest to (x, z), not closer than `minD` to the player
+  pickHost(x, z, minD = 6.3) {
+    const p = this.game.player.pos;
+    const c = this.figs().filter((f) => f === this.host || Math.hypot(f.x - p.x, f.z - p.z) >= minD)
+      .map((f) => ({ f, d: Math.hypot(f.x - x, f.z - z) })).sort((a, b) => a.d - b.d).slice(0, 3);
+    if (!c.length) return null;
+    const others = c.filter((q) => q.f !== this.host);
+    const pool = others.length && Math.random() < 0.8 ? others : c;
+    return pool[Math.floor(Math.random() * pool.length)].f;
+  }
+  setHost(f) {
+    if (!f) return;
+    this.host = f;
+    this.pos.set(f.x, 0, f.z);
+    const p = this.game.player.pos;
+    f.set(Math.atan2(p.x - f.x, p.z - f.z));          // the one tell you can see: it is the statue facing you
+  }
+  // vanish into a statue
+  enter(f, silent = false) {
+    const g = this.game;
+    if (!f) { this.form = 'free'; return; }            // no statue on this floor: it stays a plain hunter
+    if (this.emptied) { this.emptied.show(true); this.emptied = null; }
+    this.form = 'statue'; this.state = 'patrol'; this.path = null; this.finalPoint = null; this.velocity = 0; this.suspicion = 0;
+    if (!silent) { g.audio.whisper(this.pos, 0.5); if (g.isSeenByPlayer(this) && !g.clear) { g.glitch = Math.max(g.glitch, 0.35); g.schedule(0.3, () => { g.glitch = 0; }); } }
+    this.obj.visible = false;
+    this.setHost(f);
+    this.armT = silent ? 2 : 7; this.hopT = 2.5;
+    g.onChaseEnd(this);
+  }
+  emerge() {
+    const g = this.game, p = g.player, f = this.host;
+    this.form = 'emerge'; this.emergeT = 0.7;
+    if (f) { f.show(false); this.emptied = f; this.pos.set(f.x, 0, f.z); }
+    this.host = null;
+    this.obj.visible = true;
+    this.yaw = Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z);
+    this.play(this.actions.Pose2 ? 'Pose2' : 'Idle', 0.05, true);
+    g.audio.crack(this.pos); g.audio.stinger();
+    if (!g.clear) { g.glitch = Math.max(g.glitch, 0.5); g.schedule(0.25, () => { g.glitch = 0; }); }
+    g.input.rumble(250, 0.9);
+    g.stats.emerged = (g.stats.emerged || 0) + 1;
+  }
+  onNoise(x, z, strength, type) {
+    if (this.form === 'free') { super.onNoise(x, z, strength, type); return; }
+    if (this.form !== 'statue' || !this.host) return;
+    const p = this.game.player;
+    // a loud noise right next to its statue brings it out; anything else just draws it to a statue over there
+    if (!p.hidden && this.armT <= 0 && Math.hypot(p.pos.x - this.host.x, p.pos.z - this.host.z) < 6.5 && Math.hypot(x - this.host.x, z - this.host.z) < 7 && strength > 0.35) { this.emerge(); return; }
+    if (type === 'alert' || type === 'throw' || strength > 0.5) { this.setHost(this.pickHost(x, z, 0)); this.hopT = 5; }
+  }
+  update(dt) {
+    const g = this.game, p = g.player;
+    if (this.form === 'statue') {
+      this.velocity = 0; this.armT -= dt; this.hopT -= dt; this.tellT -= dt;
+      const h = this.host;
+      if (!h || h.hidden) { this.enter(this.pickHost(p.pos.x, p.pos.z), true); return; }
+      const d = Math.hypot(p.pos.x - h.x, p.pos.z - h.z);
+      const reach = 4.3 * (0.75 + 0.25 * g.diff.sight) * (p.crouched ? 0.8 : 1);
+      if (p.alive && !p.hidden && this.armT <= 0 && d < reach && g.world.los(h.x, h.z, p.pos.x, p.pos.z)) { this.emerge(); return; }
+      // keep to the statues round the player: the further they walk from this one, the sooner it moves
+      if (this.hopT <= 0) {
+        this.hopT = d > 11 ? 0.8 : 1.6 + Math.random() * 2.2;
+        const near = this.figs().map((f) => Math.hypot(f.x - p.pos.x, f.z - p.pos.z)).sort((a, b) => a - b);
+        if (d > (near[2] ?? near[near.length - 1] ?? 0) + 0.5 || Math.random() < 0.35) { const f = this.pickHost(p.pos.x, p.pos.z); if (f && f !== h) { this.setHost(f); this.armT = Math.max(this.armT, 1.5); } }
+      }
+      if (this.tellT <= 0) { this.tellT = 3.5 + Math.random() * 3.5; if (d < 13) g.audio.whisper({ x: h.x, y: 1.4, z: h.z }, 0.3); }
+      return;
+    }
+    if (this.form === 'emerge') {
+      this.emergeT -= dt; this.velocity = 0;
+      this.faceToward(p.pos.x, p.pos.z, dt, 14);
+      this.updateCommon(dt);
+      if (this.emergeT <= 0) {
+        this.form = 'free'; this.state = 'patrol';
+        this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time }; this.suspicion = 1.2; this.lostT = 0; this.waitT = 0;
+        this.setState('chase');
+      }
+      return;
+    }
+    super.update(dt);
+    if (this.state !== 'attack' && (this.velocity || 0) > this.walk * 1.7 && !this.actions.Run) { this.play('Walk'); if (this.current) this.current.timeScale = 1.9; }
+    // lost them, or they are hidden: back into the nearest statue
+    if (this.state === 'patrol' && p.alive) this.enter(this.pickHost(this.pos.x, this.pos.z, 0));
+  }
+  remove() { if (this.emptied) this.emptied.show(true); super.remove(); }
 }
 
 // ----------------------------------------------------------- Si Penganga ----
@@ -429,7 +535,7 @@ class Eyes extends Entity {
   }
 }
 
-export function spawnEntity(game, type, cell) {
+export function spawnEntity(game, type, cell, opts = {}) {
   switch (type) {
     case 'pale': return new Pale(game, cell);
     case 'gaper': return new Gaper(game, cell);
@@ -439,7 +545,7 @@ export function spawnEntity(game, type, cell) {
     case 'spider': return new Spider(game, cell);
     case 'clock': return new Clock(game, cell);
     case 'weaver': return new Weaver(game, cell);
-    case 'echo': return new Echo(game, cell);
+    case 'echo': return (game.built.figures || []).filter(hostable).length >= 4 ? new StatueEcho(game, cell, !!opts.emerged) : new Echo(game, cell);
     case 'squid': return new Squid(game, cell);
     default: return new Spider(game, cell);
   }

@@ -1,6 +1,6 @@
 // Offline support. Network first, so a new build is always picked up while
 // online; whatever was fetched is kept for the next time there is no network.
-const CACHE = 'hellroom-v45';
+const CACHE = 'hellroom-v48';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(
   caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),

@@ -16,6 +16,7 @@ export const BADGES = [
   { id: 'lolos', icon: '🏃', name: 'Tiga Kali Lolos', desc: 'Lolos dari tiga kejaran dalam satu level, lalu keluar hidup-hidup.', test: (c) => c.win && (c.g.stats.escapes || 0) >= 3 },
   { id: 'napas', icon: '🫁', name: 'Tahan Napas', desc: 'Selamat saat penghuni memeriksa tempat persembunyianmu.', test: (c) => (c.g.stats.inspected || 0) > 0 },
   { id: 'umpan', icon: '🧽', name: 'Pengalih Perhatian', desc: 'Pancing penghuni dengan lemparan.', test: (c) => (c.g.stats.lures || 0) > 0 },
+  { id: 'patung', icon: '🗿', name: 'Bukan Patung', desc: 'Lolos dari Gema Retak setelah ia keluar dari patung, lalu selesaikan levelnya.', test: (c) => c.win && (c.g.stats.emerged || 0) > 0 },
   { id: 'saksi', icon: '🕴', name: 'Ada yang Berdiri di Sana', desc: 'Tatap sosok di ujung lorong sampai ia menghilang.', test: (c) => (c.g.stats.ghosts || 0) > 0 },
   { id: 'sulit', icon: '💀', name: 'Jam Pelajaran Tambahan', desc: 'Selesaikan satu level pada kesulitan Sulit.', test: (c) => c.win && c.story && c.g.diffKey === 'sulit' },
   { id: 'ng', icon: '🔁', name: 'Putaran Kedua', desc: 'Selesaikan satu level di Putaran Kedua.', test: (c) => c.win && c.story && !!c.g.def.ng },

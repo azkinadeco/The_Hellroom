@@ -301,7 +301,7 @@ export class Game {
         const at = this.time + 2.2 + Math.random() * 1.5, token = (this.floorToken = (this.floorToken || 0) + 1);
         this.schedule(2.2 + Math.random() * 1.5, () => {
           if (this.floorK !== k || token !== this.floorToken || !this.player.alive) { this.spawnFar(kind); return; }
-          const e = spawnEntity(this, kind, via.cell);
+          const e = spawnEntity(this, kind, via.cell, { emerged: true });
           shadowCaster(e.obj);
           this.entities.push(e);
           e.onNoise(this.player.pos.x, this.player.pos.z, 1, 'alert');
@@ -455,7 +455,7 @@ export class Game {
 
   isSeenByPlayer(e) {
     const p = this.player;
-    if (!p.alive) return false;
+    if (!p.alive || e.form === 'statue') return false;
     const cam = this.camera;
     const v = new THREE.Vector3(e.pos.x, 1.1, e.pos.z);
     const d = cam.position.distanceTo(v);
@@ -497,6 +497,7 @@ export class Game {
       entity.state = entity.kind === 'eyes' ? 'watch' : entity.kind === 'shade' ? 'lurk' : 'patrol';
       entity.path = null; entity.gaze = 0; entity.calmT = 5; entity.suspicion = 0; entity.waitT = 3;
       if (entity.kind === 'echo' || entity.kind === 'gaper') { entity.aware = false; entity.target = null; }
+      if (entity.statue) entity.state = 'patrol';
       if (locker) this.toggleLocker(locker);
       this.onChaseEnd(entity);
       return;
@@ -839,7 +840,7 @@ export class Game {
       const d = Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z);
       near = Math.min(near, d);
       const los = d < 18 && this.world.los(e.pos.x, e.pos.z, p.pos.x, p.pos.z);
-      danger = Math.max(danger, clamp(1 - d / (los ? 16 : 9), 0, 1) * (los ? 1 : 0.6));
+      danger = Math.max(danger, clamp(1 - d / (los ? 16 : 9), 0, 1) * (los ? 1 : 0.6) * (e.form === 'statue' ? 0.45 : 1));
     }
     const chase = this.chasers.size > 0 ? 1 : 0;
     danger = Math.max(danger, chase * 0.55);
@@ -1100,7 +1101,7 @@ export class Game {
     if (this.hintT < 3 || !p.alive) return;
     if (!p.hidden && this.built.lockers.some((L) => Math.hypot(L.x - p.pos.x, L.z - p.pos.z) < 2.2)) { const L = this.built.lockers.find((q) => Math.hypot(q.x - p.pos.x, q.z - p.pos.z) < 2.2), n = hideOf(L).label; this.hint('locker', `${n[0].toUpperCase() + n.slice(1)} bisa dipakai untuk bersembunyi.`, 4); }
     const first = this.entities[0];
-    if (first && this.hintT > 10 && ENTITY_INFO[first.kind] && ENTITY_INFO[first.kind].hint) this.hint('ent_' + first.kind, ENTITY_INFO[first.kind].hint, 6);
+    if (first && this.hintT > 10 && ENTITY_INFO[first.kind] && ENTITY_INFO[first.kind].hint) this.hint('ent_' + first.kind + (first.statue ? '_statue' : ''), first.hintText || ENTITY_INFO[first.kind].hint, first.statue ? 8 : 6);
     if (this.danger > 0.3) this.hint('entity', 'Ada yang berpatroli di dekatmu. Menjauh, atau sembunyi di loker sebelum terlihat.', 5);
     if (p.battery < 60) this.hint('battery', 'Senter & mode malam menguras baterai kamera. Matikan saat tidak perlu.', 5);
     if (!p.hidden && !p.flashlight && !this.world.isLit(p.pos.x, p.pos.z)) this.hint('dark', t ? 'Gelap. Tekan SENTER — tapi cahaya membuatmu lebih mudah terlihat.' : 'Gelap. Tekan F untuk senter — tapi cahaya membuatmu lebih mudah terlihat.', 5);
@@ -1163,7 +1164,7 @@ export class Game {
     const why = this.lockerReason; this.lockerReason = null;
     if (why === 'seen') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} melihatmu masuk ke ${hideOf(k.lockerTarget).label}. Bersembunyilah saat tidak sedang terlihat.`;
     if (why === 'breath') return `${(ENTITY_INFO[k.kind] || {}).name || 'Penghuni'} mendengar napasmu. Saat ada yang mendekati tempat persembunyianmu, tahan napas (${this.input.touch ? 'tombol NAPAS' : 'SPASI'}) sampai langkahnya pergi.`;
-    if (this.blackoutT > 0 && (k.kind === 'echo' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
-    return (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';
+    if (this.blackoutT > 0 && !k.statue && (k.kind === 'echo' || k.kind === 'gaper')) return `Lampu padam, dan dalam gelap ${ENTITY_INFO[k.kind].name} bebas bergerak. Nyalakan senter saat listrik mati.`;
+    return k.deathText || (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';
   }
 }

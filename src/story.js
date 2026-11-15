@@ -33,7 +33,7 @@ export const NOTES = {
   ],
   6: [
     { title: 'Label di Kaki Patung', body: 'KARYA SISWA — THE HELLROOM\n"Teman Sekelas"\nBahan: (tidak diketahui)\n\nJumlah patung di ruangan ini berbeda dari kemarin.\n\nPatung besar di rotunda tingginya sembilan meter. Petugas jaga malam bersumpah wajahnya selalu menghadap ke arah orang yang terakhir masuk museum.' },
-    { title: 'Catatan di Dinding Galeri', body: 'Ada mata yang tumbuh dari dinding. Mereka menatap dari balik patung-patung.\n\nKalau kamu merasa ditatap, langsung pergi dari pandangannya. Suara keras membuatnya pindah ke dinding yang paling dekat dengan suara itu.' },
+    { title: 'Catatan di Dinding Galeri', body: 'Salah satu patung di ruangan ini bukan patung.\n\nIa pindah setiap kali kamu melangkah, selalu ke patung yang dekat denganmu. Kamu tidak akan melihatnya pindah. Tapi patung yang ia masuki selalu menghadap ke arahmu, dan kalau kamu diam, kamu bisa mendengarnya berbisik.\n\nJangan lewat di dekat patung itu. Kalau ia sudah keluar, lari, putuskan pandangannya, dan sembunyi. Ia akan kembali menjadi patung. Jongkok membuatmu bisa lewat sedikit lebih dekat.' },
     { title: 'Halaman Terakhir Buku Harian', body: 'Pintu darurat itu ada di sini. Aku bisa mendengar bel dari baliknya.\n\nKalau kamu membaca ini, jangan berhenti merekam. Selama kamera merekam, kamu masih nyata.' },
   ],
 };

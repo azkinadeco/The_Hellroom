@@ -328,9 +328,10 @@ export function buildLevel(gen, assets, def, ctx = {}) {
     const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
     list.forEach((f, idx) => {
       const sc = f.scale || 1, sv = new THREE.Vector3(sc, sc, sc);
-      const fig = { x: f.x, z: f.z, y: f.y || 0, s: sc, rot: f.rot, set(rot) {
+      const zero = new THREE.Vector3(0, 0, 0);
+      const fig = { x: f.x, z: f.z, y: f.y || 0, s: sc, rot: f.rot, hidden: false, show(v) { fig.hidden = !v; fig.set(fig.rot); }, set(rot) {
         fig.rot = rot;
-        const base = new THREE.Matrix4().compose(new THREE.Vector3(f.x, f.y || 0, f.z), q.setFromAxisAngle(up, rot), sv);
+        const base = new THREE.Matrix4().compose(new THREE.Vector3(f.x, f.y || 0, f.z), q.setFromAxisAngle(up, rot), fig.hidden ? zero : sv);
         for (const m of ims) { m.im.setMatrixAt(idx, base.clone().multiply(m.local)); m.im.instanceMatrix.needsUpdate = true; }
       } };
       fig.set(f.rot);
