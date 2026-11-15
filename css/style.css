@@ -487,3 +487,5 @@ body.panting .tbtn.breath { display: flex; }
 /* batch 99: death debrief */
 .dead-map { display: block; margin: 0 auto 18px; max-width: min(520px, 86vw); max-height: 34vh; background: #e6dfc8; box-shadow: 0 6px 30px #000; transform: rotate(-0.8deg); }
 .dead-map.hidden { display: none; }
+.accent-sub { color: var(--accent) !important; font-size: 13px !important; margin-top: 2px; }
+.accent-sub:empty { display: none; }

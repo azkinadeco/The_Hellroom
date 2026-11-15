@@ -337,6 +337,11 @@ function buildTitle() {
   btn.querySelector('.cont-s').textContent = `${L.code} · ${L.name}`;
   const er = save.endlessRun, dr = save.daily[today()];
   $('mode-endless-sub').textContent = er && er.floor > 1 ? `Lanjutkan dari Lantai ${-er.floor}.` + (save.bestFloor ? ` Rekor: ${save.bestFloor} lantai.` : '') : 'Lantai demi lantai ke bawah, setiap lantai dibuat acak.' + (save.bestFloor ? ` Rekor: ${save.bestFloor} lantai.` : '');
+  // today's tape: who lives there and what is wrong with it
+  { const date = today(), dd = endlessDef(3 + (date % 4), date % 999983), who = dd.entities.map((e) => (ENTITY_INFO[e.type] || {}).name || e.type).join(' & ');
+    $('mode-daily-who').textContent = `Hari ini: ${dd.name} · ${who}` + (dd.mods && dd.mods.length ? ' · ' + dd.mods.map((k) => ENDLESS_MODS[k].name).join(', ') : ''); }
+  { const pk = er && er.floor > 1 ? [...(er.perks || []), ...(er.chosen ? [er.chosen] : [])] : [];
+    $('mode-endless-perks').textContent = pk.length ? 'Bekal: ' + pk.map((k) => PERKS[k] ? PERKS[k].icon + ' ' + PERKS[k].name : k).join(', ') : ''; }
   $('mode-daily-sub').textContent = dr ? `Hari ini selesai dalam ${fmt(dr)}. Kembali besok untuk kaset baru.` : 'Satu lantai yang sama untuk semua pemain, berganti setiap hari.';
   document.querySelector('#title .tag').textContent = save.trueEnding ? '★★ Akhir sebenarnya ditemukan' : save.endingSeen ? '★ Rekaman terakhir sudah diputar' : 'Rekaman ditemukan · 1996';
 }
