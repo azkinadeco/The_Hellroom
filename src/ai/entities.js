@@ -451,7 +451,10 @@ export class Monitor extends Entity {
           this.lostT += dt;
           // lost sight: it runs on to where you were going, not to where you vanished
           if (!this.path && this.lastSeen) { const q = this.predictEscape(); this.goToWorld(q.x, q.z); }
-          if (this.followPath(dt, speed) || this.lostT > 5) {
+          // the further you got before it lost you, the sooner it stops running and starts searching
+          const gap = this.lastSeen ? Math.hypot(p.pos.x - this.pos.x, p.pos.z - this.pos.z) : 0;
+          const giveUp = p.hidden ? 5 : gap > 18 ? 2.5 : gap > 12 ? 3.5 : 5;
+          if (this.followPath(dt, speed) || this.lostT > giveUp) {
             this.setState('search');
             this.suspicion = 0.6;
             this.searchPts = this.planSearch();
