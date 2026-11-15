@@ -448,3 +448,5 @@ body.clear-screen #splash.tear .splash-logo, .reduce-motion #splash.tear .splash
 .tlean .tbtn { width: 44px; height: 44px; opacity: 0.8; }
 .tlean .tbtn svg { width: 20px; height: 20px; }
 @media (max-height: 420px) { .tlean { bottom: 168px; } }
+.tbtn.knock { display: none; }
+body.can-knock .tbtn.knock { display: flex; }

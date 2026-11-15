@@ -48,6 +48,7 @@ export class HUD {
     if (inv.alarms) lines.push(`JAM WEKER ×${inv.alarms}  [${g.input.touch ? 'WEKER' : g.input.keyName('alarm')}]`);
     document.body.classList.toggle('can-throw', inv.erasers > 0 && !p.hidden);
     document.body.classList.toggle('can-alarm', inv.alarms > 0 && !p.hidden);
+    if (g.input.touch) { this.knockT = (this.knockT || 0) - dt; if (this.knockT <= 0) { this.knockT = 0.25; document.body.classList.toggle('can-knock', !!g.wallAhead()); } }
     if (g.powered) lines.push('LISTRIK MENYALA — CARI PINTU KELUAR');
     this._set(this.obj, 'obj', lines.join('\n'));
 

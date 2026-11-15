@@ -344,6 +344,11 @@ export class Audio {
     const f = this._filter('lowpass', 350), g = this._out(pos, 0.6);
     src.connect(f).connect(g); this._env(g, t, 0.003, vol, 0.25); src.start(t, Math.random()); src.stop(t + 0.35);
   }
+  // knuckles on a wall: three dull knocks
+  knock(pos) {
+    if (!this.ready) return;
+    for (let i = 0; i < 3; i++) { const t = this.t + i * 0.19; this._thud(pos, t, 0.55); const o = this._osc('sine', 140 + Math.random() * 20), g = this._out(pos, 0.4); o.connect(g); this._env(g, t, 0.002, 0.12, 0.08); o.start(t); o.stop(t + 0.12); }
+  }
   doorLocked(pos) {
     if (!this.ready) return;
     const t = this.t;

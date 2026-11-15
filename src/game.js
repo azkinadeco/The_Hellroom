@@ -586,6 +586,29 @@ export class Game {
     return Math.max(0.2, Math.min(0.8, 0.8 - (Math.max(0, (c - 0.5) * CELL - d)) / 30));
   }
 
+  // the wall straight in front of the player, if there is one within reach
+  wallAhead() {
+    const p = this.player;
+    if (!this.map || p.hidden || !p.alive) return null;
+    const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw);
+    for (const r of [0.55, 0.8, 1.05]) {
+      const x = p.pos.x + fx * r, z = p.pos.z + fz * r, [qx, qz] = this.world.collide(x, z, 0.12);
+      if (Math.hypot(qx - x, qz - z) > 0.03 || !this.map.los(p.pos.x, p.pos.z, x, z)) return { x: p.pos.x + fx * (r - 0.15), z: p.pos.z + fz * (r - 0.15) };
+    }
+    return null;
+  }
+  // knock on it: a sound with nothing thrown, to pull a resident round a corner
+  knock() {
+    const w = this.wallAhead();
+    if (!w) { this.hud.toast('Tidak ada dinding di depanmu untuk diketuk.', 1.6); return; }
+    if ((this.knockCd || 0) > this.time) return;
+    this.knockCd = this.time + 3;
+    this.audio.knock({ x: w.x, y: 1.3, z: w.z });
+    this.emitNoise(w.x, w.z, NOISE.knock, 'knock');
+    this.stats.knocks = (this.stats.knocks || 0) + 1;
+    this.input.rumble(60, 0.3);
+  }
+
   // 2 = under the open sky (courtyard, forest hall, roofless), 1 = an atrium or void several storeys high, 0 = indoors
   openness(x, z) {
     const f = this.floors[this.floorK], m = this.map;
@@ -946,6 +969,7 @@ export class Game {
     p.update(dt, input, this.world, this);
     if (input.consume('throw')) this.throwEraser();
     if (input.consume('alarm')) this.setAlarm();
+    if (input.consume('knock')) this.knock();
     this.updateAlarms(dt);
     this.updateProjectiles(dt);
     this.updateHints(dt);

@@ -3,12 +3,12 @@
 export const DEFAULT_BINDS = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft', crouch: 'KeyC', interact: 'KeyE',
   flashlight: 'KeyF', nightvision: 'KeyN', zoom: 'KeyZ', throw: 'KeyG', alarm: 'KeyQ', breath: 'Space',
-  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV',
+  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV', knock: 'KeyT',
 };
 export const BIND_LABELS = {
   forward: 'Maju', back: 'Mundur', left: 'Kiri', right: 'Kanan', sprint: 'Lari', crouch: 'Jongkok', interact: 'Interaksi',
   flashlight: 'Senter', nightvision: 'Mode malam', zoom: 'Zoom kamera', throw: 'Lempar penghapus', alarm: 'Pasang jam weker', breath: 'Tahan napas',
-  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan',
+  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan', knock: 'Ketuk dinding',
 };
 const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath', 'leanLeft', 'leanRight']);
 export function keyLabel(code) {
@@ -142,7 +142,7 @@ export class Input {
     this.gp = gp;
     const dz = (v) => (Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v) * 0.18) / 0.82);
     const down = (i) => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.4));
-    const MAP = { 0: 'interact', 1: 'crouch', 2: 'flashlight', 3: 'nightvision', 4: 'throw', 8: 'map', 9: 'pause', 12: 'objectives', 14: 'alarm', 15: 'mapfloor' };
+    const MAP = { 0: 'interact', 1: 'crouch', 2: 'flashlight', 3: 'nightvision', 4: 'throw', 8: 'map', 9: 'pause', 11: 'knock', 12: 'objectives', 14: 'alarm', 15: 'mapfloor' };
     for (let i = 0; i < gp.buttons.length; i++) {
       const d = down(i);
       if (d && !P.prev[i]) { P.edges.add(i); P.seen = true; if (this.enabled && MAP[i]) this.pressed.add(MAP[i]); if (this.enabled && i === 10) this.sprintToggle = !this.sprintToggle; }
