@@ -1189,6 +1189,21 @@ export class Game {
     this.danger = damp(this.danger, danger, 3, dt);
     if (this.graceT > 0) this.graceT -= dt;
     this.direct(dt, danger, chase);
+    // near misses: a hunter passes within arm's reach of you (hidden or crouched) without noticing, then moves on
+    for (const e of this.entities) {
+      if (!e.sight || this.chasers.has(e) || !p.alive) { e.nearMiss = false; continue; }
+      const d = Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z);
+      if (d < 2.6 && (p.hidden || p.crouched) && (e.awareness || 0) < 0.45) e.nearMiss = true;
+      else if (e.nearMiss && d > 4.5) {
+        e.nearMiss = false;
+        if (this.time - (this.lastNearMiss ?? -1e9) > 20) {
+          this.lastNearMiss = this.time; this.stats.nearMisses = (this.stats.nearMisses || 0) + 1;
+          p.fear = Math.max(p.fear, 0.9); this.audio.heartbeat(1); this.input.rumble(140, 0.5);
+          this.hud.caption('…nyaris', 1.4);
+          this.hint('nearmiss', 'Nyaris. Ia lewat tepat di sebelahmu tanpa melihat. Tunggu langkahnya menjauh sebelum bergerak.', 5);
+        }
+      }
+    }
     // hallucinations: a long stretch of high fear starts to play tricks - a false alarm in the eye,
     // footsteps closing in from behind that stop dead, a figure that is not there
     if (p.fear > 0.55 && !chase && !p.hidden) this.fearT = (this.fearT || 0) + dt; else this.fearT = Math.max(0, (this.fearT || 0) - dt * 0.5);
