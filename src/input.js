@@ -45,6 +45,7 @@ export class Input {
       if (e.repeat) return;
       this.keys.add(e.code);
       for (const a in this.binds) if (this.binds[a] === e.code && !HELD.has(a)) this.pressed.add(a);
+      if (this.sprintPress && e.code === this.binds.sprint && !e.repeat) this.kbSprint = !this.kbSprint;   // press-to-sprint
       if (fixed[e.code] && !Object.values(this.binds).includes(e.code)) this.pressed.add(fixed[e.code]);
     }, true);
     addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -180,7 +181,7 @@ export class Input {
   setBinds(b) { this.binds = { ...DEFAULT_BINDS, ...(b || {}) }; }
   // what to print in prompts for an action
   keyName(a) { return keyLabel(this.binds[a]); }
-  sprint() { return this.keys.has(this.binds.sprint) || this.sprintToggle || this.pad.sprint; }
+  sprint() { return (this.sprintPress ? this.kbSprint : this.keys.has(this.binds.sprint)) || this.sprintToggle || this.pad.sprint; }
   zooming() { return this.keys.has(this.binds.zoom) || this.zoomToggle || this.pad.zoom; }
   // -1 lean left, 1 lean right, 0 upright (keyboard, touch buttons, d-pad down + stick on a pad)
   lean() { return (this.keys.has(this.binds.leanRight) || this.leanTouch > 0 ? 1 : 0) - (this.keys.has(this.binds.leanLeft) || this.leanTouch < 0 ? 1 : 0) + (this.pad.lean || 0); }

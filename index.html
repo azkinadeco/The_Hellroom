@@ -62,6 +62,12 @@
       <h2>Kecerahan</h2>
       <p class="dim small">Geser sampai simbol kiri <b>hampir tidak terlihat</b> dan simbol kanan <b>jelas terlihat</b>. Kamu bisa mengubahnya lagi di Pengaturan.</p>
       <canvas id="calib-canvas" width="480" height="160"></canvas>
+      <label class="row">Jongkok (keyboard)
+        <select id="set-crouch"><option value="toggle">Tekan sekali (ganti)</option><option value="hold">Tahan</option></select>
+      </label>
+      <label class="row">Lari (keyboard)
+        <select id="set-sprint"><option value="hold">Tahan</option><option value="press">Tekan sekali (ganti)</option></select>
+      </label>
       <label class="row">Indikator arah suara (lingkaran di sekitar bidikan) <input id="set-ring" type="checkbox" /></label>
       <label class="row">Kecerahan <span><span id="calib-val" class="dim"></span> <input id="calib-bright" type="range" min="0.7" max="1.5" step="0.05" /></span></label>
       <button class="primary" id="calib-ok">Lanjut</button>

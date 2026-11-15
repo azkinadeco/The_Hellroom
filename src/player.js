@@ -77,7 +77,12 @@ export class Player {
       if (this.battery > 0) { this.nightVision = !this.nightVision; game.audio.nvToggle(this.nightVision); }
       else game.hud.toast('Baterai habis');
     }
-    if (input.consume('crouch') && !this.hidden) {
+    // hold-to-crouch (keyboard, if chosen in the settings): crouched exactly while the key is down
+    if (input.crouchHold && !input.touch && !this.hidden) {
+      const held = input.keys.has(input.binds.crouch) || input.keys.has('ControlLeft');
+      input.consume('crouch');
+      if (held !== this.crouched) { this.crouched = held; }
+    } else if (input.consume('crouch') && !this.hidden) {
       this.crouched = !this.crouched;
       const b = document.querySelector('.tbtn[data-action="crouch"]');
       if (b) b.classList.toggle('on', this.crouched);
@@ -136,6 +141,7 @@ export class Player {
     if (Math.abs(this.lean) > 0.05 && !this.leanUsed) { this.leanUsed = true; game.stats.leans = (game.stats.leans || 0) + 1; }
     if (!want) this.leanUsed = false;
     const wantSprint = input.sprint() && !this.crouched && ax.y < 0 && !this.exhausted;
+    if (input.sprintPress && (this.exhausted || ax.y >= 0 || this.crouched)) input.kbSprint = false;   // press-to-sprint ends when you stop or tire
     this.wading = !!(this.water && this.water.some((w) => this.pos.x > w.minX && this.pos.x < w.maxX && this.pos.z > w.minZ && this.pos.z < w.maxZ));
     const speed = (this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint : PLAYER.walk) * (this.wading ? 0.62 : 1) * (want ? 0.4 : 1);
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);

@@ -113,6 +113,7 @@ export class Game {
     document.body.classList.toggle('big-text', !!s.bigText);
     if (this.state === 'menu' || !this.input.zooming()) { this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix(); }
     this.input.setBinds(s.binds);
+    this.input.crouchHold = s.crouchMode === 'hold'; this.input.sprintPress = s.sprintMode === 'press'; if (!this.input.sprintPress) this.input.kbSprint = false;
     this.input.sensitivity = s.sens;
     this.input.invertY = s.invertY;
     this.audio.setVolume(s.volume);
