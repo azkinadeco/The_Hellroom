@@ -80,7 +80,9 @@ export class Game {
       this.shadowQ = q;
       this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
     }
-    this.vhs.scale = this.baseScale;
+    this.resScale = this.resScale || 1;
+    if (s.autoRes === false) this.resScale = 1;
+    this.vhs.scale = this.baseScale * this.resScale;
     this.vhs.enabled = true;
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
     document.body.classList.toggle('clear-screen', this.clear);
@@ -95,6 +97,20 @@ export class Game {
     this.input.invertY = s.invertY;
     this.audio.setVolume(s.volume);
     this.resize();
+  }
+  // Dynamic resolution: a slow machine trades sharpness for frame rate, a fast one wins it back.
+  autoRes(rdt) {
+    if (this.settings.autoRes === false || !(rdt > 0)) return;
+    const a = this._ar || (this._ar = { avg: 1 / 60, t: 0 });
+    a.avg += (Math.min(rdt, 0.1) - a.avg) * 0.05;
+    a.t += rdt;
+    let s = this.resScale || 1;
+    if (a.t > 2 && a.avg > 1 / 26 && s > 0.6) s = Math.max(0.6, s - 0.08);
+    else if (a.t > 5 && a.avg < 1 / 48 && s < 1) s = Math.min(1, s + 0.05);
+    else return;
+    a.t = 0; this.resScale = s;
+    this.vhs.scale = this.baseScale * s;
+    this.vhs.setSize(innerWidth, innerHeight, this.pixelRatio);
   }
   resize() {
     const w = innerWidth, h = innerHeight;
@@ -498,7 +514,7 @@ export class Game {
     const p = this.player;
     if (!p.alive || e.form === 'statue') return false;
     const cam = this.camera;
-    const v = new THREE.Vector3(e.pos.x, 1.1, e.pos.z);
+    const v = (this._seeV || (this._seeV = new THREE.Vector3())).set(e.pos.x, 1.1, e.pos.z);
     const d = cam.position.distanceTo(v);
     if (d > 38) return false;
     // test several points on the body so partially visible counts

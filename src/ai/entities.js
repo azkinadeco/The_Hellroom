@@ -153,7 +153,10 @@ export class Entity {
   }
 
   updateCommon(dt) {
-    this.mixer.update(dt);
+    // far away the skeleton only needs ten updates a second
+    const cam = this.game.camera.position;
+    this.mixAcc = (this.mixAcc || 0) + dt;
+    if (Math.hypot(cam.x - this.pos.x, cam.z - this.pos.z) < 20 || this.mixAcc >= 0.1) { this.mixer.update(this.mixAcc); this.mixAcc = 0; }
     this.obj.position.copy(this.pos);
     if (this.game.stairs && this.game.stairs.length) this.obj.position.y += this.game.groundY(this.pos.x, this.pos.z);
     this.obj.rotation.y = this.yaw;

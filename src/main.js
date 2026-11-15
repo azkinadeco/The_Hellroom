@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false } };
+const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -468,7 +468,7 @@ function buildSettings() {
   const s = save.settings;
   $('set-sens').value = s.sens; $('set-vol').value = s.volume; $('set-quality').value = s.quality;
   $('set-screen').value = s.screen; $('set-inv').checked = s.invertY; $('set-subs').checked = s.subs;
-  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps;
+  $('set-fov').value = s.fov; $('set-fov-val').textContent = s.fov + '°'; $('set-bob').checked = s.bob; $('set-calm').checked = s.calm; $('set-big').checked = s.bigText; $('set-vib').checked = s.vibrate; $('set-assist').checked = s.assist; $('set-fps').checked = !!s.fps; $('set-autores').checked = s.autoRes !== false;
   $('save-msg').textContent = ''; $('save-code').classList.add('hidden'); resetArmed = false; $('save-reset').textContent = 'Hapus semua progres';
   buildBinds();
 }
@@ -534,11 +534,11 @@ function readSettings() {
   const s = save.settings;
   s.sens = +$('set-sens').value; s.volume = +$('set-vol').value; s.quality = $('set-quality').value;
   s.screen = $('set-screen').value; s.invertY = $('set-inv').checked; s.subs = $('set-subs').checked;
-  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked;
+  s.fov = +$('set-fov').value; $('set-fov-val').textContent = s.fov + '°'; s.bob = $('set-bob').checked; s.calm = $('set-calm').checked; s.bigText = $('set-big').checked; s.vibrate = $('set-vib').checked; s.assist = $('set-assist').checked; s.fps = $('set-fps').checked; s.autoRes = $('set-autores').checked;
   persist();
   if (game) game.applySettings();
 }
-for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps']) $(id).addEventListener('input', readSettings);
+for (const id of ['set-sens', 'set-vol', 'set-quality', 'set-screen', 'set-inv', 'set-subs', 'set-fov', 'set-bob', 'set-calm', 'set-big', 'set-vib', 'set-assist', 'set-fps', 'set-autores']) $(id).addEventListener('input', readSettings);
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');
@@ -625,6 +625,7 @@ async function boot() {
     try {
       input.poll(dt); padMenus();
       game.update(dt);
+      if (game.state === 'playing') game.autoRes(game.realDt);
       if (game.state !== 'menu') game.render(now / 1000);
     } catch (e) { showError(e.stack || String(e)); game.state = 'paused'; }
     requestAnimationFrame(frame);
