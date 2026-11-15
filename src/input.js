@@ -3,14 +3,14 @@
 export const DEFAULT_BINDS = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft', crouch: 'KeyC', interact: 'KeyE',
   flashlight: 'KeyF', nightvision: 'KeyN', zoom: 'KeyZ', throw: 'KeyG', alarm: 'KeyQ', breath: 'Space',
-  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab',
+  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV',
 };
 export const BIND_LABELS = {
   forward: 'Maju', back: 'Mundur', left: 'Kiri', right: 'Kanan', sprint: 'Lari', crouch: 'Jongkok', interact: 'Interaksi',
   flashlight: 'Senter', nightvision: 'Mode malam', zoom: 'Zoom kamera', throw: 'Lempar penghapus', alarm: 'Pasang jam weker', breath: 'Tahan napas',
-  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan',
+  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan',
 };
-const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath']);
+const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath', 'leanLeft', 'leanRight']);
 export function keyLabel(code) {
   if (!code) return '—';
   return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace('ShiftLeft', 'Shift').replace('ShiftRight', 'Shift kanan')
@@ -121,11 +121,13 @@ export class Input {
         if (a === 'sprint') { this.sprintToggle = !this.sprintToggle; b.classList.toggle('on', this.sprintToggle); return; }
         if (a === 'breath') { this.breathHeld = true; b.classList.add('on'); return; }
         if (a === 'zoom') { this.zoomToggle = !this.zoomToggle; b.classList.toggle('on', this.zoomToggle); return; }
+        if (a === 'leanLeft' || a === 'leanRight') { this.leanTouch = a === 'leanLeft' ? -1 : 1; b.classList.add('on'); return; }
         this.pressed.add(a);
       }, { passive: false });
       b.addEventListener('touchend', (e) => {
         e.preventDefault();
         if (a === 'breath') { this.breathHeld = false; b.classList.remove('on'); }
+        if (a === 'leanLeft' || a === 'leanRight') { this.leanTouch = 0; b.classList.remove('on'); }
       });
     }
   }
@@ -136,7 +138,7 @@ export class Input {
     P.edges.clear();
     let gp = null;
     try { for (const g of (navigator.getGamepads ? navigator.getGamepads() : [])) if (g && g.connected && g.buttons.length >= 10) { gp = g; break; } } catch (_) { /* not allowed */ }
-    if (!gp) { P.move.x = P.move.y = 0; P.sprint = P.zoom = P.breath = false; this.gp = null; return; }
+    if (!gp) { P.move.x = P.move.y = 0; P.sprint = P.zoom = P.breath = false; P.lean = 0; this.gp = null; return; }
     this.gp = gp;
     const dz = (v) => (Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v) * 0.18) / 0.82);
     const down = (i) => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.4));
@@ -152,6 +154,7 @@ export class Input {
     const rx = dz(gp.axes[2] || 0), ry = dz(gp.axes[3] || 0);
     this.lookDX += rx * Math.abs(rx) * 1500 * dt; this.lookDY += ry * Math.abs(ry) * 1000 * dt;
     P.zoom = down(6); P.sprint = down(7); P.breath = down(5);
+    P.lean = down(13) ? Math.sign(rx || P.move.x) : 0;   // hold d-pad down and tip a stick to lean
   }
   // short buzz on the phone and the controller
   rumble(ms = 120, strength = 0.6) {
@@ -179,6 +182,8 @@ export class Input {
   keyName(a) { return keyLabel(this.binds[a]); }
   sprint() { return this.keys.has(this.binds.sprint) || this.sprintToggle || this.pad.sprint; }
   zooming() { return this.keys.has(this.binds.zoom) || this.zoomToggle || this.pad.zoom; }
+  // -1 lean left, 1 lean right, 0 upright (keyboard, touch buttons, d-pad down + stick on a pad)
+  lean() { return (this.keys.has(this.binds.leanRight) || this.leanTouch > 0 ? 1 : 0) - (this.keys.has(this.binds.leanLeft) || this.leanTouch < 0 ? 1 : 0) + (this.pad.lean || 0); }
   holdingBreath() { return this.keys.has(this.binds.breath) || this.breathHeld || this.pad.breath; }
   consume(a) { const had = this.pressed.has(a); this.pressed.delete(a); return had; }
   endFrame() { this.pressed.clear(); this.lookDX = 0; this.lookDY = 0; }

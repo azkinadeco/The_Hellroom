@@ -184,7 +184,12 @@ export class Entity {
     else if (ang <= half + 35 && d < reach * 0.4 && mov > 0.1) cone = 0.35;      // the corner of its eye: only movement
     else if (d < 1.3 && !p.crouched) cone = 1;                                    // brushed right past it
     else return 0;
-    if (!g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z)) return 0;
+    // leaning out: it can only see your head, so the line goes to the head and there is less of you
+    const hp = p.headPos ? p.headPos() : { x: p.pos.x, z: p.pos.z, leaning: false };
+    if (hp.leaning) {
+      if (!g.world.los(this.pos.x, this.pos.z, hp.x, hp.z)) return 0;
+      if (!g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z)) vis *= 0.45;      // body round the corner
+    } else if (!g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z)) return 0;
     // cover: crouched behind a desk, a crate, a bench; anything tall hides you standing
     if (d > 1.6 && g.world.cover(this.pos.x, this.pos.z, p.pos.x, p.pos.z, p.crouched ? 0.7 : 1.75)) return 0;
     const k = Math.pow(1 - d / reach, 0.7);

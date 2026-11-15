@@ -110,9 +110,18 @@ export class Player {
 
     // ----- movement -----
     const ax = input.axis();
+    // lean round a corner: the head moves out, the body stays behind the wall
+    const want = input.lean ? input.lean() : 0;
+    let room = 0.48;
+    if (want) {   // as far as the wall allows
+      for (const r of [0.48, 0.34, 0.2]) { const hx = this.pos.x + Math.cos(this.yaw) * r * want, hz = this.pos.z - Math.sin(this.yaw) * r * want, [qx, qz] = world.collide(hx, hz, 0.16); room = r; if (Math.hypot(qx - hx, qz - hz) < 0.02) break; room = 0; }
+    }
+    this.lean = damp(this.lean || 0, want * room, 9, dt);
+    if (Math.abs(this.lean) > 0.05 && !this.leanUsed) { this.leanUsed = true; game.stats.leans = (game.stats.leans || 0) + 1; }
+    if (!want) this.leanUsed = false;
     const wantSprint = input.sprint() && !this.crouched && ax.y < 0 && !this.exhausted;
     this.wading = !!(this.water && this.water.some((w) => this.pos.x > w.minX && this.pos.x < w.maxX && this.pos.z > w.minZ && this.pos.z < w.maxZ));
-    const speed = (this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint : PLAYER.walk) * (this.wading ? 0.62 : 1);
+    const speed = (this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint : PLAYER.walk) * (this.wading ? 0.62 : 1) * (want ? 0.4 : 1);
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     const tx = (ax.x * cos + ax.y * sin) * speed;
     const tz = (-ax.x * sin + ax.y * cos) * speed;
@@ -172,9 +181,15 @@ export class Player {
     if (this.hidden) {
       c.position.set(this.hidden.camX, this.eye, this.hidden.camZ);
     } else {
-      c.position.set(this.pos.x + Math.cos(this.yaw) * bx, (this.y || 0) + this.eye + by, this.pos.z - Math.sin(this.yaw) * bx);
+      const ln = this.lean || 0;
+      c.position.set(this.pos.x + Math.cos(this.yaw) * (bx + ln), (this.y || 0) + this.eye + by - Math.abs(ln) * 0.12, this.pos.z - Math.sin(this.yaw) * (bx + ln));
     }
-    c.rotation.set(this.pitch, this.yaw, Math.cos(this.bob) * bobAmt * 0.25);
+    c.rotation.set(this.pitch, this.yaw, Math.cos(this.bob) * bobAmt * 0.25 - (this.hidden ? 0 : (this.lean || 0) * 0.32));
+  }
+  // where a resident would see you: your head when you lean out, otherwise your body
+  headPos() {
+    const ln = this.hidden ? 0 : this.lean || 0;
+    return { x: this.pos.x + Math.cos(this.yaw) * ln, z: this.pos.z - Math.sin(this.yaw) * ln, leaning: Math.abs(ln) > 0.15 };
   }
 
   // visibility multiplier used by entity perception (0..~1.6)

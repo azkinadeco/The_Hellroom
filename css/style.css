@@ -442,3 +442,9 @@ body.touch .watch { top: 58px; }
 }
 body.clear-screen #splash.tear .splash-logo, .reduce-motion #splash.tear .splash-logo { animation: none; opacity: 0; transition: opacity .5s; }
 @media (prefers-reduced-motion: reduce) { .splash-logo { animation-duration: .01s; } #splash.tear .splash-logo { animation: none; opacity: 0; } }
+
+/* batch 65: lean buttons */
+.tlean { position: absolute; left: 20px; bottom: 196px; display: flex; gap: 9px; }
+.tlean .tbtn { width: 44px; height: 44px; opacity: 0.8; }
+.tlean .tbtn svg { width: 20px; height: 20px; }
+@media (max-height: 420px) { .tlean { bottom: 168px; } }
