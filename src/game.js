@@ -522,7 +522,13 @@ export class Game {
     if (!this.chasers.has(e) && this.player.alive) { this.marks.push({ k: this.floorK, x: this.player.pos.x, z: this.player.pos.z, t: this.time, kind: e.kind }); if (this.marks.length > 12) this.marks.shift(); if (this.automap) this.automap.dirty = true; }
     if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); this.input.rumble(180, 0.7); }
   }
-  onChaseEnd(e) { if (this.chasers.delete(e) && this.player.alive) { this.graceT = this.diff.grace; this.quietT = 0; this.stats.escapes = (this.stats.escapes || 0) + 1; } }
+  onChaseEnd(e) {
+    if (this.chasers.delete(e) && this.player.alive) {
+      this.graceT = this.diff.grace; this.quietT = 0; this.stats.escapes = (this.stats.escapes || 0) + 1;
+      // relief, when the last hunter has lost you
+      if (!this.chasers.size && this.state === 'playing') { this.audio.exhale(); this.hud.caption('— lolos —', 1.6); this.relief = 1; }
+    }
+  }
   // Pacing: after an escape patrols wander off for a while; after a long quiet
   // stretch the next patrol leg ends somewhere near the player instead.
   pickPatrol(e) {

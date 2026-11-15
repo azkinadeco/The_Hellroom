@@ -686,6 +686,15 @@ export class Audio {
     this.riser.gain.setTargetAtTime(k * k * 0.06, this.t, 0.15);
     for (const [o, mul] of this.riserOsc) o.frequency.setTargetAtTime((110 + k * 220) * mul, this.t, 0.3);
   }
+  // a long shaky breath out: you got away
+  exhale() {
+    if (!this.ready) return;
+    const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const bp = this._filter('bandpass', 700, 1.2), g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+    bp.frequency.setValueAtTime(900, t); bp.frequency.linearRampToValueAtTime(450, t + 1.5);
+    src.connect(bp).connect(g).connect(this.master); src.start(t, Math.random()); src.stop(t + 1.7);
+  }
   // the body blow under the scream: a sub drop and a burst of torn tape
   impact() {
     if (!this.ready) return;

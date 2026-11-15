@@ -124,6 +124,9 @@ export class HUD {
     { // the eye: fills as the most alert resident notices you, red while you are hunted
       let w = 0; for (const e of g.entities) w = Math.max(w, e.awareness || 0);
       const hunt = g.chasers.size > 0 || (g.fakeHunt || 0) > 0;
+      // while a hunter falters the eye half-closes: that is your moment
+      let lull = false; for (const e of g.chasers) if (e.lullT > 0) lull = true;
+      this.watch.classList.toggle('lull', lull);
       this.watchLv = (this.watchLv || 0) + ((hunt ? 1 : Math.min(w, 1)) - (this.watchLv || 0)) * Math.min(1, dt * 8);
       const show = (hunt || this.watchLv > 0.04) && p.alive;
       this._set(this.watch, 'wshow', show ? 'watch show' + (hunt ? ' hunt' : '') : 'watch', 'className');
