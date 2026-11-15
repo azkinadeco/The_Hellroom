@@ -53,7 +53,7 @@ export class AutoMap {
       for (const it of g.built.items || []) {
         if (it.mapped || it.taken || !ITEM_MARK[it.type]) continue;
         const d = Math.hypot(it.x - p.pos.x, it.z - p.pos.z);
-        if (d < 9 && m.los(p.pos.x, p.pos.z, it.x, it.z)) { it.mapped = true; this.dirty = true; }
+        if (d < 9 && m.los(p.pos.x, p.pos.z, it.x, it.z)) { it.mapped = true; this.dirty = true; g.stats.mapped = (g.stats.mapped || 0) + 1; }
       }
       if (this.open && (this.lastX !== p.pos.x || this.lastZ !== p.pos.z || this.lastYaw !== p.yaw || (g.marks && g.marks.length))) this.dirty = true;
     }

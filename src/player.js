@@ -164,6 +164,7 @@ export class Player {
       this.pantT = (this.pantT || 0) - dt;
       if (this.pantT <= 0) {
         this.pantT = 1.1;
+        if (this.holdingBreath) game.stats.stifled = (game.stats.stifled || 0) + 1;
         if (!this.holdingBreath) { game.audio.gasp(); game.emitNoise(this.pos.x, this.pos.z, NOISE.pant, 'pant'); game.hint('pant', 'Napasmu terengah setelah berlari, dan penghuni di dekatmu bisa mendengarnya. Tahan napas (' + (input.touch ? 'tombol napas' : input.keyName('breath')) + ') atau jangan berlari sampai habis.', 6); }
       }
     }

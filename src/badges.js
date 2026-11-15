@@ -36,6 +36,10 @@ export const BADGES = [
   { id: 'dobrak', icon: '🚪', name: 'Tiga Detik Berharga', desc: 'Lolos setelah penghuni mendobrak pintu yang kamu ganjal.', test: (c) => c.win && (c.g.stats.battered || 0) > 0 },
   { id: 'silau', icon: '🔦', name: 'Silau', desc: 'Buat pengejar silau dengan senter.', test: (c) => (c.g.stats.dazzles || 0) > 0 },
   { id: 'kutuk', icon: '☠', name: 'Terkutuk', desc: 'Selesaikan lantai Jurang dengan dua kutukan atau lebih.', test: (c) => c.win && c.g.def.endless && (c.g.def.mods || []).length >= 2 },
+  { id: 'bekal', icon: '🎒', name: 'Tiga Bekal', desc: 'Selesaikan lantai Jurang dengan tiga bekal atau lebih.', test: (c) => c.win && (c.g.def.perks || []).length >= 3 },
+  { id: 'halu', icon: '🌀', name: 'Tidak Nyata', desc: 'Alami halusinasi karena ketakutan terlalu lama.', test: (c) => (c.g.stats.hallucinations || 0) > 0 },
+  { id: 'tahan', icon: '🤐', name: 'Napas Tertahan', desc: 'Redam napas terengahmu dengan menahan napas.', test: (c) => (c.g.stats.stifled || 0) > 0 },
+  { id: 'peta', icon: '🗺', name: 'Juru Peta', desc: 'Catat sepuluh barang di denah dalam satu permainan.', test: (c) => (c.g.stats.mapped || 0) >= 10 },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 
