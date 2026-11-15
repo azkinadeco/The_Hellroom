@@ -35,9 +35,9 @@ const save = loadSave();
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (_) { /* ignore */ } }
 
 // ---------------------------------------------------------------- screens
-let current = 'loading', returnTo = 'title';
+let current = 'splash', returnTo = 'title';
 function show(id) {
-  for (const s of document.querySelectorAll('.screen')) s.classList.toggle('active', s.id === id);
+  for (const s of document.querySelectorAll('.screen')) if (s.id !== 'splash') s.classList.toggle('active', s.id === id);   // the intro fades out on its own
   current = id;
   // keyboard and controller users land on the obvious button
   requestAnimationFrame(() => { if (current !== id) return; const scr = $(id), f = focusables(); const t = (scr && [...scr.querySelectorAll('.primary')].find((b) => f.includes(b))) || f[0]; if (t) t.focus({ preventScroll: true }); });
@@ -599,6 +599,29 @@ function padMenus() {
 }
 
 // ---------------------------------------------------------------- boot
+// Studio intro: the logo stays at least a few seconds while the tape loads,
+// then the signal tears and the title comes up. Click, tap or a key skips once loaded.
+const SPLASH_MIN = 3.6;
+const splashStart = performance.now();
+if ((save.settings || {}).screen === 'clear') document.body.classList.add('clear-screen');
+function endSplash() {
+  return new Promise((resolve) => {
+    const el = $('splash'), skip = $('splash-skip');
+    let done = false;
+    const go = () => {
+      if (done) return; done = true;
+      removeEventListener('keydown', go); el.removeEventListener('pointerdown', go);
+      el.classList.add('tear');
+      setTimeout(() => { el.classList.add('out'); resolve(); }, 450);
+      setTimeout(() => { el.classList.remove('active', 'out', 'tear'); el.style.display = 'none'; }, 1400);
+    };
+    $('load-bar').parentElement.classList.add('done');
+    const left = Math.max(0, SPLASH_MIN * 1000 - (performance.now() - splashStart));
+    if (left > 400) { skip.classList.add('show'); addEventListener('keydown', go); el.addEventListener('pointerdown', go); }
+    setTimeout(go, left);
+  });
+}
+
 async function boot() {
   await assets.load((f) => { $('load-bar').style.width = (f * 100).toFixed(0) + '%'; });
   game = new Game({ canvas: $('game'), assets, audio, input, hud, settings: save.settings, ui });
@@ -616,6 +639,7 @@ async function boot() {
   // installable + offline where the page is served securely
   try { if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (_) { /* sandboxed frames refuse service workers */ }
   buildTitle();
+  await endSplash();
   show('title');
   let last = performance.now();
   const frame = (now) => {

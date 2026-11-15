@@ -22,13 +22,14 @@
 <body>
   <canvas id="game"></canvas>
 
-  <!-- loading -->
-  <section id="loading" class="screen active">
-    <div class="load-box">
-      <img class="logo logo-load" src="assets/ui/logo.jpg" alt="The Hellroom" />
-      <div class="vhs-label">MEMUAT KASET…</div>
-      <div class="bar"><i id="load-bar"></i></div>
+  <!-- studio intro, doubles as the loading screen -->
+  <section id="splash" class="screen active" aria-label="ONIX Studio">
+    <div class="splash-box">
+      <img class="splash-logo" src="assets/ui/onix_logo.jpg" alt="ONIX Studio" />
+      <p class="splash-presents">mempersembahkan</p>
+      <div class="splash-bar"><i id="load-bar"></i></div>
     </div>
+    <div class="splash-skip" id="splash-skip">ketuk untuk lanjut</div>
   </section>
 
   <!-- title -->
