@@ -42,6 +42,19 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Siluman lanjutan (batch 64–74)
+
+- **Intro ONIX Studio** sebelum menu (batch 64).
+- **Condong** (X / V, tombol sentuh, D-pad bawah + stik): mengintip dari balik sudut; penghuni hanya melihat kepalamu.
+- **Suara teredam**: suara dari balik tembok terdengar lebih pelan dan redup, sesuai jalur yang harus dilaluinya.
+- **Drone ketegangan** mengikuti ikon mata; petunjuk pertama kali untuk mata, jongkok, dan perlindungan.
+- **Denah**: tanda ! di tempat kamu terlihat (memudar dalam semenit), simbol weker.
+- **Jejak kaki basah** setelah keluar dari air; penghuni mengikutinya.
+- **Dua penghuni** mulai Lantai -8 di Jurang; yang satu memanggil, yang lain menghadang.
+- **Ketuk dinding** (T / R3 / tombol sentuh) untuk memancing tanpa membuang barang.
+- **Performa**: penghuni di balik tembok tidak digambar.
+- **Lencana**: Dari Balik Sudut, Ada Orang di Sini, Jejak Basah, Dua Arah, Tak Tersentuh Cahaya; statistik ketukan, intipan, pintu yang diperiksa.
+
 ## Penglihatan penghuni (batch 62–63)
 
 - **Meteran kewaspadaan**: penghuni harus menyadarimu dulu. Setengah sadar: ia berhenti, menoleh, lalu memeriksa tempat kamu terlihat. Penuh: ia mengejar. Ikon mata di atas layar menunjukkan seberapa dekat kamu ketahuan.
