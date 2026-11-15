@@ -109,7 +109,7 @@ export class HUD {
     if (this._touch !== g.input.touch) { this._touch = g.input.touch; document.body.classList.toggle('touch', !!g.input.touch); }
     { // the eye: fills as the most alert resident notices you, red while you are hunted
       let w = 0; for (const e of g.entities) w = Math.max(w, e.awareness || 0);
-      const hunt = g.chasers.size > 0;
+      const hunt = g.chasers.size > 0 || (g.fakeHunt || 0) > 0;
       this.watchLv = (this.watchLv || 0) + ((hunt ? 1 : Math.min(w, 1)) - (this.watchLv || 0)) * Math.min(1, dt * 8);
       const show = (hunt || this.watchLv > 0.04) && p.alive;
       this._set(this.watch, 'wshow', show ? 'watch show' + (hunt ? ' hunt' : '') : 'watch', 'className');

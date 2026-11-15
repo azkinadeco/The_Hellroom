@@ -262,6 +262,7 @@ export class Game {
     this.alarms = [];
     this.trainDone = null; this.trainFinished = false;
     this.trace = null;
+    this.fearT = 0; this.fakeHunt = 0;
     if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
     this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
     this.projectiles = [];
@@ -1126,6 +1127,18 @@ export class Game {
     this.danger = damp(this.danger, danger, 3, dt);
     if (this.graceT > 0) this.graceT -= dt;
     this.direct(dt, danger, chase);
+    // hallucinations: a long stretch of high fear starts to play tricks - a false alarm in the eye,
+    // footsteps closing in from behind that stop dead, a figure that is not there
+    if (p.fear > 0.55 && !chase && !p.hidden) this.fearT = (this.fearT || 0) + dt; else this.fearT = Math.max(0, (this.fearT || 0) - dt * 0.5);
+    if (this.fearT > 14 && Math.random() < dt * 0.25) {
+      this.fearT = 0; this.stats.hallucinations = (this.stats.hallucinations || 0) + 1;
+      const r = Math.random();
+      if (r < 0.35) { this.fakeHunt = 0.9; this.audio.stinger(); if (!this.clear && !this.calm) { this.glitch = Math.max(this.glitch, 0.3); this.schedule(0.25, () => { this.glitch = 0; }); } }
+      else if (r < 0.75) for (let i = 0; i < 4; i++) this.schedule(i * 0.45, () => this.audio.heavyStep({ x: p.pos.x + Math.sin(p.yaw) * (5 - i), y: 0.2, z: p.pos.z + Math.cos(p.yaw) * (5 - i) }, 0.35 + i * 0.1));
+      else if (this.odd) this.odd.spawnGhost();
+      this.hint('hallu', 'Terlalu lama ketakutan, kamera dan telingamu mulai menipu. Tidak semua yang kamu dengar atau lihat itu nyata.', 6);
+    }
+    if (this.fakeHunt > 0) this.fakeHunt -= dt;
     // residents sharing a floor call each other: the hunter gives away where you are, the others cut you off
     if (this.entities.length > 1 && chase) {
       this.callT = (this.callT || 0) - dt;
