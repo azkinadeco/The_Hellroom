@@ -48,7 +48,7 @@ export class Game {
     this.scene.add(this.dust.points);
     // haze in the torch beam, mist on the floor, an uneven lens
     this.beam = new Beam(this.player.light); this.camera.add(this.beam.mesh);
-    this.mist = new Mist(); this.scene.add(this.mist.group);
+    this.mist = new Mist();   // settings holder; the mist itself is drawn by the post pass
     this.player.light.map = flashlightCookie();
     this.state = 'menu';
     this.time = 0;
@@ -71,7 +71,10 @@ export class Game {
   applySettings() {
     const s = this.settings;
     const q = s.quality === 'ultra' ? 2 : s.quality === 'high' ? 1 : 0;
-    this.pixelRatio = Math.min(devicePixelRatio || 1, [1, 1.5, 2][q]);
+    // render at the window's own size and let the frame-rate governor (autoRes) climb towards
+    // the preset's supersampling ceiling only while the GPU keeps 60 fps
+    this.pixelRatio = 1;
+    this.resMax = Math.max(1, Math.min(devicePixelRatio || 1, [1, 1.5, 2][q]));
     this.clear = s.screen === 'clear';
     // clear HD: sharper image (full resolution) and none of the broken-tape effects
     this.baseScale = this.clear ? (q ? 1 : 0.9) : (q ? 1 : 0.8) * (this.input.touch && !q ? 0.9 : 1);
@@ -92,8 +95,8 @@ export class Game {
       this.shadowQ = q;
       this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
     }
-    this.resScale = this.resScale || 1;
-    if (s.autoRes === false) this.resScale = 1;
+    this.resScale = Math.min(this.resScale || 1, this.resMax); this.resCap = this.resMax; this.resCapT = 0;
+    if (s.autoRes === false) this.resScale = this.resMax;
     this.vhs.scale = this.baseScale * this.resScale;
     this.vhs.enabled = true;
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
@@ -125,20 +128,25 @@ export class Game {
     }
   }
   // Dynamic resolution: a slow machine trades sharpness for frame rate, a fast one wins it back.
+  // Frame-rate governor aiming at 60 fps: under ~50 fps it renders fewer pixels, with steady
+  // vsync-bound frames it adds them back up to the preset's ceiling. After a drop the level that
+  // was too slow stays out of reach for a while, so it does not see-saw.
   autoRes(rdt) {
     if (this.settings.autoRes === false || !(rdt > 0)) return;
     const a = this._ar || (this._ar = { avg: 1 / 60, t: 0 });
-    a.avg += (Math.min(rdt, 0.1) - a.avg) * 0.05;
+    a.avg += (Math.min(rdt, 0.1) - a.avg) * 0.06;
     a.t += rdt;
+    if (this.resCapT > 0 && (this.resCapT -= rdt) <= 0) this.resCap = this.resMax;
     let s = this.resScale || 1;
-    // already at the lowest resolution and still slow: drop the dearest effects (contact shadows, then mist)
-    if (a.t > 3 && a.avg > 1 / 22 && s <= 0.6 && this.fxQ > 0 && (this.fxCut || 0) < 2) {
+    const lo = 0.65;
+    // already at the floor and still far too slow: give up the dearest effect (contact shadows), then the mist
+    if (a.t > 3 && a.avg > 1 / 22 && s <= lo && this.fxQ > 0 && (this.fxCut || 0) < 2) {
       a.t = 0; this.fxCut = (this.fxCut || 0) + 1;
       if (this.fxCut === 1) this.vhs.aoStrength = 0; else this.mistOff = true;
       return;
     }
-    if (a.t > 2 && a.avg > 1 / 26 && s > 0.6) s = Math.max(0.6, s - 0.08);
-    else if (a.t > 5 && a.avg < 1 / 48 && s < 1) s = Math.min(1, s + 0.05);
+    if (a.t > 1.5 && a.avg > 1 / 50 && s > lo) { this.resCap = Math.max(lo, s - 0.02); this.resCapT = 20; s = Math.max(lo, s * 0.88); }
+    else if (a.t > 4 && a.avg < 1 / 57 && s < Math.min(this.resMax, this.resCap) - 0.01) s = Math.min(this.resMax, this.resCap, s + 0.08);
     else return;
     a.t = 0; this.resScale = s;
     this.vhs.scale = this.baseScale * s;
@@ -1045,8 +1053,14 @@ export class Game {
     this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);
     { const fl = Math.min(1, this.player.light.intensity / 9), rdt = Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t)));
       this.beam.update(t, fl, this.fxQ ? this.haze : 0);
-      this.mist.group.visible = this.fxQ > 0 && !this.mistOff && this.state !== 'menu' && !!this.map;
-      if (this.mist.group.visible) this.mist.update(this.camera, t, fl, bakeUniforms.uPower.value, this.map ? this.groundY(this.player.pos.x, this.player.pos.z) : 0, rdt); }
+      const V = this.vhs.uniforms, on = this.fxQ > 0 && !this.mistOff && this.state !== 'menu' && !!this.map && !this.player.nightVision;
+      V.uMist.value = on ? this.mist.u.uAmt.value : 0;
+      if (on) {
+        const gy = this.groundY(this.player.pos.x, this.player.pos.z);
+        this.mistY = (this.mistY ?? gy) + (gy - (this.mistY ?? gy)) * Math.min(1, rdt * 3);
+        V.uGround.value = this.mistY; V.uMistLight.value = fl;
+        V.uMistCol.value.copy(this.mist.u.uCol.value).multiplyScalar(0.35 + 0.65 * bakeUniforms.uPower.value);
+      } }
     updateSkyEyes(t, Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t))), bakeUniforms.uPower.value); this.lastRenderT = t;
     this.vhs.render(this.scene, this.camera, t);
   }
@@ -1246,15 +1260,9 @@ export class Game {
       for (const b of f.built.doorBatches || []) { b.cull(c.x, c.z, far, show, this._frus, f.built.root.matrixWorld); b.refresh(); }
     }
   }
-  adaptResolution(dt) {
+  // frame-time average for the FPS readout; the resolution itself is governed by autoRes()
+  adaptResolution() {
     this.frameEma += (this.realDt - this.frameEma) * 0.05;
-    this.perfT += dt;
-    if (this.perfT < 2) return;
-    this.perfT = 0;
-    let s = this.vhs.scale;
-    if (this.frameEma > 1 / 30 && s > 0.45) s -= 0.1;
-    else if (this.frameEma < 1 / 52 && s < this.baseScale) s = Math.min(this.baseScale, s + 0.05);
-    if (s !== this.vhs.scale) { this.vhs.scale = s; this.resize(); }
   }
 
   objectiveText() {

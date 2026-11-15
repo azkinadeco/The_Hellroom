@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { CELL, WALL_H } from '../config.js';
 import { DIRS, EDGE } from '../level/map.js';
+import { noiseTex, NOISE_GLSL } from './noise.js';
 
 // ---------- flashlight cookie: a real torch never throws an even disc ----------
 export function flashlightCookie() {
@@ -42,14 +43,11 @@ void main(){
 const beamFrag = /* glsl */`
 uniform float uLight, uTime; uniform vec3 uCol;
 varying vec3 vN; varying vec3 vV; varying float vT; varying vec3 vW;
-float h(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
-float n3(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
-  return mix(mix(mix(h(i), h(i+vec3(1,0,0)), f.x), mix(h(i+vec3(0,1,0)), h(i+vec3(1,1,0)), f.x), f.y),
-             mix(mix(h(i+vec3(0,0,1)), h(i+vec3(1,0,1)), f.x), mix(h(i+vec3(0,1,1)), h(i+vec3(1,1,1)), f.x), f.y), f.z); }
+${NOISE_GLSL}
 void main(){
   float rim = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);       // soft silhouette, no hard cone edge
   float fall = smoothstep(0.0, 0.06, vT) * pow(1.0 - vT, 1.7);
-  float smoke = 0.55 + 0.9 * n3(vW * 1.3 + vec3(uTime * 0.08, -uTime * 0.05, uTime * 0.06));
+  float smoke = 0.55 + 0.9 * wn(vW.xz * 1.3 + vW.y * 0.9 + vec2(uTime * 0.08, -uTime * 0.05));
   float a = rim * fall * smoke * uLight * 0.085;
   gl_FragColor = vec4(uCol * a, a);
 }`;
@@ -57,7 +55,7 @@ export class Beam {
   constructor(light) {
     const L = 9, ang = 0.27;
     const geo = new THREE.ConeGeometry(Math.tan(ang) * L, 1, 28, 1, true);   // unit height, apex at +0.5
-    this.u = { uLight: { value: 0 }, uTime: { value: 0 }, uCol: { value: new THREE.Color(1.0, 0.94, 0.82) } };
+    this.u = { uLight: { value: 0 }, uTime: { value: 0 }, uNoiseTex: { value: noiseTex() }, uCol: { value: new THREE.Color(1.0, 0.94, 0.82) } };
     this.mesh = new THREE.Mesh(geo, new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: beamVert, fragmentShader: beamFrag,
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide }));
     this.mesh.scale.set(1, L, 1);
@@ -77,8 +75,8 @@ void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position
 const mistFrag = /* glsl */`
 uniform vec3 uCam, uDir, uCol, uLamp; uniform float uTime, uAmt, uLight, uPower;
 varying vec3 vW;
-float h(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
-float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+${NOISE_GLSL}
+float n(vec2 p){ return wn(p); }
 void main(){
   vec2 p = vW.xz;
   float a = n(p * 0.35 + vec2(uTime * 0.05, uTime * 0.03)) * 0.6 + n(p * 0.9 - vec2(uTime * 0.07, -uTime * 0.04)) * 0.3 + n(p * 2.4 + uTime * 0.1) * 0.1;
@@ -93,7 +91,7 @@ void main(){
 export class Mist {
   constructor() {
     this.u = { uCam: { value: new THREE.Vector3() }, uDir: { value: new THREE.Vector3(0, 0, -1) }, uCol: { value: new THREE.Color(0.2, 0.21, 0.2) },
-      uLamp: { value: new THREE.Color(0.55, 0.5, 0.42) }, uTime: { value: 0 }, uAmt: { value: 0.5 }, uLight: { value: 0 }, uPower: { value: 1 } };
+      uLamp: { value: new THREE.Color(0.55, 0.5, 0.42) }, uNoiseTex: { value: noiseTex() }, uTime: { value: 0 }, uAmt: { value: 0.5 }, uLight: { value: 0 }, uPower: { value: 1 } };
     const mat = new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: mistVert, fragmentShader: mistFrag, transparent: true, depthWrite: false,
       blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, side: THREE.DoubleSide });
     this.group = new THREE.Group();

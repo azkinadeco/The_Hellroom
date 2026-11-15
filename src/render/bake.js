@@ -4,6 +4,7 @@
 // shader as extra indirect light. The flashlight is still a real SpotLight.
 import * as THREE from 'three';
 import { CELL } from '../config.js';
+import { noiseTex, NOISE_GLSL } from './noise.js';
 
 export const bakeUniforms = {
   uFlicker: { value: 1 },     // global flicker signal for flickering fixtures
@@ -80,6 +81,7 @@ export function bakeMaterial(src, mode = 'attr') {
     Object.assign(shader.uniforms, bakeUniforms);
     shader.uniforms.uLocalBake = local;
     if (relief || prop) shader.uniforms.uDetail = { value: detailTex() };
+    if (water || tile || relief || prop) shader.uniforms.uNoiseTex = { value: noiseTex() };
     const decl = mode === 'attr' ? 'attribute vec2 bake;\n' : 'uniform vec2 uLocalBake;\n';
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + decl + 'varying vec2 vBake;')
@@ -92,7 +94,7 @@ export function bakeMaterial(src, mode = 'attr') {
         (prop ? '\nuniform float uFx;\nuniform float uGrime;' : '') +
         (wpos ? '\nvarying vec3 vWPos;\nvarying vec3 vWN;' : '') +
         (relief ? '\nuniform float uFx;\nuniform float uGrime;\nuniform float uFH;' : '') +
-        (water || tile || relief || prop ? '\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
+        (water || tile || relief || prop ? '\nuniform float uTime;' + NOISE_GLSL : ''))
       .replace('#include <map_fragment>', '#include <map_fragment>' + (tile ? `
         { // pick the projection the surface faces most, 15 cm tiles
           vec3 an = abs(vWN);
@@ -135,7 +137,7 @@ export function bakeMaterial(src, mode = 'attr') {
           float hrD = length(vViewPosition);
           if (hrD < 30.0) {
             vec3 P = vWPos; float up = vWN.y;
-            float lod = smoothstep(30.0, 16.0, hrD), near = smoothstep(11.0, 3.0, hrD);
+            float lod = smoothstep(30.0, 16.0, hrD), near = smoothstep(7.0, 2.5, hrD);
             float h = mod(P.y + 0.02, uFH);                       // height above this storey's floor
             float dark = smoothstep(0.55, 0.08, vBake.x + vBake.y);   // filth gathers where the lamps are dead
             vec3 dirt = vec3(0.40, 0.34, 0.25), mold = vec3(0.24, 0.29, 0.20), rust = vec3(0.46, 0.27, 0.16);
@@ -150,13 +152,13 @@ export function bakeMaterial(src, mode = 'attr') {
               r = smoothstep(0.66, 0.92, col) * smoothstep(3.0, 0.5, h) * smoothstep(0.1, 0.9, h) * (0.5 + 0.5 * wn(vec2(al * 6.5, P.y * 0.8))) ;   // runs coming down from the ceiling
               m = smoothstep(0.58, 0.8, n1 * 0.6 + wn(w2 * 0.33 + 5.0) * 0.6 + n2 * 0.12) * (0.35 + 0.65 * dark);    // mold blooms
               float rd = abs(wn(w2 * 0.8 + 31.0) - 0.5 + (n2 - 0.5) * 0.09);
-              { float cw = 0.0028 + fwidth(rd) * 0.9; crack = smoothstep(cw, cw * 0.3, rd) * smoothstep(0.5, 0.66, wn(w2 * 0.21 + 3.0)) * near * smoothstep(0.02, 0.006, fwidth(rd)); }                 // hairline cracks in patches
+              { float cw = 0.0028 + fwidth(rd) * 0.9; crack = smoothstep(cw, cw * 0.3, rd) * smoothstep(0.64, 0.74, wn(w2 * 0.45 + 3.0)) * smoothstep(0.38, 0.62, wn(w2 * 2.4 + 17.0)) * near * smoothstep(0.02, 0.006, fwidth(rd)); }                 // hairline cracks in patches
             } else if (up > 0.0) {                                 // ---- floors
               float n1 = wn(P.xz * 0.5), n2 = wn(P.xz * 2.3 + 7.0), n3 = wn(P.xz * 9.0);
               g = smoothstep(0.45, 0.85, n1 * 0.7 + n2 * 0.3) * 0.7 + smoothstep(0.6, 0.9, n3) * 0.18 * near;           // trodden-in dirt, grit
               hrWet = smoothstep(0.60, 0.70, wn(P.xz * 0.37 + 19.0) * 0.8 + n2 * 0.2) * (0.5 + 0.5 * dark);            // standing water
               float rd = abs(wn(P.xz * 0.7 + 13.0) - 0.5 + (n2 - 0.5) * 0.1);
-              { float cw = 0.0028 + fwidth(rd) * 0.9; crack = smoothstep(cw, cw * 0.3, rd) * smoothstep(0.55, 0.7, wn(P.xz * 0.19 + 9.0)) * near * smoothstep(0.02, 0.006, fwidth(rd)); }
+              { float cw = 0.0028 + fwidth(rd) * 0.9; crack = smoothstep(cw, cw * 0.3, rd) * smoothstep(0.64, 0.74, wn(P.xz * 0.45 + 9.0)) * smoothstep(0.38, 0.62, wn(P.xz * 2.4 + 21.0)) * near * smoothstep(0.02, 0.006, fwidth(rd)); }
             } else {                                               // ---- ceilings
               float s1 = wn(P.xz * 0.55 + 23.0) * 0.75 + wn(P.xz * 2.1) * 0.25;
               g = smoothstep(0.60, 0.70, s1) * 0.55 - smoothstep(0.72, 0.80, s1) * 0.25;                                // ring-shaped water stains

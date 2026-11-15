@@ -1,5 +1,6 @@
 // Single-pass "1996 camcorder" post effect.
 import * as THREE from 'three';
+import { noiseTex, NOISE_GLSL } from './noise.js';
 
 const frag = /* glsl */`
 precision highp float;
@@ -8,10 +9,34 @@ uniform sampler2D tDepth;
 uniform float uNear, uFar, uAO, uSharp;
 uniform vec2 uProj;      // tan(fov/2) * aspect, tan(fov/2)
 uniform int uTaps;
+uniform sampler2D tFx;
+uniform float uFxOn;
 uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery, uClean;
 uniform vec2 uRes, uTexel;
 uniform vec3 uGrade;
 varying vec2 vUv;
+uniform mat4 uCamWorld;
+uniform vec3 uCamDir, uMistCol, uMistLamp;
+uniform float uMist, uGround, uMistLight;
+${NOISE_GLSL}
+float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; return uNear * uFar / ((uFar - uNear) * d - uFar); }
+vec3 viewPos(vec2 uv){ float z = viewZ(uv); return vec3((uv * 2.0 - 1.0) * uProj * -z, z); }
+// ground mist as a volume: exponential height fog integrated along the view ray, broken into drifting patches.
+// It has no surface, so it can never draw a line where it meets a wall.
+vec3 groundMist(vec3 c, vec2 uv){
+  if (uMist <= 0.0) return c;
+  vec3 W = (uCamWorld * vec4(viewPos(uv), 1.0)).xyz, C = uCamWorld[3].xyz;
+  vec3 d = W - C; float dist = length(d);
+  float h = 0.55, a = (C.y - uGround) / h, b = (W.y - uGround) / h;
+  float avg = abs(b - a) < 1e-3 ? exp(-a) : (exp(-a) - exp(-b)) / (b - a);
+  float dens = avg * min(dist, 18.0);
+  vec2 q = mix(C.xz, W.xz, 0.75);
+  float nz = wn(q * 0.35 + vec2(uTime * 0.05, uTime * 0.03)) * 0.6 + wn(q * 0.9 - vec2(uTime * 0.07, -uTime * 0.04)) * 0.4;
+  dens *= 0.35 + 1.3 * smoothstep(0.3, 0.8, nz);
+  float f = (1.0 - exp(-dens * uMist * 0.55)) * smoothstep(0.4, 1.6, dist);
+  float beam = smoothstep(0.80, 0.97, dot(d / max(dist, 1e-3), uCamDir)) * uMistLight * smoothstep(11.0, 2.0, dist);
+  return mix(c, uMistCol + uMistLamp * beam, clamp(f, 0.0, 0.85));
+}
 // filmic grade: gentle S-curve, a little extra saturation, cool lifted shadows
 vec3 grade(vec3 c){
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -33,35 +58,8 @@ vec3 bloom(vec2 uv){
   return b * 0.3;
 }
 
-float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 
-// ---- contact shadows from the depth buffer: corners, under furniture, where things touch
-float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; return uNear * uFar / ((uFar - uNear) * d - uFar); }
-vec3 viewPos(vec2 uv){ float z = viewZ(uv); return vec3((uv * 2.0 - 1.0) * uProj * -z, z); }
-float ambientOcclusion(vec2 uv){
-  vec3 P = viewPos(uv);
-  float dist = -P.z;
-  if (dist > 28.0) return 1.0;
-  // normal from the nearer neighbour on each axis, so edges do not smear
-  vec3 px = viewPos(uv + vec2(uTexel.x, 0.0)) - P, mx = P - viewPos(uv - vec2(uTexel.x, 0.0));
-  vec3 py = viewPos(uv + vec2(0.0, uTexel.y)) - P, my = P - viewPos(uv - vec2(0.0, uTexel.y));
-  vec3 N = normalize(cross(abs(px.z) < abs(mx.z) ? px : mx, abs(py.z) < abs(my.z) ? py : my));
-  float R = 0.55;
-  vec2 rad = R / (2.0 * uProj * dist);                       // the sample disc in uv
-  rad = min(rad, vec2(0.12));
-  float rot = (fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5) * 1.1;   // a small turn per pixel: hides banding without visible stipple
-  float occ = 0.0, n = 0.0;
-  for (int i = 0; i < 12; i++) {
-    if (i >= uTaps) break;
-    float fi = float(i) + 0.5, r = sqrt(fi / float(uTaps)), a = fi * 2.3999632 + rot;
-    vec3 S = viewPos(uv + vec2(cos(a), sin(a)) * r * rad) - P;
-    float l2 = dot(S, S);
-    occ += max(dot(N, S) * inversesqrt(l2 + 1e-5) - 0.12, 0.0) * step(l2, R * R * 2.2) / (1.0 + l2 * 4.0);
-    n += 1.0;
-  }
-  float ao = clamp(1.0 - occ / n * 2.6, 0.0, 1.0);
-  return mix(1.0, ao, smoothstep(28.0, 18.0, dist));
-}
 // the scene colour with contact shadows and a light unsharp mask
 vec3 scene(vec2 uv){
   vec3 c = texture2D(tDiffuse, uv).rgb;
@@ -70,18 +68,21 @@ vec3 scene(vec2 uv){
            + texture2D(tDiffuse, uv + vec2(0.0, uTexel.y)).rgb + texture2D(tDiffuse, uv - vec2(0.0, uTexel.y)).rgb;
     c = max(c + (c - b * 0.25) * uSharp, 0.0);
   }
-  if (uAO > 0.0) { float ao = ambientOcclusion(uv); c *= mix(1.0, ao, uAO * (1.0 - smoothstep(0.55, 0.95, max(c.r, max(c.g, c.b))))); }
+  c = groundMist(c, uv);
+  if (uFxOn > 0.5 && uAO > 0.0) { float ao = texture2D(tFx, uv).a; c *= mix(1.0, ao, uAO * (1.0 - smoothstep(0.55, 0.95, max(c.r, max(c.g, c.b))))); }
   return c;
 }
+// glow: from the half-resolution fx buffer when it exists, else the old inline taps
+vec3 glow(vec2 uv){ return uFxOn > 0.5 ? texture2D(tFx, uv).rgb : bloom(uv); }
 
 void main(){
   // "Layar jernih": no lens, jitter, tracking, aberration, grain, scanlines or static
   if (uClean > 0.5) {
-    vec3 c = grade(pow(max(scene(vUv) + bloom(vUv), 0.0), vec3(1.0 / 2.2)));
+    vec3 c = grade(pow(max(scene(vUv) + glow(vUv), 0.0), vec3(1.0 / 2.2)));
     if (uNV > 0.5) { float n = pow(dot(c, vec3(0.3, 0.6, 0.1)) * 2.6, 0.75); c = vec3(0.25, 1.0, 0.35) * n; }
     vec2 q = vUv - 0.5;
     c *= mix(0.82, 1.0, smoothstep(0.9, 0.3, length(q * vec2(1.1, 1.25))));
-    c += (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) / 160.0;      // dither: no banding in the dark
+    c += (fract(52.9829189 * fract(dot(gl_FragCoord.xy + floor(fract(uTime * 7.0) * 64.0), vec2(0.06711056, 0.00583715)))) - 0.5) / 160.0;      // dither: no banding in the dark
     c = mix(c, vec3(1.0), uWhite);
     c *= (1.0 - uFade);
     gl_FragColor = vec4(c, 1.0);
@@ -109,7 +110,7 @@ void main(){
   col.g = mid.g;
   col.b = texture2D(tDiffuse, uv - vec2(ca, 0.0)).b * (mid.b + 0.02) / (texture2D(tDiffuse, uv).b + 0.02);
   // render target is sRGB-encoded storage, sampled back as linear -> encode for display
-  col += bloom(uv);
+  col += glow(uv);
   col = grade(pow(max(col, 0.0), vec3(1.0 / 2.2)));
 
   // camcorder colour grade: lifted blacks, yellow-green cast, mild desaturation
@@ -147,6 +148,76 @@ void main(){
   gl_FragColor = vec4(col, 1.0);
 }`;
 
+// ---- half-resolution effects: contact shadows (rgb unused -> glow) packed in one RGBA buffer
+const fxCommon = /* glsl */`
+precision highp float;
+uniform sampler2D tDiffuse, tDepth;
+uniform float uNear, uFar;
+uniform vec2 uProj, uTexel;
+varying vec2 vUv;
+float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; return uNear * uFar / ((uFar - uNear) * d - uFar); }
+vec3 viewPos(vec2 uv){ float z = viewZ(uv); return vec3((uv * 2.0 - 1.0) * uProj * -z, z); }`;
+const fxFrag = fxCommon + /* glsl */`
+uniform int uTaps;
+void main(){
+  vec2 uv = vUv;
+  // glow: the bright part of two rings around this pixel (blurred afterwards)
+  vec3 b = vec3(0.0);
+  for (int i = 0; i < 8; i++) {
+    float a = float(i) * 0.785398 + 0.39;
+    vec2 o = vec2(cos(a), sin(a)) * uTexel;
+    b += max(texture2D(tDiffuse, uv + o * 2.5).rgb - 0.68, 0.0) * 0.6;
+    b += max(texture2D(tDiffuse, uv + o * 7.0).rgb - 0.68, 0.0) * 0.5;
+  }
+  b *= 0.3;
+  // contact shadows
+  float ao = 1.0;
+  vec3 P = viewPos(uv);
+  float dist = -P.z;
+  if (dist < 28.0) {
+    vec3 px = viewPos(uv + vec2(uTexel.x, 0.0)) - P, mx = P - viewPos(uv - vec2(uTexel.x, 0.0));
+    vec3 py = viewPos(uv + vec2(0.0, uTexel.y)) - P, my = P - viewPos(uv - vec2(0.0, uTexel.y));
+    vec3 N = normalize(cross(abs(px.z) < abs(mx.z) ? px : mx, abs(py.z) < abs(my.z) ? py : my));
+    float R = 0.55;
+    vec2 rad = min(R / (2.0 * uProj * dist), vec2(0.12));
+    // a 4x4 ordered pattern of turns: the 4x4 blur that follows averages it away exactly (no stripes, no stipple)
+    vec2 q = mod(floor(gl_FragCoord.xy), 4.0);
+    // 4x4 Bayer matrix, written arithmetically (GLSL ES 1.0 has no constant arrays)
+    float b0 = mod(q.x, 2.0), b1 = mod(q.y, 2.0), c0 = floor(q.x * 0.5), c1 = floor(q.y * 0.5);
+    float k = 4.0 * (2.0 * mod(b0 + b1, 2.0) + b1) + (2.0 * mod(c0 + c1, 2.0) + c1);
+    float rot = k / 16.0 * 6.2831853;
+    float occ = 0.0, n = 0.0;
+    for (int i = 0; i < 12; i++) {
+      if (i >= uTaps) break;
+      float fi = float(i) + 0.5, r = sqrt(fi / float(uTaps)), a = fi * 2.3999632 + rot;
+      vec3 S = viewPos(uv + vec2(cos(a), sin(a)) * r * rad) - P;
+      float l2 = dot(S, S);
+      occ += max(dot(N, S) * inversesqrt(l2 + 1e-5) - 0.12, 0.0) * step(l2, R * R * 2.2) / (1.0 + l2 * 4.0);
+      n += 1.0;
+    }
+    ao = mix(1.0, clamp(1.0 - occ / n * 2.6, 0.0, 1.0), smoothstep(28.0, 18.0, dist));
+  }
+  gl_FragColor = vec4(b, ao);
+}`;
+// 4x4 blur at half resolution; the shadow term only mixes with neighbours at the same depth
+const blurFrag = fxCommon + /* glsl */`
+uniform sampler2D tFxA;
+uniform vec2 uHalf;
+void main(){
+  float z0 = -viewZ(vUv);
+  vec3 b = vec3(0.0); float ao = 0.0, w = 0.0;
+  for (int y = -2; y < 2; y++) for (int x = -2; x < 2; x++) {
+    vec2 uv = vUv + (vec2(float(x), float(y)) + 0.5) * uHalf;
+    vec4 s = texture2D(tFxA, uv);
+    b += s.rgb;
+    float dz = abs(-viewZ(uv) - z0) / max(z0, 0.3);
+    float wk = 1.0 / (1.0 + dz * dz * 400.0);
+    ao += s.a * wk; w += wk;
+  }
+  gl_FragColor = vec4(b / 16.0, ao / max(w, 1e-4));
+}`;
+const quadVert = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+
 export class VHS {
   constructor(renderer) {
     this.renderer = renderer;
@@ -158,7 +229,18 @@ export class VHS {
       uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uClean: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
       uTexel: { value: new THREE.Vector2(0.001, 0.001) }, uGrade: { value: new THREE.Vector3(1, 1, 1) },
       tDepth: { value: null }, uNear: { value: 0.1 }, uFar: { value: 100 }, uAO: { value: 0 }, uSharp: { value: 0 }, uProj: { value: new THREE.Vector2(1, 1) }, uTaps: { value: 6 },
+      tFx: { value: null }, uFxOn: { value: 0 },
+      uCamWorld: { value: new THREE.Matrix4() }, uCamDir: { value: new THREE.Vector3() }, uMistCol: { value: new THREE.Color(0.2, 0.2, 0.2) }, uMistLamp: { value: new THREE.Color(0.55, 0.5, 0.42) },
+      uMist: { value: 0 }, uGround: { value: 0 }, uMistLight: { value: 0 }, uNoiseTex: { value: noiseTex() },
     };
+    const mk = () => { const t = new THREE.WebGLRenderTarget(2, 2, { depthBuffer: false, type: THREE.UnsignedByteType }); t.texture.minFilter = t.texture.magFilter = THREE.LinearFilter; t.texture.generateMipmaps = false; return t; };
+    this.fxA = mk(); this.fxB = mk();
+    const U = this.uniforms;
+    this.fxU = { tDiffuse: U.tDiffuse, tDepth: U.tDepth, uNear: U.uNear, uFar: U.uFar, uProj: U.uProj, uTexel: U.uTexel, uTaps: U.uTaps };
+    this.blurU = { ...this.fxU, tFxA: { value: this.fxA.texture }, uHalf: { value: new THREE.Vector2(0.01, 0.01) } };
+    const quad = (frag, uni) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ uniforms: uni, vertexShader: quadVert, fragmentShader: frag, depthTest: false, depthWrite: false })); m.frustumCulled = false; const sc = new THREE.Scene(); sc.add(m); return sc; };
+    this.fxScene = quad(fxFrag, this.fxU); this.blurScene = quad(blurFrag, this.blurU);
+    U.tFx.value = this.fxB.texture;
     this.mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
@@ -192,16 +274,27 @@ export class VHS {
     this.target.setSize(Math.max(2, Math.floor(w * s)), Math.max(2, Math.floor(h * s)));
     this.uniforms.uRes.value.set(w, h);
     this.uniforms.uTexel.value.set(1 / this.target.width, 1 / this.target.height);
+    const hw = Math.max(2, Math.ceil(this.target.width / 2)), hh = Math.max(2, Math.ceil(this.target.height / 2));
+    this.fxA.setSize(hw, hh); this.fxB.setSize(hw, hh);
+    this.blurU.uHalf.value.set(1 / hw, 1 / hh);
   }
   render(scene, camera, t) {
     this.uniforms.uTime.value = t;
     const U = this.uniforms, th = Math.tan(camera.fov * Math.PI / 360);
     U.uNear.value = camera.near; U.uFar.value = camera.far; U.uProj.value.set(th * camera.aspect, th);
     U.uAO.value = this.target.depthTexture ? (this.aoStrength || 0) : 0;
+    U.uCamWorld.value.copy(camera.matrixWorld); camera.getWorldDirection(U.uCamDir.value);
+    if (!this.target.depthTexture) U.uMist.value = 0;
     const r = this.renderer;
     if (!this.enabled) { r.setRenderTarget(null); r.render(scene, camera); return; }
     r.setRenderTarget(this.target);
     r.render(scene, camera);
+    const fx = U.uAO.value > 0;
+    U.uFxOn.value = fx ? 1 : 0;
+    if (fx) {
+      r.setRenderTarget(this.fxA); r.render(this.fxScene, this.cam);
+      r.setRenderTarget(this.fxB); r.render(this.blurScene, this.cam);
+    }
     r.setRenderTarget(null);
     r.render(this.scene, this.cam);
   }
