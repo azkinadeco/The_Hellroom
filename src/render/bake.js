@@ -11,6 +11,9 @@ export const bakeUniforms = {
   uBakeTint: { value: new THREE.Color(1.0, 0.98, 0.9) },
   uNV: { value: 0 },          // night-vision boost
   uTime: { value: 0 },        // seconds, for moving water
+  uFx: { value: 1 },          // 0 = low preset (no procedural surface detail), 1 = high, 2 = ultra
+  uGrime: { value: 1 },       // how filthy this building is
+  uFH: { value: 3.3 },        // floor-to-floor height, to get the height above the storey's floor
 };
 
 const cache = new Map();
@@ -68,12 +71,15 @@ export function bakeMaterial(src, mode = 'attr') {
   const water = /^Fall/.test(src.name || '') && !!src.transparent;
   // glazed tile on props (tunnels, pillars, benches): grout grid and grime in world space
   const tile = !water && TILE_RE.test(src.name || '');
-  const wpos = water || tile;
+  // plain vertex-coloured props (desks, lockers, beds…): surface grain, stains and dust in world space.
+  // Only static geometry: on anything that moves the pattern would swim.
+  const prop = mode === 'attr' && !relief && !water && !tile && !emissive && !src.transparent && !src.map;
+  const wpos = water || tile || relief || prop;
   m.userData.bake = local;
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, bakeUniforms);
     shader.uniforms.uLocalBake = local;
-    if (relief) shader.uniforms.uDetail = { value: detailTex() };
+    if (relief || prop) shader.uniforms.uDetail = { value: detailTex() };
     const decl = mode === 'attr' ? 'attribute vec2 bake;\n' : 'uniform vec2 uLocalBake;\n';
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\n' + decl + 'varying vec2 vBake;')
@@ -82,9 +88,11 @@ export function bakeMaterial(src, mode = 'attr') {
     if (wpos) shader.vertexShader = shader.vertexShader.replace('varying vec2 vBake;', 'varying vec2 vBake;\nvarying vec3 vWPos;\nvarying vec3 vWN;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vBake;\nuniform float uFlicker;\nuniform float uPower;\nuniform vec3 uBakeTint;\nuniform float uNV;' +
-        (relief ? '\nuniform sampler2D uDetail;' : '') +
+        (relief || prop ? '\nuniform sampler2D uDetail;' : '') +
+        (prop ? '\nuniform float uFx;\nuniform float uGrime;' : '') +
         (wpos ? '\nvarying vec3 vWPos;\nvarying vec3 vWN;' : '') +
-        (water || tile ? '\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
+        (relief ? '\nuniform float uFx;\nuniform float uGrime;\nuniform float uFH;' : '') +
+        (water || tile || relief || prop ? '\nuniform float uTime;\nfloat wh(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }\nfloat wn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }' : ''))
       .replace('#include <map_fragment>', '#include <map_fragment>' + (tile ? `
         { // pick the projection the surface faces most, 15 cm tiles
           vec3 an = abs(vWN);
@@ -103,7 +111,66 @@ export function bakeMaterial(src, mode = 'attr') {
           float blot = smoothstep(0.5, 0.82, wn(vWPos.xz * 0.9 + vWPos.y * 0.7) * 0.65 + wn(vWPos.xy * 3.1 + vWPos.zz) * 0.35);
           vec3 dirt = vec3(0.42, 0.36, 0.26);
           diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * dirt, clamp(damp * 0.75 + runs * 0.7 + blot * 0.55 + grout * damp * 0.4, 0.0, 0.85));
+        }` : '') + (prop ? `
+        if (uFx > 0.5) {
+          float pd = length(vViewPosition);
+          if (pd < 18.0) {
+            vec3 an = abs(vWN);
+            vec2 tp = an.y > max(an.x, an.z) ? vWPos.xz : an.x > an.z ? vWPos.zy : vWPos.xy;
+            float near = smoothstep(9.0, 1.5, pd), lod = smoothstep(18.0, 10.0, pd);
+            float grain = texture2D(uDetail, tp * 1.9).r * 0.55 + texture2D(uDetail, tp * 7.3).r * 0.45;
+            float blot = wn(tp * 1.1 + vWPos.y * 0.7), fine = wn(tp * 5.0 + 3.0);
+            diffuseColor.rgb *= 1.0 + (grain - 0.5) * 0.30 * near;
+            // handled, knocked, left alone for years: darker patches, scuffs, a film of dust on whatever faces up
+            float stain = smoothstep(0.52, 0.85, blot * 0.7 + fine * 0.3);
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.52, 0.46, 0.38), stain * 0.55 * uGrime * lod);
+            float scuff = smoothstep(0.80, 0.92, wn(vec2(tp.x * 2.0 + tp.y * 9.0, tp.y * 1.5 - tp.x * 4.0))) * near;
+            diffuseColor.rgb *= 1.0 - scuff * 0.22;
+            float dust = smoothstep(0.55, 0.95, vWN.y) * (0.35 + 0.65 * fine) * lod;
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.50, 0.47, 0.41), dust * 0.22 * min(uGrime, 1.2));
+          }
         }` : '') + (relief ? `
+        float hrWet = 0.0;
+        if (uFx > 0.5) {
+          float hrD = length(vViewPosition);
+          if (hrD < 30.0) {
+            vec3 P = vWPos; float up = vWN.y;
+            float lod = smoothstep(30.0, 16.0, hrD), near = smoothstep(11.0, 3.0, hrD);
+            float h = mod(P.y + 0.02, uFH);                       // height above this storey's floor
+            float dark = smoothstep(0.55, 0.08, vBake.x + vBake.y);   // filth gathers where the lamps are dead
+            vec3 dirt = vec3(0.40, 0.34, 0.25), mold = vec3(0.24, 0.29, 0.20), rust = vec3(0.46, 0.27, 0.16);
+            float g = 0.0, m = 0.0, r = 0.0, crack = 0.0;
+            if (abs(up) < 0.5) {                                   // ---- walls
+              float al = P.x + P.z;                                // walls are axis-aligned: one coordinate runs along them
+              vec2 w2 = vec2(al, P.y);
+              float n1 = wn(w2 * 0.9), n2 = wn(w2 * 3.7 + 11.0);
+              g = smoothstep(0.85, 0.0, h) * (0.45 + 0.55 * n1);                                   // rising damp
+              g += smoothstep(2.35, 3.0, h) * (0.25 + 0.6 * n2) * 0.8;                              // soot under the ceiling
+              float col = wn(vec2(al * 6.5, 3.0));
+              r = smoothstep(0.66, 0.92, col) * smoothstep(3.0, 0.5, h) * smoothstep(0.1, 0.9, h) * (0.5 + 0.5 * wn(vec2(al * 6.5, P.y * 0.8))) ;   // runs coming down from the ceiling
+              m = smoothstep(0.58, 0.8, n1 * 0.6 + wn(w2 * 0.33 + 5.0) * 0.6 + n2 * 0.12) * (0.35 + 0.65 * dark);    // mold blooms
+              float rd = abs(wn(w2 * 0.8 + 31.0) - 0.5 + (n2 - 0.5) * 0.09);
+              { float cw = 0.0028 + fwidth(rd) * 0.9; crack = smoothstep(cw, cw * 0.3, rd) * smoothstep(0.5, 0.66, wn(w2 * 0.21 + 3.0)) * near * smoothstep(0.02, 0.006, fwidth(rd)); }                 // hairline cracks in patches
+            } else if (up > 0.0) {                                 // ---- floors
+              float n1 = wn(P.xz * 0.5), n2 = wn(P.xz * 2.3 + 7.0), n3 = wn(P.xz * 9.0);
+              g = smoothstep(0.45, 0.85, n1 * 0.7 + n2 * 0.3) * 0.7 + smoothstep(0.6, 0.9, n3) * 0.18 * near;           // trodden-in dirt, grit
+              hrWet = smoothstep(0.60, 0.70, wn(P.xz * 0.37 + 19.0) * 0.8 + n2 * 0.2) * (0.5 + 0.5 * dark);            // standing water
+              float rd = abs(wn(P.xz * 0.7 + 13.0) - 0.5 + (n2 - 0.5) * 0.1);
+              { float cw = 0.0028 + fwidth(rd) * 0.9; crack = smoothstep(cw, cw * 0.3, rd) * smoothstep(0.55, 0.7, wn(P.xz * 0.19 + 9.0)) * near * smoothstep(0.02, 0.006, fwidth(rd)); }
+            } else {                                               // ---- ceilings
+              float s1 = wn(P.xz * 0.55 + 23.0) * 0.75 + wn(P.xz * 2.1) * 0.25;
+              g = smoothstep(0.60, 0.70, s1) * 0.55 - smoothstep(0.72, 0.80, s1) * 0.25;                                // ring-shaped water stains
+              m = smoothstep(0.7, 0.85, s1) * (0.4 + 0.6 * dark);
+            }
+            float k = uGrime * lod;
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * dirt, clamp(g, 0.0, 0.8) * k);
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * rust, clamp(r, 0.0, 0.75) * k);
+            diffuseColor.rgb = mix(diffuseColor.rgb, mold * (0.35 + 0.4 * wn(P.xz * 13.0 + P.y * 13.0)), clamp(m, 0.0, 0.7) * k * 0.8);
+            diffuseColor.rgb *= 1.0 - crack * 0.8 * min(uGrime, 1.0);
+            hrWet *= k;
+            diffuseColor.rgb *= 1.0 - hrWet * 0.42;
+          }
+        }
         { float dg = texture2D(uDetail, vMapUv * 7.0).r * 0.6 + texture2D(uDetail, vMapUv * 23.0).r * 0.4;
           float fade = smoothstep(9.0, 2.0, length(vViewPosition));
           diffuseColor.rgb *= 1.0 + (dg - 0.5) * 0.22 * fade; }` : ''))
@@ -115,6 +182,18 @@ export function bakeMaterial(src, mode = 'attr') {
           bk *= clamp(1.0 + (dot(normal, upV) - dot(nonPerturbedNormal, upV)) * 1.6, 0.55, 1.45);
         }` : ''}
         reflectedLight.indirectDiffuse += diffuseColor.rgb * uBakeTint * bk + diffuseColor.rgb * uNV;
+        ${relief ? `if (uFx > 0.5) { // the flashlight glints off polished and wet surfaces; puddles mirror the room light
+          vec3 hV = normalize(vViewPosition);
+          float nv = clamp(dot(normal, hV), 0.0, 1.0);
+          float dl = dot(reflectedLight.directDiffuse, vec3(0.34));
+          reflectedLight.directDiffuse += vec3(1.0, 0.96, 0.88) * (pow(nv, 60.0) * 1.6 + pow(nv, 12.0) * 0.25) * dl * (${gloss.toFixed(2)} * 0.9 + hrWet * 2.2);
+          reflectedLight.indirectDiffuse += uBakeTint * bk * pow(1.0 - nv, 3.0) * hrWet * 0.55;
+        }` : ''}
+        ${prop ? `if (uFx > 0.5) { // paint, laminate and steel give a small glint back to the torch
+          vec3 hV = normalize(vViewPosition);
+          float nv = clamp(dot(normal, hV), 0.0, 1.0);
+          reflectedLight.directDiffuse += vec3(1.0, 0.96, 0.88) * pow(nv, 40.0) * dot(reflectedLight.directDiffuse, vec3(0.34)) * 0.45;
+        }` : ''}
         ${water ? `{ // streaks sliding down the sheet, foam where it lands
           float along = vWPos.x + vWPos.z;
           float st = wn(vec2(along * 9.0, vWPos.y * 1.6 + uTime * 3.2)) * 0.6 + wn(vec2(along * 23.0, vWPos.y * 3.0 + uTime * 5.5)) * 0.4;
@@ -128,7 +207,7 @@ export function bakeMaterial(src, mode = 'attr') {
           reflectedLight.indirectDiffuse += uBakeTint * bk * fres * ${gloss.toFixed(2)} * 0.55;
         }` : ''}`);
   };
-  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '') + (water ? '-w' : '') + (tile ? '-t' : '');
+  m.customProgramCacheKey = () => 'bake-' + mode + (relief ? '-n' : '') + (gloss ? '-g' + gloss : '') + (water ? '-w' : '') + (tile ? '-t' : '') + (prop ? '-p' : '');
   if (mode === 'attr') cache.set(key, m);
   return m;
 }

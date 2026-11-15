@@ -42,6 +42,14 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Grafis batch 60
+
+- **Permukaan**: noda lembap, rembesan karat, jamur di tempat gelap, retakan halus, noda air di plafon, genangan basah yang memantulkan cahaya, dan kilau senter. Semuanya prosedural di shader (`src/render/bake.js`), kadarnya berbeda per bangunan (`def.grime`).
+- **Properti**: butiran permukaan, noda, goresan, dan debu di sisi atas untuk semua properti statis.
+- **Pasca-proses** (`src/render/vhs.js`): ambient occlusion dari depth buffer, penajaman, dithering.
+- **Ambience** (`src/render/ambience.js`): berkas cahaya senter di udara, lensa senter yang tidak rata, kabut lantai, sarang laba-laba di sudut plafon.
+- Kualitas **Rendah** mematikan semua efek ini. Kalau resolusi otomatis sudah mentok dan masih lambat, bayangan kontak lalu kabut dimatikan sendiri.
+
 ## Fitur batch 49–59
 
 - **Tampilan**: menu awal baru (Lanjutkan, Pilih Bab, Mode Lain, Arsip; Pengaturan, Cara Bermain, dan Ruang Uji jadi ikon di pojok), ukuran tulisan lebih kecil di seluruh UI, tombol sentuh berupa ikon tanpa tulisan.

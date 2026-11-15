@@ -6,6 +6,7 @@ import { buildLevel, cloneWithBake, buildSlides } from './level/builder.js';
 import { bakeUniforms } from './render/bake.js';
 import { VHS } from './render/vhs.js';
 import { Dust } from './render/dressing.js';
+import { Beam, Mist, buildWebs, flashlightCookie } from './render/ambience.js';
 import { updateSkyEyes, resetSkyEyes } from './render/skyeye.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -45,6 +46,10 @@ export class Game {
     this.scene.add(this.ambient);
     this.dust = new Dust(260);
     this.scene.add(this.dust.points);
+    // haze in the torch beam, mist on the floor, an uneven lens
+    this.beam = new Beam(this.player.light); this.camera.add(this.beam.mesh);
+    this.mist = new Mist(); this.scene.add(this.mist.group);
+    this.player.light.map = flashlightCookie();
     this.state = 'menu';
     this.time = 0;
     this.entities = [];
@@ -70,7 +75,11 @@ export class Game {
     this.clear = s.screen === 'clear';
     // clear HD: sharper image (full resolution) and none of the broken-tape effects
     this.baseScale = this.clear ? (q ? 1 : 0.9) : (q ? 1 : 0.8) * (this.input.touch && !q ? 0.9 : 1);
-    this.vhs.setSamples(q ? 4 : 0);
+    this.vhs.setSamples(q ? 4 : 0, q > 0);
+    this.vhs.setFx(q, this.clear);
+    this.fxCut = 0; this.mistOff = false;
+    bakeUniforms.uFx.value = q;
+    this.fxQ = q;
     // the flashlight casts real shadows on the higher presets
     const sh = q > 0;
     if (this.renderer.shadowMap.enabled !== sh || this.shadowQ !== q) {
@@ -122,6 +131,12 @@ export class Game {
     a.avg += (Math.min(rdt, 0.1) - a.avg) * 0.05;
     a.t += rdt;
     let s = this.resScale || 1;
+    // already at the lowest resolution and still slow: drop the dearest effects (contact shadows, then mist)
+    if (a.t > 3 && a.avg > 1 / 22 && s <= 0.6 && this.fxQ > 0 && (this.fxCut || 0) < 2) {
+      a.t = 0; this.fxCut = (this.fxCut || 0) + 1;
+      if (this.fxCut === 1) this.vhs.aoStrength = 0; else this.mistOff = true;
+      return;
+    }
     if (a.t > 2 && a.avg > 1 / 26 && s > 0.6) s = Math.max(0.6, s - 0.08);
     else if (a.t > 5 && a.avg < 1 / 48 && s < 1) s = Math.min(1, s + 0.05);
     else return;
@@ -166,6 +181,7 @@ export class Game {
       const built = buildLevel(gen, this.assets, def, { FH, k });
       this.scene.add(built.root);
       const world = new World(gen, built);
+      { const oa = gen.openAbove || [], nc = gen.noCeil || []; const webs = buildWebs(gen.map, def, (def.seed || 1) * 31 + k, oa.length || nc.length ? gen.map.region.map((_, i) => (oa[i] || nc[i] ? 1 : 0)) : null); if (webs) built.root.add(webs); }
       // stair shafts and lift cabins are dead ends on their own floor: residents may cross them after you, never roam into them
       gen.map.avoid = new Uint8Array(gen.map.W * gen.map.H);
       for (const r of gen.rooms) if (r.type === 'stairs' || r.type === 'lift') for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) gen.map.avoid[x + z * gen.map.W] = 1;
@@ -210,6 +226,12 @@ export class Game {
     this.scene.background = new THREE.Color(fogC);
     const tint = def.tint || [1, 0.98, 0.9];
     bakeUniforms.uBakeTint.value.setRGB(tint[0], tint[1], tint[2]);
+    bakeUniforms.uGrime.value = def.grime ?? ({ detention: 1.35, hospital: 1.1, school: 1.0, backroom: 0.9, pool: 0.8, mall: 0.7, museum: 0.65 }[def.arch] ?? 1);
+    bakeUniforms.uFH.value = FH;
+    // how much hangs in the air here
+    this.haze = def.haze ?? ({ pool: 1.0, detention: 0.9, hospital: 0.8, school: 0.65, backroom: 0.6, museum: 0.55, mall: 0.5 }[def.arch] ?? 0.7);
+    this.mist.u.uAmt.value = (def.mist ?? ({ pool: 0.55, detention: 0.5, hospital: 0.45, school: 0.32, museum: 0.3, backroom: 0.25, mall: 0.25 }[def.arch] ?? 0.35));
+    { const c = new THREE.Color(fogC); this.mist.u.uCol.value.setRGB(0.1 + c.r * 2 + 0.1 * tint[0], 0.1 + c.g * 2 + 0.1 * tint[1], 0.1 + c.b * 2 + 0.1 * tint[2]); }
     this.vhs.uniforms.uGrade.value.set(...(def.grade || [1, 1, 1]));
     this.dust.u.uCol.value.setRGB(0.9 * tint[0], 0.86 * tint[1], 0.74 * tint[2]);
     this.start = start;
@@ -1021,6 +1043,10 @@ export class Game {
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
     this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);
+    { const fl = Math.min(1, this.player.light.intensity / 9), rdt = Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t)));
+      this.beam.update(t, fl, this.fxQ ? this.haze : 0);
+      this.mist.group.visible = this.fxQ > 0 && !this.mistOff && this.state !== 'menu' && !!this.map;
+      if (this.mist.group.visible) this.mist.update(this.camera, t, fl, bakeUniforms.uPower.value, this.map ? this.groundY(this.player.pos.x, this.player.pos.z) : 0, rdt); }
     updateSkyEyes(t, Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t))), bakeUniforms.uPower.value); this.lastRenderT = t;
     this.vhs.render(this.scene, this.camera, t);
   }
