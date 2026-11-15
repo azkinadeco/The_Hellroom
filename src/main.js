@@ -78,6 +78,11 @@ let noteFromArchive = false;
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 const ui = {
+  faceFlash(kind) {
+    const el = $('scare-face');
+    el.style.backgroundImage = `url('assets/ui/portraits/${kind}.jpg')`;
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  },
   scare(clear) {
     const el = $('scare');
     el.className = clear ? 'soft' : 'hard';

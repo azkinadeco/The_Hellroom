@@ -495,3 +495,8 @@ body.panting .tbtn.breath { display: flex; }
 .brain { position: absolute; transform: translate(-50%, -100%); font: 12px ui-monospace, Menlo, monospace; color: #fff; background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; white-space: pre; text-align: center; line-height: 1.25; }
 .brain b { color: #ffd76a; font-weight: normal; } .brain.hunt b { color: #ff6a5a; }
 .brain i { display: block; height: 3px; background: #ffd76a; margin-top: 2px; font-style: normal; }
+
+/* batch 116: the face, once more */
+#scare-face { position: fixed; inset: 0; z-index: 41; pointer-events: none; opacity: 0; background: #000 center / contain no-repeat; filter: contrast(1.6) brightness(1.2) saturate(0.4); mix-blend-mode: screen; }
+#scare-face.go { animation: faceFlash 0.16s steps(2) forwards; }
+@keyframes faceFlash { 0% { opacity: 0.95; transform: scale(1.25); } 50% { opacity: 0.6; transform: scale(1.35) translateX(-2%); } 100% { opacity: 0; transform: scale(1.4); } }

@@ -16,6 +16,9 @@ uniform vec2 uRes, uTexel;
 uniform vec3 uGrade;
 uniform float uBright;   // player's brightness setting: a gamma lift of the shadows
 uniform float uFlash;    // lightning: a cold white lift of the whole frame
+uniform float uScare;    // jumpscare flash frames: 0 none, 1 red, 2 negative
+uniform float uChase;    // 0..1 how hard you are being hunted (pulsing red edge, narrowing)
+uniform float uPulse;    // 0..1 heartbeat envelope
 varying vec2 vUv;
 uniform mat4 uCamWorld;
 uniform vec3 uCamDir, uMistCol, uMistLamp;
@@ -77,6 +80,20 @@ vec3 scene(vec2 uv){
   if (uFxOn > 0.5 && uAO > 0.0) { float ao = texture2D(tFx, uv).a; c *= mix(1.0, ao, uAO * (1.0 - smoothstep(0.55, 0.95, max(c.r, max(c.g, c.b))))); }
   return c;
 }
+// the hunt and the catch, on top of everything else
+vec3 dread(vec3 c, vec2 q){
+  float e = length(q * vec2(1.1, 1.25));
+  if (uChase > 0.0) {
+    float edge = smoothstep(0.35, 0.95, e);
+    float l = dot(c, vec3(0.299, 0.587, 0.114));
+    c = mix(c, vec3(l), uChase * 0.25);                              // the colour drains
+    c *= 1.0 - edge * uChase * (0.35 + 0.25 * uPulse);               // the edges close in, beating
+    c += vec3(0.32, 0.0, 0.01) * edge * edge * uChase * uPulse;      // a red throb at the rim
+  }
+  if (uScare > 1.5) c = vec3(1.0) - c * vec3(0.4, 1.0, 1.0);         // negative frame
+  else if (uScare > 0.5) c = c * vec3(1.6, 0.25, 0.2) + vec3(0.35, 0.0, 0.0);   // red frame
+  return c;
+}
 // glow: from the half-resolution fx buffer when it exists, else the old inline taps
 vec3 glow(vec2 uv){ return uFxOn > 0.5 ? texture2D(tFx, uv).rgb : bloom(uv); }
 
@@ -87,6 +104,7 @@ void main(){
     if (uNV > 0.5) { float n = pow(dot(c, vec3(0.3, 0.6, 0.1)) * 2.6, 0.75); c = vec3(0.25, 1.0, 0.35) * n; }
     vec2 q = vUv - 0.5;
     c *= mix(0.82, 1.0, smoothstep(0.9, 0.3, length(q * vec2(1.1, 1.25))));
+    c = dread(c, vUv - 0.5);
     c += (fract(52.9829189 * fract(dot(gl_FragCoord.xy + floor(fract(uTime * 7.0) * 64.0), vec2(0.06711056, 0.00583715)))) - 0.5) / 160.0;      // dither: no banding in the dark
     c = mix(c, vec3(1.0), uWhite);
     c *= (1.0 - uFade);
@@ -148,6 +166,7 @@ void main(){
   // low battery: occasional dropout
   if (uBattery < 0.08 && hash(vec2(floor(uTime * 8.0), 3.0)) > 0.85) col *= 0.3;
 
+  col = dread(col, vUv - 0.5);
   col = mix(col, vec3(1.0), uWhite);
   col *= (1.0 - uFade);
   gl_FragColor = vec4(col, 1.0);
@@ -234,7 +253,7 @@ export class VHS {
       uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uClean: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
       uTexel: { value: new THREE.Vector2(0.001, 0.001) }, uGrade: { value: new THREE.Vector3(1, 1, 1) },
       tDepth: { value: null }, uNear: { value: 0.1 }, uFar: { value: 100 }, uAO: { value: 0 }, uSharp: { value: 0 }, uProj: { value: new THREE.Vector2(1, 1) }, uTaps: { value: 6 },
-      tFx: { value: null }, uFxOn: { value: 0 }, uBright: { value: 1 }, uFlash: { value: 0 },
+      tFx: { value: null }, uFxOn: { value: 0 }, uBright: { value: 1 }, uFlash: { value: 0 }, uScare: { value: 0 }, uChase: { value: 0 }, uPulse: { value: 0 },
       uCamWorld: { value: new THREE.Matrix4() }, uCamDir: { value: new THREE.Vector3() }, uMistCol: { value: new THREE.Color(0.2, 0.2, 0.2) }, uMistLamp: { value: new THREE.Color(0.55, 0.5, 0.42) },
       uMist: { value: 0 }, uGround: { value: 0 }, uMistLight: { value: 0 }, uNoiseTex: { value: noiseTex() },
     };

@@ -48,7 +48,7 @@ export class Game {
     this.scene.add(this.ambient);
     this.audio.occlude = (pos) => this.occlusion(pos);
     // the heartbeat in your hands: a controller or phone pulses with it once fear is high
-    this.audio.onBeat = (f) => { if (f > 0.45 && this.state === 'playing' && !this.calm) this.input.rumble(45, Math.min(0.6, 0.12 + 0.4 * f)); };
+    this.audio.onBeat = (f) => { this.beatAt = this.time; if (f > 0.45 && this.state === 'playing' && !this.calm) this.input.rumble(45, Math.min(0.6, 0.12 + 0.4 * f)); };
     this.dust = new Dust(260);
     this.scene.add(this.dust.points);
     // haze in the torch beam, mist on the floor, an uneven lens
@@ -765,6 +765,7 @@ export class Game {
     this.busy = true;
     this.deathT = 0;
     this.killer = entity;
+    this.faceFlashed = false; this.scareFrame = 0;
     if (locker) { // dragged out of the locker
       const h = hideOf(locker);
       locker.target = h.open;
@@ -772,7 +773,9 @@ export class Game {
       p.pos.x = locker.x + Math.sin(locker.rot) * h.exit; p.pos.z = locker.z + Math.cos(locker.rot) * h.exit;
     }
     this.audio.jumpscare();
+    this.audio.impact();
     this.input.rumble(700, 1);
+    this.schedule(0.35, () => this.input.rumble(200, 0.8)); this.schedule(1.15, () => this.input.rumble(260, 1));
     this.audio.sting(entity.kind, entity.pos);
     this.ui.scare && this.ui.scare(this.clear);
     this.input.resetToggles();
@@ -1101,7 +1104,13 @@ export class Game {
 
     // camcorder zoom: narrower FOV, slower look, small battery cost
     const zoom = input.zooming() && p.alive && p.battery > 0;
-    const fov = damp(this.camera.fov, zoom ? 26 : this.baseFov, 8, dt);
+    // being hunted: how close the nearest hunter is drives the red edge, a narrowing view, the riser and its footfalls in the camera
+    { let dmin = Infinity; for (const e of this.chasers) dmin = Math.min(dmin, Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z));
+      const want = this.chasers.size ? 0.45 + 0.55 * clamp(1 - dmin / 14, 0, 1) : 0;
+      this.dread = damp(this.dread || 0, want, want > (this.dread || 0) ? 4 : 1.5, dt);
+      this.audio.setChaseDist && this.audio.setChaseDist(this.chasers.size ? dmin : Infinity, dt);
+      if (this.chasers.size && dmin < 7 && !this.calm && p.alive) { const a = (1 - dmin / 7) * 0.025; this.camera.position.x += (Math.random() - 0.5) * a; this.camera.position.y += (Math.random() - 0.5) * a; } }
+    const fov = damp(this.camera.fov, zoom ? 26 : this.baseFov - (this.dread || 0) * (this.calm ? 2 : 7), 8, dt);
     if (Math.abs(fov - this.camera.fov) > 0.01) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
     p.lookScale = fov / this.baseFov;
     p.zooming = zoom;
@@ -1229,7 +1238,10 @@ export class Game {
       const dist = Math.hypot(dx, dz);
       // pull it right up to the lens and make it face us
       const want = { centipede: 1.0, eyes: 0.9, spider: 1.3, clock: 0.8, weaver: 0.9, echo: 1.0, squid: 0.9 }[k.kind] ?? 0.62;
-      if (dist > want) { const step = Math.min(dist - want, dt * (T < 0.25 ? 14 : 5)); k.pos.x -= (dx / dist) * step; k.pos.z -= (dz / dist) * step; }
+      // it lunges right into the lens, then settles back a little: the face fills the frame for an instant
+      const reach = T < 0.18 ? want * 0.55 : want;
+      if (dist > reach) { const step = Math.min(dist - reach, dt * (T < 0.18 ? 26 : 5)); k.pos.x -= (dx / dist) * step; k.pos.z -= (dz / dist) * step; }
+      else if (T >= 0.18 && dist < want) { const step = Math.min(want - dist, dt * 1.5); k.pos.x += (dx / dist) * step; k.pos.z += (dz / dist) * step; }
       k.yaw = Math.atan2(-dx, -dz);
       const hx = head.x - p.camera.position.x, hz = head.z - p.camera.position.z;
       const tYaw = Math.atan2(-hx, -hz);
@@ -1243,7 +1255,16 @@ export class Game {
       this.camera.fov += (fovT - this.camera.fov) * Math.min(1, dt * 18); this.camera.updateProjectionMatrix();
       this.deathRoll = T > 1.0 ? Math.min(1.3, (T - 1.0) * 2.4) : 0;
       this.deathDrop = T > 1.0 ? Math.min(1.1, (T - 1.0) * 2.0) : 0;
-      if (!this.clear) { p.camera.position.x += (Math.random() - 0.5) * 0.05 * (T < 1 ? 1 : 0.3); p.camera.position.y += (Math.random() - 0.5) * 0.05 * (T < 1 ? 1 : 0.3); }
+      { // the camera is knocked about: hard at the hit, softer while it stares, again on the second flash
+        const amp = this.calm ? 0.01 : (T < 0.35 ? 0.16 * (1 - T / 0.35) + 0.04 : T > 1.12 && T < 1.3 ? 0.09 : 0.02) * (this.clear ? 0.6 : 1);
+        p.camera.position.x += (Math.random() - 0.5) * amp; p.camera.position.y += (Math.random() - 0.5) * amp;
+        p.camera.rotation.z += (Math.random() - 0.5) * amp * 0.8;
+      }
+      // flash frames: red, negative, red at the hit; a negative frame and its face once more just before the tape dies
+      if (!this.calm) {
+        this.scareFrame = T < 0.05 ? 1 : T < 0.09 ? 2 : T < 0.13 ? 1 : T > 1.15 && T < 1.21 ? 2 : 0;
+        if (T > 1.15 && !this.faceFlashed) { this.faceFlashed = true; this.audio.flashHit(); this.ui.faceFlash && this.ui.faceFlash(k.kind); }
+      } else this.scareFrame = 0;
       // short tear on impact, a clean look at its face, then the tape breaks up
       this.glitch = this.clear ? 0 : T < 0.08 ? 0.7 : T < 1.0 ? 0.04 : clamp((T - 1.0) * 1.2, 0, 1);
       this.vhs.uniforms.uFade.value = clamp((T - 1.35) / 0.35, 0, 1);
@@ -1291,6 +1312,9 @@ export class Game {
     u.uDanger.value = this.state === 'playing' ? (this.deathT >= 0 && this.deathT < 1 ? 0.15 : this.danger) : 0;
     u.uNV.value = this.player.nightVision ? 1 : 0;
     u.uFlash.value = this.calm ? Math.min(0.3, this.lightning || 0) : (this.lightning || 0);
+    u.uScare.value = this.deathT >= 0 ? (this.scareFrame || 0) : 0;
+    u.uChase.value = this.state === 'playing' && this.deathT < 0 ? (this.dread || 0) * (this.calm ? 0.4 : 1) : 0;
+    u.uPulse.value = Math.exp(-Math.max(0, this.time - (this.beatAt ?? -9)) * 5);
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
     this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);

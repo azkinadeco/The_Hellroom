@@ -674,6 +674,36 @@ export class Audio {
     const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf; src.connect(ws); src.start(t); src.stop(t + 1.8);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.7, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
   }
+  // a rising tone that climbs as a hunter closes in (silent outside a chase)
+  setChaseDist(d, dt) {
+    if (!this.ready) return;
+    if (!this.riser) {
+      const ctx = this.ctx; this.riser = ctx.createGain(); this.riser.gain.value = 0; this.riser.connect(this.master);
+      this.riserOsc = [];
+      for (const [type, mul] of [['sawtooth', 1], ['sawtooth', 1.01], ['sine', 2]]) { const o = ctx.createOscillator(); o.type = type; o.frequency.value = 110 * mul; const g = ctx.createGain(); g.gain.value = type === 'sine' ? 0.3 : 0.15; const lp = this._filter('lowpass', 1400); o.connect(lp).connect(g).connect(this.riser); o.start(); this.riserOsc.push([o, mul]); }
+    }
+    const k = isFinite(d) ? Math.max(0, Math.min(1, 1 - d / 12)) : 0;
+    this.riser.gain.setTargetAtTime(k * k * 0.06, this.t, 0.15);
+    for (const [o, mul] of this.riserOsc) o.frequency.setTargetAtTime((110 + k * 220) * mul, this.t, 0.3);
+  }
+  // the body blow under the scream: a sub drop and a burst of torn tape
+  impact() {
+    if (!this.ready) return;
+    const t = this.t, ctx = this.ctx;
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(28, t + 0.9);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t + 1.15);
+    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf; const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+    const g2 = ctx.createGain(); g2.gain.setValueAtTime(0.5, t); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    src.connect(hp).connect(g2).connect(this.master); src.start(t, Math.random()); src.stop(t + 0.4);
+  }
+  // a second hit a moment later, when its face flashes again
+  flashHit() {
+    if (!this.ready) return;
+    const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const bp = this._filter('bandpass', 900, 0.8), g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.6, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    src.connect(bp).connect(g).connect(this.master); src.start(t, Math.random()); src.stop(t + 0.3);
+  }
   // resident-specific layer on top of the jumpscare hit
   sting(kind, pos) {
     if (!this.ready) return;
