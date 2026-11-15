@@ -460,3 +460,8 @@ body.can-knock .tbtn.knock { display: flex; }
 .sound-ring path { fill: none; stroke-width: 5; stroke-linecap: round; }
 .sound-ring path.res { stroke: #ff4a3d; }
 .sound-ring path.env { stroke: #e9e6d6; }
+
+/* batch 83: run history */
+.archive-item.hist span { display: flex; flex-direction: column; }
+.archive-item.hist small { font-size: 12px; }
+.archive-item.hist b.dead { color: #ff8a80; }

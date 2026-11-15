@@ -130,7 +130,7 @@ const ui = {
       save.daily = { [game.def.daily]: isBest ? t : prev };   // only today is kept
       const newB = awardBadges({ g: game, save, win: true, story: false });
       persist();
-      $('win-title').textContent = 'KASET HARIAN SELESAI';
+      $('win-title').textContent = 'REKAMAN HARIAN SELESAI';
       $('win-rank').textContent = '';
       $('win-stats').innerHTML = [['Waktu', fmt(t)], ['Terbaik hari ini', fmt(save.daily[game.def.daily]) + (isBest ? '  ★' : '')], ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kesulitan', DIFFICULTY[game.diffKey].label]]
         .map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
@@ -190,6 +190,12 @@ function countRun(how, killer = null) {
   for (const [k, from] of [['knocks', 'knocks'], ['peeks', 'peeks'], ['noticed', 'doorsNoticed']]) { const v = game.stats[from] || 0, key = 'counted_' + k; S[k] = (S[k] || 0) + v - (game[key] || 0); game[key] = v; }
   if (how === 'dead' && killer) S.deaths[killer] = (S.deaths[killer] || 0) + 1;
   if (how === 'win') { S.wins++; if (game.def.endless && !game.def.daily) S.floors++; }
+  // the last dozen runs, newest first (training and test rooms are not runs)
+  if (!game.def.test && (how === 'win' || how === 'dead')) {
+    const H = save.history || (save.history = []);
+    H.unshift({ at: Date.now(), code: game.def.code, name: game.def.name, diff: game.diffKey, t: Math.round(game.time), how, killer: how === 'dead' ? killer : null, spotted: game.stats.spotted || 0 });
+    H.length = Math.min(H.length, 12);
+  }
 }
 const badgeLine = (list) => (list.length ? '\n\n' + list.map((b) => `${b.icon} Lencana baru: ${b.name}`).join('\n') : '');
 let ignoreUnlock = false;
@@ -395,6 +401,16 @@ function buildArchive() {
   for (const [a, b] of [['Lama merekam', `${hh} jam ${mm} menit`], ['Bab & lantai diselesaikan', S.wins], ['Rekaman terputus (mati)', nDead],
     ['Paling sering membunuhmu', dead.length ? `${ENTITY_INFO[dead[0][0]] ? ENTITY_INFO[dead[0][0]].name : dead[0][0]} (${dead[0][1]}×)` : '—'], ['Lolos dari kejaran', S.escapes], ['Ketukan di dinding', S.knocks || 0], ['Intipan dari balik sudut', S.peeks || 0], ['Pintu yang diperiksa penghuni', S.noticed || 0], ['Lantai Jurang dilewati', S.floors]]) {
     const d = document.createElement('div'); d.className = 'archive-item stat'; d.innerHTML = `<span>${a}</span><b>${b}</b>`; list.appendChild(d);
+  }
+  if ((save.history || []).length) {
+    const hh2 = document.createElement('h3'); hh2.textContent = 'Riwayat rekaman'; list.appendChild(hh2);
+    for (const r of save.history) {
+      const d = document.createElement('div'); d.className = 'archive-item stat hist';
+      const when = new Date(r.at), day = `${String(when.getDate()).padStart(2, '0')}/${String(when.getMonth() + 1).padStart(2, '0')} ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+      const res = r.how === 'win' ? `✓ ${fmt(r.t)}` : `✕ ${r.killer && ENTITY_INFO[r.killer] ? ENTITY_INFO[r.killer].name : 'terputus'}`;
+      d.innerHTML = `<span>${r.code} · ${r.name}<small class="dim"> ${day} · ${(DIFFICULTY[r.diff] || {}).label || ''} · terlihat ${r.spotted}×</small></span><b class="${r.how}">${res}</b>`;
+      list.appendChild(d);
+    }
   }
   const hl = document.createElement('h3'); hl.textContent = `Lencana  ${save.badges.length}/${BADGES.length}`; list.appendChild(hl);
   for (const b of BADGES) {
