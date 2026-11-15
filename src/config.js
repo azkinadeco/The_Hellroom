@@ -168,6 +168,16 @@ export const ENDLESS_MODS = {
   tanpaganjal: { name: 'Tanpa Ganjal', desc: 'Tidak ada ganjal pintu di lantai ini.', def: { wedges: 0 } },
   redup: { name: 'Senter Redup', desc: 'Senter hanya menerangi setengah jarak biasanya.', def: { torchMul: 0.55 } },
 };
+// Bekal: after each Jurang floor pick one of three; they last for the whole run and stack
+export const PERKS = {
+  langkah: { icon: '👣', name: 'Sol Karet', desc: 'Langkahmu 20% lebih senyap.', apply: (d) => { d.noiseMul = (d.noiseMul || 1) * 0.8; } },
+  mata: { icon: '🌫', name: 'Bayangan Tebal', desc: 'Penghuni menyadarimu 15% lebih lambat.', apply: (d) => { d.awareMul = (d.awareMul || 1) * 0.85; } },
+  ganjal: { icon: '🚪', name: 'Ganjal Cadangan', desc: '+1 ganjal pintu di setiap lantai.', apply: (d) => { d.wedges = (d.wedges ?? 1) + 1; } },
+  baterai: { icon: '🔋', name: 'Saku Baterai', desc: '+2 baterai tersebar di setiap lantai.', apply: (d) => { d.batteries = (d.batteries || 0) + 2; } },
+  napas: { icon: '🫁', name: 'Paru-Paru Kuat', desc: 'Stamina terkuras 25% lebih lambat.', apply: (d) => { d.staminaMul = (d.staminaMul || 1) * 0.75; } },
+  senter: { icon: '🔦', name: 'Lensa Bersih', desc: 'Senter menjangkau 25% lebih jauh.', apply: (d) => { d.torchMul = (d.torchMul || 1) * 1.25; } },
+  weker: { icon: '⏰', name: 'Jam Weker', desc: 'Mulai setiap lantai dengan 1 jam weker.', apply: (d) => { d.startAlarms = (d.startAlarms || 0) + 1; } },
+};
 export function endlessDef(floor, seed) {
   const f = floor;
   let st = (seed * 9301 + f * 49297) % 233280;

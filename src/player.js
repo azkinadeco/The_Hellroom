@@ -153,7 +153,7 @@ export class Player {
     const sprinting = wantSprint && sp > PLAYER.walk * 0.9;
     this.sprinting = sprinting;
     if (sprinting) {
-      this.stamina -= PLAYER.staminaDrain * dt;
+      this.stamina -= PLAYER.staminaDrain * dt * (game.def.staminaMul || 1);
       if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; game.audio.pant(); }
     } else {
       this.stamina = Math.min(PLAYER.staminaMax, this.stamina + PLAYER.staminaRegen * dt * (sp < 0.2 ? 1.5 : 1));

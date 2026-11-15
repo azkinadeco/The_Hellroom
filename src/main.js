@@ -3,7 +3,7 @@ import { Audio } from './audio.js';
 import { Input, DEFAULT_BINDS, BIND_LABELS, keyLabel } from './input.js';
 import { HUD } from './hud.js';
 import { Game } from './game.js';
-import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VERSION, NG_CAST } from './config.js';
+import { LEVELS, DIFFICULTY, endlessDef, DEV_ROOMS, RESIDENTS, ENDLESS_MODS, VERSION, NG_CAST, PERKS } from './config.js';
 import { ENTITY_INFO } from './ai/creatures.js';
 import { ModelViewer } from './viewer.js';
 import { BADGES, awardBadges, gradeRun, parOf } from './badges.js';
@@ -124,6 +124,7 @@ const ui = {
     hud.show(false); $('touch-layer').classList.add('hidden');
     const t = Math.floor(game.time);
     countRun('win'); lastDeath = null;
+    $('perk-pick').classList.add('hidden'); $('btn-next').disabled = false;
     $('btn-share').classList.add('hidden');
     if (game.def.daily) {
       const prev = save.daily[game.def.daily], isBest = !prev || t < prev;
@@ -141,7 +142,7 @@ const ui = {
       return;
     }
     if (game.def.endless) {
-      save.endlessRun = { seed: game.def.runSeed ?? Math.floor(Math.random() * 1e6), floor: game.def.floor + 1 };
+      save.endlessRun = { seed: game.def.runSeed ?? Math.floor(Math.random() * 1e6), floor: game.def.floor + 1, perks: (save.endlessRun && save.endlessRun.perks) || [] };
       save.bestFloor = Math.max(save.bestFloor, game.def.floor);
       const newB = awardBadges({ g: game, save, win: true, story: false });
       persist();
@@ -151,6 +152,18 @@ const ui = {
       $('win-rank').textContent = '';
       $('win-text').textContent = 'Di balik pintu darurat ada tangga. Tangga itu hanya mengarah ke bawah.' + badgeLine(newB);
       $('btn-next').textContent = `Turun ke Lantai ${-(game.def.floor + 1)}`;
+      // pick one of three provisions for the rest of the run
+      if (!game.def.daily) {
+        const keys = Object.keys(PERKS); for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
+        const box = $('perk-pick'); box.innerHTML = '<h3>Pilih satu bekal</h3>'; box.classList.remove('hidden');
+        $('btn-next').disabled = true;
+        for (const k of keys.slice(0, 3)) {
+          const P = PERKS[k], b = document.createElement('button'); b.className = 'perk';
+          b.innerHTML = `<span class="pi">${P.icon}</span><b>${P.name}</b><small>${P.desc}</small>`;
+          b.onclick = () => { for (const o of box.querySelectorAll('.perk')) o.classList.toggle('on', o === b); save.endlessRun.chosen = k; persist(); $('btn-next').disabled = false; $('btn-next').focus(); };
+          box.appendChild(b);
+        }
+      }
       show('win');
       return;
     }
@@ -232,13 +245,18 @@ const modText = (def) => (def.mods && def.mods.length ? def.mods.map((k) => `☠
 // run you walked away from can be picked up at the floor you had reached
 function startEndless(floor, seed = null) {
   if (seed === null) seed = Math.floor(Math.random() * 1e6);
-  save.endlessRun = { seed, floor }; persist();
+  const prev = save.endlessRun && save.endlessRun.seed === seed && floor > 1 ? save.endlessRun : null;
+  const perks = prev ? [...(prev.perks || []), ...(prev.chosen ? [prev.chosen] : [])] : [];
+  save.endlessRun = { seed, floor, perks }; persist();
   pendingLevel = -1;
   pendingDef = endlessDef(floor, seed); pendingDef.runSeed = seed; pendingGod = false;
+  for (const k of perks) if (PERKS[k]) PERKS[k].apply(pendingDef);
+  pendingDef.perks = perks;
   $('intro-code').textContent = 'JURANG · ' + pendingDef.code;
   $('intro-name').textContent = pendingDef.name;
   $('intro-sub').textContent = pendingDef.subtitle;
-  $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : tipLine(), modText(pendingDef)].filter(Boolean).join('\n\n');
+  const perkLine = perks.length ? 'Bekal: ' + perks.map((k) => PERKS[k] ? PERKS[k].icon + ' ' + PERKS[k].name : k).join(', ') : '';
+  $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : tipLine(), modText(pendingDef), perkLine].filter(Boolean).join('\n\n');
   show('intro');
 }
 // Rekaman Harian: one fixed floor per calendar day, the same for everyone; best time is kept

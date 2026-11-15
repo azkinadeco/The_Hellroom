@@ -258,7 +258,7 @@ export class Game {
     p.water = this.gen.water; p.y = 0;
     this.audio.setTheme(def.theme || null); this.themeT = 0;
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
-    p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
+    p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: def.startAlarms || 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
     this.alarms = [];
     this.trainDone = null; this.trainFinished = false;
     if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
