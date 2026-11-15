@@ -17,7 +17,7 @@ window.addEventListener('unhandledrejection', (e) => showError(String(e.reason &
 function showError(msg) { const el = $('error'); el.textContent = '⚠ ' + msg; el.classList.remove('hidden'); console.error(msg); }
 
 // ---------------------------------------------------------------- save data
-const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true } };
+const defaults = { trueEnding: false, ng: false, stats: { time: 0, deaths: {}, wins: 0, escapes: 0, floors: 0, knocks: 0, peeks: 0, noticed: 0 }, endlessRun: null, daily: {}, badges: [], ranks: {}, film: {}, hints: [], tapes: [], met: [], endingSeen: false, notesRead: [], bestFloor: 0, unlocked: 1, best: {}, diff: 'normal', settings: { sens: 1, volume: 0.8, quality: 'high', screen: 'vhs', invertY: false, subs: true, gfx: 2, fov: 72, bob: true, calm: false, bigText: false, vibrate: true, assist: true, fps: false, autoRes: true } };
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -187,6 +187,7 @@ function countRun(how, killer = null) {
   const S = save.stats = { ...defaults.stats, ...save.stats, deaths: { ...(save.stats && save.stats.deaths) } };
   S.time += Math.max(0, Math.round(game.time - (game.countedT || 0))); game.countedT = game.time;
   S.escapes += (game.stats.escapes || 0) - (game.countedEsc || 0); game.countedEsc = game.stats.escapes || 0;
+  for (const [k, from] of [['knocks', 'knocks'], ['peeks', 'peeks'], ['noticed', 'doorsNoticed']]) { const v = game.stats[from] || 0, key = 'counted_' + k; S[k] = (S[k] || 0) + v - (game[key] || 0); game[key] = v; }
   if (how === 'dead' && killer) S.deaths[killer] = (S.deaths[killer] || 0) + 1;
   if (how === 'win') { S.wins++; if (game.def.endless && !game.def.daily) S.floors++; }
 }
@@ -256,7 +257,7 @@ function beginPlay(cp = null) {
     game.loadLevel(pendingLevel, save.diff, pendingDef);
     game.godMode = pendingGod;
     if (cp) { game.retries = retries; game.restore(cp); }
-    game.countedT = game.time; game.countedEsc = game.stats.escapes || 0;
+    game.countedT = game.time; game.countedEsc = game.stats.escapes || 0; for (const k of ['knocks', 'peeks', 'noticed']) game['counted_' + k] = game.stats[{ knocks: 'knocks', peeks: 'peeks', noticed: 'doorsNoticed' }[k]] || 0;
     if (lastDeath && lastDeath.key === levelKey(game.def)) game.placeGrave(lastDeath);
   } catch (e) { showError(e.stack || e); return; }
   hideAll();
@@ -378,7 +379,7 @@ function buildArchive() {
   const S = { ...defaults.stats, ...save.stats }, dead = Object.entries(S.deaths || {}).sort((a, b) => b[1] - a[1]);
   const nDead = dead.reduce((n, d) => n + d[1], 0), hh = Math.floor(S.time / 3600), mm = Math.floor(S.time / 60) % 60;
   for (const [a, b] of [['Lama merekam', `${hh} jam ${mm} menit`], ['Bab & lantai diselesaikan', S.wins], ['Rekaman terputus (mati)', nDead],
-    ['Paling sering membunuhmu', dead.length ? `${ENTITY_INFO[dead[0][0]] ? ENTITY_INFO[dead[0][0]].name : dead[0][0]} (${dead[0][1]}×)` : '—'], ['Lolos dari kejaran', S.escapes], ['Lantai Jurang dilewati', S.floors]]) {
+    ['Paling sering membunuhmu', dead.length ? `${ENTITY_INFO[dead[0][0]] ? ENTITY_INFO[dead[0][0]].name : dead[0][0]} (${dead[0][1]}×)` : '—'], ['Lolos dari kejaran', S.escapes], ['Ketukan di dinding', S.knocks || 0], ['Intipan dari balik sudut', S.peeks || 0], ['Pintu yang diperiksa penghuni', S.noticed || 0], ['Lantai Jurang dilewati', S.floors]]) {
     const d = document.createElement('div'); d.className = 'archive-item stat'; d.innerHTML = `<span>${a}</span><b>${b}</b>`; list.appendChild(d);
   }
   const hl = document.createElement('h3'); hl.textContent = `Lencana  ${save.badges.length}/${BADGES.length}`; list.appendChild(hl);

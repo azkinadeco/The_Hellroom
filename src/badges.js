@@ -26,6 +26,11 @@ export const BADGES = [
   { id: 'film5', icon: '🎥', name: 'Juru Kamera', desc: 'Rekam bukti lima penghuni.', test: (c) => filmed(c.save) >= 5 },
   { id: 'film10', icon: '🎬', name: 'Dokumenter Lengkap', desc: 'Rekam bukti semua penghuni.', test: (c) => filmed(c.save) >= RESIDENTS.length },
   { id: 'dalam5', icon: '⬇', name: 'Lima Lantai ke Bawah', desc: 'Lewati lantai -5 di mode Jurang.', test: (c) => c.save.bestFloor >= 5 },
+  { id: 'intip', icon: '👀', name: 'Dari Balik Sudut', desc: 'Intip penghuni dari balik sudut tanpa ketahuan.', test: (c) => (c.g.stats.peeks || 0) > 0 },
+  { id: 'ketuk', icon: '✊', name: 'Ada Orang di Sini', desc: 'Pancing penghuni dengan mengetuk dinding.', test: (c) => (c.g.stats.knockLures || 0) > 0 },
+  { id: 'jejak', icon: '👣', name: 'Jejak Basah', desc: 'Selesaikan level setelah penghuni mengikuti jejak kakimu.', test: (c) => c.win && (c.g.stats.printsFollowed || 0) > 0 },
+  { id: 'hadang', icon: '⚔', name: 'Dua Arah', desc: 'Selesaikan lantai Jurang tempat dua penghuni saling memanggil.', test: (c) => c.win && (c.g.stats.calls || 0) > 0 },
+  { id: 'bayang', icon: '🕯', name: 'Tak Tersentuh Cahaya', desc: 'Selesaikan satu bab tanpa ikon mata pernah terisi setengah.', test: (c) => c.win && c.story && (c.g.stats.maxWatch || 0) < 0.5 },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 

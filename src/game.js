@@ -496,7 +496,7 @@ export class Game {
         d = Math.max(d, (c - 0.5) * CELL);
         r *= 0.8;
       }
-      if (d < r) { e.onNoise(x, z, 1 - d / r, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; }
+      if (d < r) { e.onNoise(x, z, 1 - d / r, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; if (type === 'knock') this.stats.knockLures = (this.stats.knockLures || 0) + 1; }
     }
   }
   alert(x, z, src) {
@@ -1117,6 +1117,10 @@ export class Game {
     this.audio.update(dt, p.fear, chase, p.pos);
     { let w = 0, who = null; for (const e of this.entities) if ((e.awareness || 0) > w) { w = e.awareness; who = e; }
       this.audio.setWatch(Math.min(1, w), chase, dt);
+      this.stats.maxWatch = Math.max(this.stats.maxWatch || 0, chase ? 1 : w);
+      // a peek: leaning out with a resident in view, unnoticed
+      if (Math.abs(p.lean || 0) > 0.15 && !chase && w < 0.45 && this.entities.some((e) => this.isSeenByPlayer(e))) this.peekT = (this.peekT || 0) + dt; else this.peekT = 0;
+      if (this.peekT > 1.5) { this.peekT = -1e9; this.stats.peeks = (this.stats.peeks || 0) + 1; }
       // first time something half-notices you: say what the eye means
       if (w > 0.35 && !chase && who) this.hint('watch', 'Ikon mata terisi: penghuni mulai menyadarimu. Jongkok, matikan senter, menjauh dari pandangannya, atau berlindung di balik meja sebelum matanya penuh.', 6);
       if (p.crouched && w > 0.05 && !chase) this.hint('crouch_cover', 'Saat jongkok di balik meja, peti, atau bangku, penghuni tidak bisa melihatmu. ' + (this.input.touch ? 'Tahan tombol condong' : 'Tahan ' + this.input.keyName('leanLeft') + ' / ' + this.input.keyName('leanRight')) + ' untuk mengintip dari balik sudut.', 6); }
