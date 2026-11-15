@@ -15,6 +15,7 @@ uniform float uTime, uDanger, uNV, uGlitch, uFade, uWhite, uBattery, uClean;
 uniform vec2 uRes, uTexel;
 uniform vec3 uGrade;
 uniform float uBright;   // player's brightness setting: a gamma lift of the shadows
+uniform float uFlash;    // lightning: a cold white lift of the whole frame
 varying vec2 vUv;
 uniform mat4 uCamWorld;
 uniform vec3 uCamDir, uMistCol, uMistLamp;
@@ -66,6 +67,7 @@ float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33
 // the scene colour with contact shadows and a light unsharp mask
 vec3 scene(vec2 uv){
   vec3 c = texture2D(tDiffuse, uv).rgb;
+  c = c * (1.0 + uFlash * 2.2) + vec3(0.035, 0.042, 0.06) * uFlash;
   if (uSharp > 0.0) {
     vec3 b = texture2D(tDiffuse, uv + vec2(uTexel.x, 0.0)).rgb + texture2D(tDiffuse, uv - vec2(uTexel.x, 0.0)).rgb
            + texture2D(tDiffuse, uv + vec2(0.0, uTexel.y)).rgb + texture2D(tDiffuse, uv - vec2(0.0, uTexel.y)).rgb;
@@ -232,7 +234,7 @@ export class VHS {
       uGlitch: { value: 0 }, uFade: { value: 0 }, uWhite: { value: 0 }, uBattery: { value: 1 }, uClean: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
       uTexel: { value: new THREE.Vector2(0.001, 0.001) }, uGrade: { value: new THREE.Vector3(1, 1, 1) },
       tDepth: { value: null }, uNear: { value: 0.1 }, uFar: { value: 100 }, uAO: { value: 0 }, uSharp: { value: 0 }, uProj: { value: new THREE.Vector2(1, 1) }, uTaps: { value: 6 },
-      tFx: { value: null }, uFxOn: { value: 0 }, uBright: { value: 1 },
+      tFx: { value: null }, uFxOn: { value: 0 }, uBright: { value: 1 }, uFlash: { value: 0 },
       uCamWorld: { value: new THREE.Matrix4() }, uCamDir: { value: new THREE.Vector3() }, uMistCol: { value: new THREE.Color(0.2, 0.2, 0.2) }, uMistLamp: { value: new THREE.Color(0.55, 0.5, 0.42) },
       uMist: { value: 0 }, uGround: { value: 0 }, uMistLight: { value: 0 }, uNoiseTex: { value: noiseTex() },
     };

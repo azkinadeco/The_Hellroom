@@ -1233,6 +1233,7 @@ export class Game {
     }
     u.uDanger.value = this.state === 'playing' ? (this.deathT >= 0 && this.deathT < 1 ? 0.15 : this.danger) : 0;
     u.uNV.value = this.player.nightVision ? 1 : 0;
+    u.uFlash.value = this.calm ? Math.min(0.3, this.lightning || 0) : (this.lightning || 0);
     u.uGlitch.value = Math.max(this.glitch, (this.gazeFx || 0) * 0.3);
     u.uBattery.value = this.player.battery / 100;
     this.dust.update(this.camera, t, Math.min(1, this.player.light.intensity / 9), this.vhs.target.height);
