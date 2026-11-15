@@ -256,6 +256,7 @@ export class Audio {
       if (this._beat <= 0) {
         this._beat = 60 / (70 + fear * 100);
         this.heartbeat(Math.min(1, fear));
+        if (this.onBeat) this.onBeat(fear);
       }
     }
     this._nextAmb -= dt;

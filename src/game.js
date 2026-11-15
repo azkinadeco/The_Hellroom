@@ -47,6 +47,8 @@ export class Game {
     this.ambient = new THREE.AmbientLight(0xd8e0d0, 0.05);
     this.scene.add(this.ambient);
     this.audio.occlude = (pos) => this.occlusion(pos);
+    // the heartbeat in your hands: a controller or phone pulses with it once fear is high
+    this.audio.onBeat = (f) => { if (f > 0.45 && this.state === 'playing' && !this.calm) this.input.rumble(45, Math.min(0.6, 0.12 + 0.4 * f)); };
     this.dust = new Dust(260);
     this.scene.add(this.dust.points);
     // haze in the torch beam, mist on the floor, an uneven lens
