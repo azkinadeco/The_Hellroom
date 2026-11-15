@@ -445,7 +445,40 @@ export class Game {
       return null;
     }
     if (this.quietT > this.diff.quiet) { this.quietT = this.diff.quiet * 0.4; this.stats.lured = (this.stats.lured || 0) + 1; return randomReachableCell(m, Math.random, px, pz, 4, 8); }
-    return null;
+    return this.coverPatrol(e, px, pz, cx, cz);
+  }
+  // Ordinary patrol leg: prefer rooms nobody has walked through for a while,
+  // and halls the player has spent time in (an old trail, never where they stand now).
+  coverPatrol(e, px, pz, cx, cz) {
+    const f = this.floors[this.floorK], m = this.map;
+    if (!f || !f.heat) return null;
+    const dist = m.bfs(cx, cz), W = m.W, cand = [];
+    for (let i = 0; i < dist.length; i++) if (dist[i] >= 4 && dist[i] <= 18 && !(m.avoid && m.avoid[i])) cand.push(i);
+    if (!cand.length) return null;
+    let best = -1, bs = -Infinity;
+    for (let k = 0; k < 10; k++) {
+      const i = cand[Math.floor(Math.random() * cand.length)], x = i % W, z = (i / W) | 0;
+      if (Math.abs(x - px) + Math.abs(z - pz) < 5) continue;
+      const stale = Math.min(this.time - (f.visit.get(m.region[i]) ?? -1e9), 150) / 150;
+      let heat = 0; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (m.inside(x + dx, z + dz)) heat += f.heat[x + dx + (z + dz) * W];
+      const s = stale + Math.min(heat / 30, 1) * 0.6 + Math.random() * 0.35;
+      if (s > bs) { bs = s; best = i; }
+    }
+    return best >= 0 ? [best % W, (best / W) | 0] : null;
+  }
+  // every half second: the player's trail cools, and residents mark the rooms they pass through
+  updateTrail(dt) {
+    const f = this.floors[this.floorK], m = this.map, p = this.player;
+    if (!f || !m) return;
+    if (!f.heat || f.heat.length !== m.W * m.H) { f.heat = new Float32Array(m.W * m.H); f.visit = new Map(); }
+    this.trailT = (this.trailT || 0) - dt;
+    if (this.trailT > 0) return;
+    this.trailT = 0.5;
+    const k = Math.exp(-0.5 / 120), h = f.heat;
+    for (let i = 0; i < h.length; i++) h[i] *= k;
+    const [x, z] = m.cellOf(p.pos.x, p.pos.z);
+    if (m.inside(x, z) && !p.hidden) h[x + z * m.W] += 0.5;
+    for (const e of this.entities) { const [ex, ez] = e.cell(); if (m.inside(ex, ez)) f.visit.set(m.region[ex + ez * m.W], this.time); }
   }
 
   surfaceAt(x, z) {
@@ -854,6 +887,7 @@ export class Game {
     danger = Math.max(danger, chase * 0.55);
     this.danger = damp(this.danger, danger, 3, dt);
     if (this.graceT > 0) this.graceT -= dt;
+    this.updateTrail(dt);
     if (danger > 0.25 || chase || p.hidden) this.quietT = Math.max(0, this.quietT - dt * 4); else this.quietT += dt;
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);
     let interference = this.danger > 0.45 && !this.clear ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
