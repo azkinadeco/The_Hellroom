@@ -99,6 +99,7 @@ const KINDS = {
     const c = g.built.doors.filter((d) => { if (d.locked) return false; const q = Math.hypot(d.x - p.pos.x, d.z - p.pos.z); return q > 3.5 && q < 14 && g.entities.every((e) => Math.hypot(e.pos.x - d.x, e.pos.z - d.z) > 3); });
     if (!c.length) return false;
     const d = c[Math.floor(Math.random() * c.length)], pos = { x: d.x, y: 1.2, z: d.z };
+    d.byPlayer = false;
     if (d.target) { d.target = 0; g.audio.doorCreak(pos, false); g.schedule(0.5, () => g.audio.doorSlam(pos)); }
     else { d.target = 1; g.audio.doorCreak(pos, true); }
     return true;

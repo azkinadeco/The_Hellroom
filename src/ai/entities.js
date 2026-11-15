@@ -7,6 +7,7 @@ import { findPath, randomReachableCell } from './path.js';
 import { cloneWithBake } from '../level/builder.js';
 import { applyEntityLook, lookIndex } from '../render/entityLook.js';
 import { angleDiff, clamp } from '../util/rng.js';
+const PV = new THREE.Vector3();
 
 const TMP = new THREE.Vector3();
 
@@ -152,6 +153,44 @@ export class Entity {
     return clamp((1 - d / r) * 1.4 + 0.15, 0, 1) * Math.min(1.3, vis);
   }
 
+  // How fast this resident is noticing the player right now (awareness per second, 0 = not at all).
+  // A sight cone with a narrow sharp centre and a short blurry edge that only catches movement;
+  // light, crouching, standing still, the torch pointed at it, low cover and open sky all count.
+  perceive(range, fovDeg) {
+    const g = this.game, p = g.player;
+    if (p.hidden || !p.alive) return 0;
+    const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, d = Math.hypot(dx, dz);
+    const open = g.openness(p.pos.x, p.pos.z), mov = Math.min(p.moving || 0, 1.5);
+    // how much of you there is to see
+    let vis = g.world.isLit(p.pos.x, p.pos.z) ? 1 : 0.45;
+    if (p.flashlight) {
+      vis += 0.45;
+      // the beam pointed straight at it gives you away from far off
+      const cd = g.camera.getWorldDirection(PV), q = (-dx * cd.x - dz * cd.z) / Math.max(d, 1e-3) / Math.max(Math.hypot(cd.x, cd.z), 1e-3);
+      if (q > 0.85) vis += 0.8 * (q - 0.85) / 0.15;
+    }
+    if (p.crouched) vis *= 0.35;
+    vis *= mov < 0.1 ? 0.55 : 0.8 + mov * 0.2;
+    if (p.sprinting) vis *= 1.25;
+    let R = range * g.diff.sight;
+    if (open === 2) { R = Math.max(R * 2.4, 42); vis = Math.max(vis, p.crouched ? 0.55 : 0.9); }   // a figure against the open sky
+    else if (open === 1) R *= 1.5;
+    const reach = R * (0.4 + 0.6 * Math.min(vis, 1.2) / 1.2);
+    if (d > reach) return 0;
+    // where in the cone
+    const ang = Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) * 180 / Math.PI, half = fovDeg / 2;
+    let cone;
+    if (half >= 180 || ang <= half) cone = 1;
+    else if (ang <= half + 35 && d < reach * 0.4 && mov > 0.1) cone = 0.35;      // the corner of its eye: only movement
+    else if (d < 1.3 && !p.crouched) cone = 1;                                    // brushed right past it
+    else return 0;
+    if (!g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z)) return 0;
+    // cover: crouched behind a desk, a crate, a bench; anything tall hides you standing
+    if (d > 1.6 && g.world.cover(this.pos.x, this.pos.z, p.pos.x, p.pos.z, p.crouched ? 0.7 : 1.75)) return 0;
+    const k = Math.pow(1 - d / reach, 0.7);
+    return cone * (vis * k * 3.2 + (d < 2.5 ? 4 * (1 - d / 2.5) : 0));
+  }
+
   updateCommon(dt) {
     // far away the skeleton only needs ten updates a second
     const cam = this.game.camera.position;
@@ -225,7 +264,17 @@ export class Monitor extends Entity {
     const g = this.game, p = g.player;
     this.stateT += dt;
     this.whistleCd -= dt;
-    const see = this.sense();
+    // awareness: outside a chase it has to notice you first
+    const hunting = this.state === 'chase' || this.state === 'attack';
+    let see = 0;
+    if (hunting) see = this.sense();
+    else {
+      const gain = this.perceive(this.sight[0], this.sight[1]);
+      if (gain > 0) { this.awareness = Math.min(1.2, (this.awareness || 0) + gain * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }
+      else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
+      if (this.awareness >= 1) see = 1;
+      this.checkDoors(dt);
+    }
     if (see > 0) {
       this.suspicion = Math.min(1.2, this.suspicion + see * dt * (this.distTo(p.pos) < 4 ? 6 : 1.9));
       this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time };
@@ -238,6 +287,12 @@ export class Monitor extends Entity {
     // keeps coming for as long as it can see you (or until you hide)
     if (see > 0 && this.state !== 'chase' && this.state !== 'attack' && (this.state !== 'locker' || !this.lockerSure)) {
       this.suspicion = 1.2; this.path = null; this.setState('chase');
+    } else if (!hunting && this.state !== 'locker' && (this.awareness || 0) >= 0.45 && this.glimpse && g.time - this.glimpse.t < 0.3
+      && (this.state !== 'investigate' || !this.investigatePt || Math.hypot(this.investigatePt.x - this.glimpse.x, this.investigatePt.z - this.glimpse.z) > 2.5)) {
+      // half-noticed: go and see what moved there
+      this.investigatePt = { x: this.glimpse.x, z: this.glimpse.z };
+      this.suspicion = Math.max(this.suspicion, 0.65);
+      this.setState('investigate'); this.lookT = 0; this.goToWorld(this.glimpse.x, this.glimpse.z);
     } else if (this.state !== 'chase' && this.state !== 'attack' && this.state !== 'locker' && this.suspicion >= 1) this.setState('chase');
 
     let speed = 0;
@@ -245,6 +300,9 @@ export class Monitor extends Entity {
       case 'patrol': {
         this.checkLockers(dt);
         if (this.state !== 'patrol') break;
+        if ((this.awareness || 0) > 0.18 && this.glimpse && g.time - this.glimpse.t < 1.5) {   // something there? stop and look
+          this.velocity = 0; this.faceToward(this.glimpse.x, this.glimpse.z, dt, 3); this.waitT = Math.max(this.waitT || 0, 0.6); break;
+        }
         if (this.waitT > 0) {
           this.waitT -= dt; this.velocity = 0;
           this.yaw += Math.sin(g.time * 0.7) * dt * 0.5;
@@ -315,7 +373,7 @@ export class Monitor extends Entity {
         } else if ((!this.path || this.pathIdx >= this.path.length) && !this.finalPoint) {
           if (this.peekNext) { this.peek = this.peekNext; this.peekNext = null; this.peekT = 1.3; break; }
           const n = this.searchPts.shift();
-          if (!n) { this.setState('patrol'); this.waitT = 1; this.suspicion = 0.2; g.onChaseEnd(this); }
+          if (!n) { this.setState('patrol'); this.waitT = 1; this.suspicion = 0.2; this.awareness = 0.3; g.onChaseEnd(this); }
           else if (n.L) { const q = this.lockerPoint(n.L); if (this.goToWorld(q.x, q.z)) this.peekNext = n.L; else this.finalPoint = null; }
           else this.goTo(...n);
           const [cx, cz] = this.cell(); (this.searched || (this.searched = new Map())).set(cx + cz * g.map.W, g.time);
@@ -376,6 +434,35 @@ export class Monitor extends Entity {
     const breathing = !p.holdingBreath;
     const chance = (breathing ? 0.35 + p.fear * 0.5 : 0.02) * this.game.diff.hearing * (1 - d / 4.5);
     if (Math.random() < chance * dt) this.targetLocker(L, false);
+  }
+
+  // Door memory: it remembers the doors it has seen on its rounds. One the player has opened
+  // or shut since then is a trail: it gets suspicious and goes to look on the other side.
+  checkDoors(dt) {
+    const g = this.game;
+    this.doorT = (this.doorT || 0) - dt;
+    if (this.doorT > 0 || !g.built || !g.built.doors) return;
+    this.doorT = 0.5;
+    const mem = this.doorMem || (this.doorMem = new Map());
+    if (this.doorFloor !== g.floorK) { mem.clear(); this.doorFloor = g.floorK; }
+    for (const d of g.built.doors) {
+      if (d.locked) continue;
+      const dx = d.x - this.pos.x, dz = d.z - this.pos.z, dist = Math.hypot(dx, dz);
+      if (dist > 11 || dist < 0.8) continue;
+      // in front of it and in plain view (aim a little short of the door, on this side)
+      if (Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) > 1.3) continue;
+      if (!g.world.los(this.pos.x, this.pos.z, d.x - dx / dist * 0.4, d.z - dz / dist * 0.4)) continue;
+      const was = mem.get(d), now = d.target;
+      mem.set(d, now);
+      if (was === undefined || was === now || !d.byPlayer || this.state === 'locker') continue;
+      // the far side of the doorway, if it is floor
+      const fx = d.x + dx / dist * 1.6, fz = d.z + dz / dist * 1.6, [cx, cz] = g.map.cellOf(fx, fz);
+      const at = g.map.reg(cx, cz) >= 0 ? { x: fx, z: fz } : { x: d.x, z: d.z };
+      this.awareness = Math.max(this.awareness || 0, 0.55);
+      this.glimpse = { x: at.x, z: at.z, t: g.time };
+      g.stats.doorsNoticed = (g.stats.doorsNoticed || 0) + 1;
+      break;
+    }
   }
 
   // Where to look after losing them: ahead along the way they were running,

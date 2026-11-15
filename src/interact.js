@@ -13,12 +13,14 @@ export class DoorSystem {
   open(door, by, fromPos) {
     if (door.target === 1) return;
     door.target = 1;
+    door.byPlayer = by === 'player';
     this.game.audio.doorCreak({ x: door.x, y: 1.2, z: door.z }, true);
     if (by === 'player') this.game.emitNoise(door.x, door.z, NOISE.door, 'door');
   }
   close(door) {
     if (door.target === 0) return;
     door.target = 0;
+    door.byPlayer = true;
     this.game.audio.doorCreak({ x: door.x, y: 1.2, z: door.z }, false);
     this.game.emitNoise(door.x, door.z, NOISE.door, 'door');
   }

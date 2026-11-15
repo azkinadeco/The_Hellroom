@@ -19,6 +19,36 @@ export class World {
     this.doors = built.doors;
   }
 
+  // Is there a prop between an eye at (x0,z0) and a body at (x1,z1) tall enough to hide it?
+  // Only props within `near` metres of the body count: further off, a low desk is
+  // below the line from the resident's eyes down to you.
+  cover(x0, z0, x1, z1, minH, near = 2.4) {
+    const dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz);
+    if (L < 0.8) return false;
+    const seen = new Set();
+    for (let s = 0.35; s <= Math.min(near, L - 0.4); s += 0.5) {
+      const k = Math.floor((x1 - dx / L * s) / CELL) + ',' + Math.floor((z1 - dz / L * s) / CELL);
+      const b = this.buckets.get(k);
+      if (!b) continue;
+      for (const c of b) {
+        if (seen.has(c) || (c.h ?? 1) < minH) continue;
+        seen.add(c);
+        // 2D slab test of the sight line against the box (slightly shrunk so grazing edges do not hide you)
+        const ix = 0.06, mnX = c.minX + ix, mxX = c.maxX - ix, mnZ = c.minZ + ix, mxZ = c.maxZ - ix;
+        let t0 = 0, t1 = 1;
+        for (const [o, d, lo, hi] of [[x0, dx, mnX, mxX], [z0, dz, mnZ, mxZ]]) {
+          if (Math.abs(d) < 1e-6) { if (o < lo || o > hi) { t0 = 2; break; } continue; }
+          let a = (lo - o) / d, b2 = (hi - o) / d; if (a > b2) [a, b2] = [b2, a];
+          t0 = Math.max(t0, a); t1 = Math.min(t1, b2);
+          if (t0 > t1) break;
+        }
+        // the box must sit between the two, not behind the body
+        if (t0 <= t1 && t1 < 1 - 0.25 / L && t0 > 0) return true;
+      }
+    }
+    return false;
+  }
+
   // segments (x0,z0,x1,z1) for walls around a cell
   _edgeSegments(x, z, d, out) {
     const m = this.map;

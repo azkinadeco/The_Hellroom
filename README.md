@@ -42,6 +42,15 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Penglihatan penghuni (batch 62–63)
+
+- **Meteran kewaspadaan**: penghuni harus menyadarimu dulu. Setengah sadar: ia berhenti, menoleh, lalu memeriksa tempat kamu terlihat. Penuh: ia mengejar. Ikon mata di atas layar menunjukkan seberapa dekat kamu ketahuan.
+- **Kerucut pandang**: pusat dengan jarak penuh, tepi pendek yang hanya menangkap gerakan, belakang buta.
+- **Jongkok** (terutama di gelap dan diam) membuatmu sulit terlihat; jongkok di balik meja, peti, atau bangku memutus pandangan. Senter yang diarahkan ke penghuni membuatmu ketahuan dari jauh.
+- **Luar ruangan** (lapangan, hutan, langit terbuka): jarak pandang minimal 42 m; atrium bertingkat 1,5×.
+- **Ingatan pintu**: pintu yang kamu buka atau tutup sejak penghuni terakhir melihatnya akan ia periksa.
+- Batch 61: garis di layar Ultra HD hilang (kabut volumetrik, noise tekstur), pasca-proses setengah resolusi, pengatur frame-rate menuju 60 fps.
+
 ## Grafis batch 60
 
 - **Permukaan**: noda lembap, rembesan karat, jamur di tempat gelap, retakan halus, noda air di plafon, genangan basah yang memantulkan cahaya, dan kilau senter. Semuanya prosedural di shader (`src/render/bake.js`), kadarnya berbeda per bangunan (`def.grime`).

@@ -562,6 +562,19 @@ export class Game {
     return 'wood';
   }
 
+  // 2 = under the open sky (courtyard, forest hall, roofless), 1 = an atrium or void several storeys high, 0 = indoors
+  openness(x, z) {
+    const f = this.floors[this.floorK], m = this.map;
+    if (!f || !m) return 0;
+    if (!f.open || f.open.length !== m.W * m.H) {
+      const o = f.open = new Uint8Array(m.W * m.H), g = f.gen, nc = g.noCeil || [], oa = g.openAbove || [];
+      const sky = new Set(g.rooms.filter((r) => r.type === 'lapangan' || r.type === 'forest').map((r) => r.id));
+      for (let i = 0; i < o.length; i++) o[i] = nc[i] || sky.has(m.region[i]) ? 2 : oa[i] || m.region[i] === -2 ? 1 : 0;
+    }
+    const [cx, cz] = m.cellOf(x, z);
+    return m.inside(cx, cz) ? f.open[cx + cz * m.W] : 0;
+  }
+
   isSeenByPlayer(e) {
     const p = this.player;
     if (!p.alive || e.form === 'statue') return false;

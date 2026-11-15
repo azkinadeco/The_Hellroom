@@ -79,6 +79,7 @@ class Pale extends Monitor {
     this.reach = 0.6;
   }
   chaseSound() { this.game.audio.hiss(this.pos); }
+  perceive() { return this.sense() * 8; }   // blind: it 'sees' only what it hears and feels close by
   sense() {
     const p = this.game.player;
     if (p.hidden || !p.alive) return 0;
@@ -328,7 +329,8 @@ class StatueEcho extends Monitor {
       const reach = 3.7 * (0.75 + 0.25 * g.diff.sight) * (p.crouched ? 0.8 : 1);
       const los = d < reach * 1.7 && g.world.los(h.x, h.z, p.pos.x, p.pos.z);
       // cracking: two seconds of warning (less if you run past, more if you creep), and it settles if you back off
-      if (p.alive && !p.hidden && this.armT <= 0 && d < reach && los) {
+      const behind = p.crouched && g.world.cover(h.x, h.z, p.pos.x, p.pos.z, 0.7);   // crouched behind a plinth or a bench: the statue cannot see you
+      if (p.alive && !p.hidden && this.armT <= 0 && d < reach && los && !behind) {
         if (this.wake <= 0) g.audio.scrape({ x: h.x, y: 1.2, z: h.z }, 0.35, 0.3);
         this.wake += dt / (moved > 4.2 ? 1.3 : p.crouched ? 3 : 2);
         if (this.wake >= 1) { this.emerge(); return; }
@@ -499,8 +501,10 @@ class Shade extends Entity {
     }
     let speed = 0;
     if (this.state === 'lurk') {
-      const senses = !p.hidden && p.alive && this.calmT <= 0 && d < 16 && g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z) &&
-        (d < 6 || !g.world.isLit(p.pos.x, p.pos.z) || p.flashlight);
+      const senses = !p.hidden && p.alive && this.calmT <= 0 && d < (p.crouched && !p.flashlight ? 7 : 16) && g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z) &&
+        (d < (p.crouched ? 2.5 : 6) || !g.world.isLit(p.pos.x, p.pos.z) || p.flashlight) &&
+        !(p.crouched && d > 2 && g.world.cover(this.pos.x, this.pos.z, p.pos.x, p.pos.z, 0.7));
+      this.awareness = senses ? 1 : 0;
       if (senses) { this.state = 'stalk'; this.stateT = 0; g.onChaseStart(this); g.audio.whisper(this.pos, 1); }
       else if (!this.path || this.pathIdx >= this.path.length) {
         this.velocity = 0;

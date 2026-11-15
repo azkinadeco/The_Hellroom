@@ -402,3 +402,16 @@ body.clear-screen .title-grain { display: none; }
   .title-menu .cont-k { font-size: 22px; }
 }
 .level-item .code { white-space: nowrap; }
+
+/* batch 62: how close you are to being noticed */
+.watch { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: 46px; height: 23px; opacity: 0; transition: opacity .25s; }
+.watch.show { opacity: 1; }
+.watch svg { width: 100%; height: 100%; overflow: visible; }
+.watch .lid { fill: rgba(0,0,0,0.35); stroke: rgba(233,230,214,0.75); stroke-width: 1.6; }
+.watch .fill { fill: rgba(232,196,90,0.75); }
+.watch .pupil { fill: #111; stroke: rgba(233,230,214,0.6); stroke-width: 1; }
+.watch.hunt .lid { stroke: var(--danger); } .watch.hunt .fill { fill: rgba(255,59,48,0.85); }
+.watch.hunt { animation: watchPulse .6s ease-in-out infinite alternate; }
+@keyframes watchPulse { to { transform: translateX(-50%) scale(1.12); } }
+body.clear-screen .watch.hunt { animation: none; }
+body.touch .watch { top: 58px; }

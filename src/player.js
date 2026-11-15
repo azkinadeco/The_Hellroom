@@ -120,6 +120,7 @@ export class Player {
     this.vel.y = damp(this.vel.y, tz, PLAYER.accel, dt);
     const sp = this.vel.length();
     const sprinting = wantSprint && sp > PLAYER.walk * 0.9;
+    this.sprinting = sprinting;
     if (sprinting) {
       this.stamina -= PLAYER.staminaDrain * dt;
       if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; game.audio.pant(); }
