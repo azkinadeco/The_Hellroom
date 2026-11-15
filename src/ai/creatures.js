@@ -214,6 +214,8 @@ class StatueEcho extends Monitor {
     if (!emerged) this.enter(this.pickHost(this.pos.x, this.pos.z, 0), true);
   }
   chaseSound() { this.game.audio.chorus(this.pos); }
+  // it does not open hiding spots: one look where you were heading, then it gives up and walks off
+  planSearch() { return super.planSearch().filter((q) => !q.L).slice(0, 1); }
   figs() { return (this.game.built.figures || []).filter(hostable); }
   // is the spot on the player's screen with nothing in between?
   seenSpot(x, z) {

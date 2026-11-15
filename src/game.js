@@ -29,6 +29,9 @@ const CUES = {
   whisper: 'Bisikan dari kegelapan', squelch: 'Bunyi daging basah', alarm: 'Jam weker berdering', glass: 'Pecahan kaca terinjak',
 };
 
+// deaths per map and difficulty in this session (for the mercy rule)
+const DEATHS = new Map();
+
 export class Game {
   constructor({ canvas, assets, audio, input, hud, settings, ui }) {
     this.assets = assets; this.audio = audio; this.input = input; this.hud = hud; this.settings = settings; this.ui = ui;
@@ -98,6 +101,20 @@ export class Game {
     this.audio.setVolume(s.volume);
     this.resize();
   }
+  // The director. Stress builds while something is close or chasing and
+  // drains in quiet; past the limit the building gives you a breather
+  // (patrols drift off for a while). A chase that drags on tires the hunter.
+  direct(dt, danger, chase) {
+    if (chase) this.chaseT += dt; else this.chaseT = Math.max(0, this.chaseT - dt * 2);
+    if (danger > 0.5 || chase) this.stress += dt / (this.diffKey === 'mimpi' ? 70 : 45);
+    else this.stress = Math.max(0, this.stress - dt / 90);
+    if (this.stress > 1 && !chase) { this.stress = 0.35; this.graceT = Math.max(this.graceT, this.diff.grace * 1.5); this.stats.breathers = (this.stats.breathers || 0) + 1; }
+    const tire = this.chaseT > 20 ? Math.max(0.88, 1 - (this.chaseT - 20) / 50 * 0.12) : 1;
+    for (const e of this.entities) {
+      if (e.baseSpeedMul === undefined) e.baseSpeedMul = e.speedMul;
+      e.speedMul = e.baseSpeedMul * (this.mercy || 1) * (this.chasers.has(e) ? tire : 1);
+    }
+  }
   // Dynamic resolution: a slow machine trades sharpness for frame rate, a fast one wins it back.
   autoRes(rdt) {
     if (this.settings.autoRes === false || !(rdt > 0)) return;
@@ -129,6 +146,11 @@ export class Game {
     this.levelIndex = index;
     this.diffKey = difficulty;
     this.diff = DIFFICULTY[difficulty];
+    // mercy: after the third death on the same map this session residents lose a step (never on the two hardest settings)
+    const dk = (def.endless ? 'endless' : def.id) + ':' + difficulty, nd = DEATHS.get(dk) || 0;
+    this.deathKey = dk;
+    this.mercy = ['sulit', 'mimpi'].includes(difficulty) ? 1 : 1 - 0.03 * Math.min(Math.max(nd - 2, 0), 3);
+    this.stress = 0; this.chaseT = 0;
     const scaled = { ...def, batteries: Math.max(1, Math.round(def.batteries * this.diff.batteries)) };
     // a level is a stack of floors; single-floor levels are a stack of one
     let gens, start, startFloor = 0;
@@ -560,6 +582,7 @@ export class Game {
       return;
     }
     p.alive = false;
+    if (this.deathKey && !this.def.test) DEATHS.set(this.deathKey, (DEATHS.get(this.deathKey) || 0) + 1);
     this.busy = true;
     this.deathT = 0;
     this.killer = entity;
@@ -903,6 +926,7 @@ export class Game {
     danger = Math.max(danger, chase * 0.55);
     this.danger = damp(this.danger, danger, 3, dt);
     if (this.graceT > 0) this.graceT -= dt;
+    this.direct(dt, danger, chase);
     this.updateTrail(dt);
     if (danger > 0.25 || chase || p.hidden) this.quietT = Math.max(0, this.quietT - dt * 4); else this.quietT += dt;
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);

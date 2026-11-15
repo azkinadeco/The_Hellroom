@@ -76,7 +76,7 @@ export const DIFFICULTY = {
 // Test rooms in the main menu (Ruang Uji): every map playable, resident
 // override and invulnerability. Pilih Bab itself stays unlocked in order. Set to false for the public release.
 export const DEV_ROOMS = true;
-export const VERSION = '0.49';
+export const VERSION = '0.59';
 
 // Level definitions. Every level has exactly ONE resident. Layouts are
 // generated from the seed so every run of a level is identical.

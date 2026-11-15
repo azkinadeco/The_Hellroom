@@ -42,6 +42,15 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Fitur batch 49–59
+
+- **Tampilan**: menu awal baru (Lanjutkan, Pilih Bab, Mode Lain, Arsip; Pengaturan, Cara Bermain, dan Ruang Uji jadi ikon di pojok), ukuran tulisan lebih kecil di seluruh UI, tombol sentuh berupa ikon tanpa tulisan.
+- **Nama baru**: bab BAB I–VI, penghuni (Murid Pucat, Spesimen Tiga, Bayang Padam, Dinding Bermata, Kelabang Murid, Induk Laba-Laba, Jam Berlidah, Sang Pembisik), mode **Jurang** dan **Rekaman Harian**, kesulitan Cerita / Standar / Mencekam / Mimpi Buruk.
+- **Gema Retak**: patung berderak 2 detik sebelum pecah (mundur dan ia tenang), diam sebentar sebelum mengejar, lalu pergi pelan-pelan dan menghilang kalau kehilanganmu.
+- **AI**: jalur dihaluskan (tidak zig-zag), suara merambat lewat lorong dan pintu (tidak menembus tembok), pencarian mengikuti arah larimu dan memeriksa tempat sembunyi terdekat, patroli menjelajah ruangan yang lama tidak didatangi.
+- **Sutradara ketegangan**: stres yang menumpuk memberi jeda napas, kejaran yang terlalu lama membuat penghuni lelah, dan setelah tiga kali mati di bab yang sama penghuni sedikit melambat (tidak di Mencekam / Mimpi Buruk).
+- **Performa**: resolusi otomatis, animasi penghuni jauh diperbarui lebih jarang.
+
 ## Fitur batch 36–45
 
 - **Bantuan arah**: kalau lama tidak ada kemajuan, tanda `?` merah muncul di denah pada ruangan yang menyimpan hal berikutnya yang kamu butuhkan (bisa dimatikan).
