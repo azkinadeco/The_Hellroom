@@ -281,6 +281,17 @@ export class Monitor extends Entity {
 
   onNoise(x, z, strength, type) {
     if (this.state === 'chase' || this.state === 'attack' || this.state === 'locker') return;
+    // fooled twice in a minute by the same trick (a thrown eraser, an alarm clock, a knock), it starts to see through it
+    if (['throw', 'alarm', 'knock'].includes(type)) {
+      const g = this.game, log = (this.lureLog || (this.lureLog = {}))[type] = ((this.lureLog || {})[type] || []).filter((t) => g.time - t < 60);
+      if (log.length >= 2 && Math.random() < 0.65) {
+        this.awareness = Math.max(this.awareness || 0, 0.22); this.glimpse = { x, z, t: g.time };
+        g.stats.luresIgnored = (g.stats.luresIgnored || 0) + 1;
+        if (this.distTo(g.player.pos) < 25) g.hint('wise', 'Penghuni mulai tidak tertipu pengalih yang sama. Ganti cara: lempar, weker, atau ketuk dinding bergantian.', 6);
+        return;
+      }
+      log.push(g.time);
+    }
     // a faint everyday sound only makes it stop and look that way
     if (strength < 0.22 && ['step', 'door', 'pant', 'pickup', 'locker'].includes(type) && this.state === 'patrol') {
       this.awareness = Math.max(this.awareness || 0, 0.22); this.glimpse = { x, z, t: this.game.time }; this.waitT = Math.max(this.waitT || 0, 1.2);
