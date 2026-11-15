@@ -3,7 +3,7 @@
 import { CELL } from '../config.js';
 
 // ---------------------------------------------------------------------------
-// LEVEL 0 — a real two-storey school round a roofed-over courtyard (lapangan).
+// BAB I — a real two-storey school round a roofed-over courtyard (lapangan).
 // Ring corridors face the yard through a colonnade on the ground floor and a
 // balcony upstairs; classrooms, offices, toilets, canteen, library, UKS and the
 // hall sit round the outside. Two stairwells link the floors.
@@ -64,7 +64,7 @@ export const LAYOUTS = { school };
 export { CELL };
 
 // ---------------------------------------------------------------------------
-// LEVEL 2 — Rumah Sakit: three floors along a central spine corridor, a lift
+// BAB III — Bangsal Hening: three floors along a central spine corridor, a lift
 // that serves every floor, two stairwells that do NOT line up (west links
 // 1-2, east links 2-3), and in the south wing a forest that grows through
 // all three storeys under an open night sky, with balconies over it and a
@@ -120,10 +120,10 @@ function hospital(b, rng) {
 
 LAYOUTS.hospital = hospital;
 
-// LEVEL 3 (mall) lives in mall.js and LEVEL 4 (poolrooms) in pool.js.
+// BAB IV (mall) lives in mall.js and BAB V (poolrooms) in pool.js.
 
 // ---------------------------------------------------------------------------
-// LEVEL 1 — Sayap Detensi: a panopticon. Three storeys of detention cells and
+// BAB II — Blok Isolasi: a panopticon. Three storeys of detention cells and
 // punishment rooms round one open well; at the bottom of the well hundreds of
 // exam desks all face the guard tower that stands in the middle, reached on
 // the upper floors only by narrow bridges. East of the well a three-storey
@@ -200,7 +200,7 @@ function detention(b, rng) {
 LAYOUTS.detention = detention;
 
 // ---------------------------------------------------------------------------
-// LEVEL 5 — Ruang Patung: a three-storey museum. A domed rotunda in the middle
+// BAB VI — Museum Bisu: a three-storey museum. A domed rotunda in the middle
 // with a statue nine metres tall, grand open stairs climbing round it, and
 // galleries that open into one another. East of the rotunda the statue hall:
 // three storeys high, its floor a crowd of figures, crossed by bridges.

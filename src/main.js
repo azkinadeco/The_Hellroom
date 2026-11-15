@@ -175,7 +175,7 @@ const ui = {
     const last = game.levelIndex >= LEVELS.length - 1;
     if (last && !game.def.test) { showEnding(t, gr, newB); return; }
     $('win-text').textContent = (last ? ENDING : 'Pintu darurat terbuka ke… lorong lain. Sekolah ini lebih dalam dari yang kamu kira.') + badgeLine(newB);
-    $('btn-next').textContent = last ? 'Main Lagi dari Awal' : 'Level Berikutnya';
+    $('btn-next').textContent = last ? 'Main Lagi dari Awal' : 'Bab Berikutnya';
     show('win');
   },
 };
@@ -234,7 +234,7 @@ function startEndless(floor, seed = null) {
   $('intro-text').textContent = [floor === 1 ? `Setiap lantai dibuat acak dan makin berbahaya. Seberapa dalam kamu bisa turun?\nRekor: ${save.bestFloor} lantai.` : tipLine(), modText(pendingDef)].filter(Boolean).join('\n\n');
   show('intro');
 }
-// Kaset Harian: one fixed floor per calendar day, the same for everyone; best time is kept
+// Rekaman Harian: one fixed floor per calendar day, the same for everyone; best time is kept
 const today = () => { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
 function startDaily() {
   const date = today(), floor = 3 + (date % 4);
@@ -291,14 +291,21 @@ function quitToMenu() {
 
 // ---------------------------------------------------------------- menus
 function buildTitle() {
+  const L = LEVELS[save.unlocked - 1];
   const btn = document.querySelector('#title [data-go="play"]');
-  btn.textContent = save.unlocked > 1 ? `▶ Lanjutkan — ${LEVELS[save.unlocked - 1].code}` : '▶ Mainkan';
-  const er = save.endlessRun, eb = document.querySelector('#title [data-go="endless"]');
-  eb.textContent = er && er.floor > 1 ? `Mode Tanpa Ujung — lanjut LANTAI ${-er.floor}` : 'Mode Tanpa Ujung';
-  const dr = save.daily[today()];
-  document.querySelector('#title [data-go="daily"]').textContent = 'Kaset Harian' + (dr ? `  ✓ ${fmt(dr)}` : '');
-  document.querySelector('#title .tag').textContent = 'Rekaman Handycam · 1996' + (save.trueEnding ? '  ·  ★★ AKHIR SEBENARNYA' : save.endingSeen ? '  ·  ★ ENDING TERBUKA' : '');
+  btn.querySelector('.cont-k').textContent = save.unlocked > 1 ? 'Lanjutkan' : 'Mulai';
+  btn.querySelector('.cont-s').textContent = `${L.code} · ${L.name}`;
+  const er = save.endlessRun, dr = save.daily[today()];
+  $('mode-endless-sub').textContent = er && er.floor > 1 ? `Lanjutkan dari Lantai ${-er.floor}.` + (save.bestFloor ? ` Rekor: ${save.bestFloor} lantai.` : '') : 'Lantai demi lantai ke bawah, setiap lantai dibuat acak.' + (save.bestFloor ? ` Rekor: ${save.bestFloor} lantai.` : '');
+  $('mode-daily-sub').textContent = dr ? `Hari ini selesai dalam ${fmt(dr)}. Kembali besok untuk kaset baru.` : 'Satu lantai yang sama untuk semua pemain, berganti setiap hari.';
+  document.querySelector('#title .tag').textContent = save.trueEnding ? '★★ Akhir sebenarnya ditemukan' : save.endingSeen ? '★ Rekaman terakhir sudah diputar' : 'Rekaman ditemukan · 1996';
 }
+// the camcorder clock in the corner of the title screen
+setInterval(() => {
+  const el = $('title-clock'); if (!el || current !== 'title') return;
+  const d = new Date(), z = (n) => String(n).padStart(2, '0');
+  el.textContent = `${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+}, 1000);
 // resident portrait for a card; unseen residents stay a dark silhouette
 function portrait(kind, seen) {
   if (!kind) return '<span class="portrait none"></span>';
@@ -310,7 +317,7 @@ function buildLevels() {
   LEVELS.forEach((l, i) => {
     const b = document.createElement('button');
     b.className = 'level-item';
-    // levels unlock in order; every map can still be tried from Pilih Room (uji)
+    // levels unlock in order; every map can still be tried from Ruang Uji
     b.disabled = i + 1 > save.unlocked;
     const rk = l.id + ':' + save.diff + (ngOn() ? ':ng' : '');
     const best = save.best[rk];
@@ -370,8 +377,8 @@ function buildArchive() {
   const hs = document.createElement('h3'); hs.textContent = 'Statistik'; list.appendChild(hs);
   const S = { ...defaults.stats, ...save.stats }, dead = Object.entries(S.deaths || {}).sort((a, b) => b[1] - a[1]);
   const nDead = dead.reduce((n, d) => n + d[1], 0), hh = Math.floor(S.time / 3600), mm = Math.floor(S.time / 60) % 60;
-  for (const [a, b] of [['Lama merekam', `${hh} jam ${mm} menit`], ['Level & lantai diselesaikan', S.wins], ['Rekaman terputus (mati)', nDead],
-    ['Paling sering membunuhmu', dead.length ? `${ENTITY_INFO[dead[0][0]] ? ENTITY_INFO[dead[0][0]].name : dead[0][0]} (${dead[0][1]}×)` : '—'], ['Lolos dari kejaran', S.escapes], ['Lantai Tanpa Ujung dilewati', S.floors]]) {
+  for (const [a, b] of [['Lama merekam', `${hh} jam ${mm} menit`], ['Bab & lantai diselesaikan', S.wins], ['Rekaman terputus (mati)', nDead],
+    ['Paling sering membunuhmu', dead.length ? `${ENTITY_INFO[dead[0][0]] ? ENTITY_INFO[dead[0][0]].name : dead[0][0]} (${dead[0][1]}×)` : '—'], ['Lolos dari kejaran', S.escapes], ['Lantai Jurang dilewati', S.floors]]) {
     const d = document.createElement('div'); d.className = 'archive-item stat'; d.innerHTML = `<span>${a}</span><b>${b}</b>`; list.appendChild(d);
   }
   const hl = document.createElement('h3'); hl.textContent = `Lencana  ${save.badges.length}/${BADGES.length}`; list.appendChild(hl);
@@ -382,7 +389,7 @@ function buildArchive() {
     d.innerHTML = `<span class="bicon">${ok ? b.icon : '·'}</span><span><b>${b.name}</b><br><small>${b.desc}</small></span>`;
     list.appendChild(d);
   }
-  $('archive-count').textContent = `${have}/${total} ditemukan  ·  Rekor Mode Tanpa Ujung: ${save.bestFloor} lantai`;
+  $('archive-count').textContent = `${have}/${total} ditemukan  ·  Rekor mode Jurang: ${save.bestFloor} lantai`;
 }
 // test rooms: every level unlocked, pick the resident, optional invulnerability
 const roomOpts = { resident: 'default', god: false };
@@ -397,7 +404,7 @@ function buildRooms() {
     list.appendChild(b);
   });
   const sel = $('room-resident');
-  sel.innerHTML = [['default', 'Bawaan level'], ['none', 'Tanpa penghuni (jelajah bebas)'], ...RESIDENTS.map((k) => [k, ENTITY_INFO[k].name])]
+  sel.innerHTML = [['default', 'Bawaan bab'], ['none', 'Tanpa penghuni (jelajah bebas)'], ...RESIDENTS.map((k) => [k, ENTITY_INFO[k].name])]
     .map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   sel.value = roomOpts.resident;
   sel.onchange = () => { roomOpts.resident = sel.value; };
@@ -489,14 +496,14 @@ $('save-import').onclick = () => {
   } catch (_) { $('save-msg').textContent = 'Kode tidak valid. Progresmu tidak diubah.'; }
 };
 $('save-reset').onclick = () => {
-  if (!resetArmed) { resetArmed = true; $('save-reset').textContent = 'Yakin? Tekan sekali lagi'; $('save-msg').textContent = 'Semua level, arsip, lencana, dan rekor akan hilang. Pengaturan tetap.'; return; }
+  if (!resetArmed) { resetArmed = true; $('save-reset').textContent = 'Yakin? Tekan sekali lagi'; $('save-msg').textContent = 'Semua bab, arsip, lencana, dan rekor akan hilang. Pengaturan tetap.'; return; }
   const keep = save.settings;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...structuredClone(defaults), settings: keep })); } catch (_) { /* ignore */ }
   location.reload();
 };
 $('btn-share').onclick = async () => {
   const d = String(game.def.daily), t = save.daily[game.def.daily];
-  const text = `THE HELLROOM · Kaset Harian ${d.slice(6)}/${d.slice(4, 6)}/${d.slice(0, 4)}\n${game.def.name} — ${fmt(t)} (${DIFFICULTY[game.diffKey].label}, terlihat ${game.stats.spotted}×)`;
+  const text = `THE HELLROOM · Rekaman Harian ${d.slice(6)}/${d.slice(4, 6)}/${d.slice(0, 4)}\n${game.def.name} — ${fmt(t)} (${DIFFICULTY[game.diffKey].label}, terlihat ${game.stats.spotted}×)`;
   $('btn-share').textContent = (await copyText(text)) ? 'Tersalin ✓' : 'Gagal menyalin';
 };
 function buildBinds() {
@@ -541,6 +548,7 @@ document.addEventListener('click', (e) => {
   if (go === 'play') { startLevel(save.unlocked - 1); return; }
   if (go === 'endless') { const r = save.endlessRun; if (r && r.floor > 1) startEndless(r.floor, r.seed); else startEndless(1); return; }
   if (go === 'daily') { startDaily(); return; }
+  if (go === 'modes') buildTitle();
   if (go === 'archive') buildArchive();
   if (go === 'levels') buildLevels();
   if (go === 'rooms') buildRooms();

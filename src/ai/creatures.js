@@ -11,45 +11,45 @@ import { findPath, randomReachableCell } from './path.js';
 export const ENTITY_INFO = {
   pale: {
     lore: 'Dulu ia murid yang paling pendiam di kelas. Kini matanya sudah tidak ada, dan wajahnya terbelah dari dahi sampai dagu. Ia merangkak di lorong sambil mendengarkan dan menunggu langkah yang terlalu keras.',
-    name: 'Si Pucat',
-    death: 'Si Pucat menemukanmu. Ia tidak punya mata. Ia mendengar setiap langkahmu. Jongkok dan berjalanlah pelan, jangan berlari di dekatnya.',
-    hint: 'Si Pucat buta, tapi telinganya sangat tajam. Jongkok untuk lewat, dan lempar penghapus untuk mengalihkannya.',
+    name: 'Murid Pucat',
+    death: 'Murid Pucat menemukanmu. Ia tidak punya mata. Ia mendengar setiap langkahmu. Jongkok dan berjalanlah pelan, jangan berlari di dekatnya.',
+    hint: 'Murid Pucat buta, tapi telinganya sangat tajam. Jongkok untuk lewat, dan lempar penghapus untuk mengalihkannya.',
   },
   gaper: {
     lore: 'Spesimen nomor tiga dari lab biologi. Rahangnya terus melebar sejak toplesnya pecah. Ia membeku seperti patung selama ada yang menatapnya, tapi tidak pernah benar-benar diam.',
-    name: 'Si Penganga',
-    death: 'Kamu berpaling dari Si Penganga. Selama kamu menatapnya ia membeku, tapi dalam gelap tatapanmu tidak ada artinya.',
-    hint: 'Si Penganga hanya bergerak saat tidak kamu lihat. Jaga pandanganmu padanya, dan jangan biarkan ia masuk ke kegelapan.',
+    name: 'Spesimen Tiga',
+    death: 'Kamu berpaling dari Spesimen Tiga. Selama kamu menatapnya ia membeku, tapi dalam gelap tatapanmu tidak ada artinya.',
+    hint: 'Spesimen Tiga hanya bergerak saat tidak kamu lihat. Jaga pandanganmu padanya, dan jangan biarkan ia masuk ke kegelapan.',
   },
   shade: {
-    lore: 'Sesuatu yang tinggal di mal tanpa ujung, di bagian yang lampunya sudah padam. Tidak ada yang tahu berapa banyak mata yang dimilikinya. Cahaya menyakitinya, dan kegelapan adalah rumahnya.',
-    name: 'Bayang Kelas',
-    death: 'Bayang Kelas menelanmu dalam gelap. Ia tidak bisa masuk ke ruang yang terang, dan cahaya senter membuatnya mundur.',
-    hint: 'Bayang Kelas hanya hidup di kegelapan. Tetaplah di bawah lampu, dan sorotkan senter ke arahnya.',
+    lore: 'Sesuatu yang tinggal di Plaza Abadi, di bagian yang lampunya sudah padam. Tidak ada yang tahu berapa banyak mata yang dimilikinya. Cahaya menyakitinya, dan kegelapan adalah rumahnya.',
+    name: 'Bayang Padam',
+    death: 'Bayang Padam menelanmu dalam gelap. Ia tidak bisa masuk ke ruang yang terang, dan cahaya senter membuatnya mundur.',
+    hint: 'Bayang Padam hanya hidup di kegelapan. Tetaplah di bawah lampu, dan sorotkan senter ke arahnya.',
   },
   eyes: {
     lore: 'Akar-akarnya merambat di dinding ruang patung dan papan tulis sekolah. Setiap mata yang menangis hitam itu dulu milik seseorang. Ia tidak bisa berjalan, tapi selalu tahu harus pindah ke dinding yang mana.',
-    name: 'Mata Papan',
-    death: 'Mata Papan menatapmu terlalu lama dari dinding. Begitu kamu merasa diperhatikan, putuskan pandangannya: keluar dari jangkauan matanya atau sembunyi.',
+    name: 'Dinding Bermata',
+    death: 'Dinding Bermata menatapmu terlalu lama dari dinding. Begitu kamu merasa diperhatikan, putuskan pandangannya: keluar dari jangkauan matanya atau sembunyi.',
     hint: 'Ada mata yang tumbuh di dinding. Jangan berdiri dalam pandangannya. Suara keras membuatnya pindah ke dinding terdekat.',
   },
   centipede: {
     lore: 'Murid-murid yang tidak pernah pulang dari pelajaran renang. Mereka sekarang merayap bersama sebagai satu tubuh di kolam putih yang tak berujung, dan semua wajahnya masih menjerit.',
-    name: 'Kelabang',
-    death: 'Kelabang menangkapmu. Wajah-wajahnya melihat ke segala arah. Kamu tidak bisa menyelinap di belakangnya, jadi putuskan garis pandangnya dengan pintu dan dinding.',
-    hint: 'Kelabang melihat ke segala arah, tapi jarak pandangnya pendek. Gunakan dinding dan loker untuk memutus pandangannya.',
+    name: 'Kelabang Murid',
+    death: 'Kelabang Murid menangkapmu. Wajah-wajahnya melihat ke segala arah. Kamu tidak bisa menyelinap di belakangnya, jadi putuskan garis pandangnya dengan pintu dan dinding.',
+    hint: 'Kelabang Murid melihat ke segala arah, tapi jarak pandangnya pendek. Gunakan dinding dan loker untuk memutus pandangannya.',
   },
   spider: {
     lore: 'Tubuh laba-laba sebesar lemari, berjalan dengan empat kaki manusia yang lututnya menekuk ke atas. Di bawah perutnya tergantung seorang perempuan, terbalik, mulutnya selalu terbuka. Jeritannya terdengar sebelum langkahnya.',
-    name: 'Laba-Laba Kaki',
-    death: 'Laba-Laba Kaki menangkapmu. Ia sangat cepat begitu melihatmu. Jangan biarkan ia punya garis pandang: putus dengan dinding dan pintu, lalu sembunyi.',
-    hint: 'Laba-Laba Kaki lebih cepat darimu saat berlari. Begitu ia melihatmu, ia mengejar sampai pandangannya terputus. Belok, tutup pintu, sembunyi di loker.',
+    name: 'Induk Laba-Laba',
+    death: 'Induk Laba-Laba menangkapmu. Ia sangat cepat begitu melihatmu. Jangan biarkan ia punya garis pandang: putus dengan dinding dan pintu, lalu sembunyi.',
+    hint: 'Induk Laba-Laba lebih cepat darimu saat berlari. Begitu ia melihatmu, ia mengejar sampai pandangannya terputus. Belok, tutup pintu, sembunyi di loker.',
   },
   clock: {
     lore: 'Jam kakek tua dari ruang kepala sekolah yang suatu malam berdiri di atas dua kaki. Detaknya terdengar dari ujung lorong. Di dalam pintunya, di samping bandul, menggantung sebuah lidah.',
-    name: 'Jam Kakek',
-    death: 'Jam Kakek menangkapmu. Dengarkan detaknya: makin keras, makin dekat. Saat lonceng berdentang, ia sudah melihatmu.',
-    hint: 'Detak jam = Jam Kakek di dekatmu. Ia lambat berjalan tapi tidak pernah berhenti mengejar selama masih melihatmu.',
+    name: 'Jam Berlidah',
+    death: 'Jam Berlidah menangkapmu. Dengarkan detaknya: makin keras, makin dekat. Saat lonceng berdentang, ia sudah melihatmu.',
+    hint: 'Detak jam = Jam Berlidah di dekatmu. Ia lambat berjalan tapi tidak pernah berhenti mengejar selama masih melihatmu.',
   },
   weaver: {
     lore: 'Seorang perempuan tanpa kulit yang dililit tulang punggungnya sendiri. Di sepanjang tulang itu tumbuh mata-mata biru dan tangan-tangan kecil. Ia menyeret tumpukan tulang di bawah tubuhnya ke mana pun ia pergi.',
@@ -58,20 +58,20 @@ export const ENTITY_INFO = {
     hint: 'Penenun Tulang melihat ke segala arah dalam jarak dekat. Ia lambat. Jangan biarkan ia mendekat tanpa kamu sadari: dengarkan bunyi basahnya.',
   },
   echo: {
-    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.\n\nDi Ruang Patung ia tidak berjalan di lorong. Ia masuk ke dalam patung dan menunggu di arah yang kamu tuju, berpindah hanya saat kamu tidak melihat. Kalau kamu berdiri terlalu dekat, patungnya berderak selama dua detik lalu pecah. Ia berdiri diam sejenak sebelum mengejar. Kalau kehilangan jejakmu ia menunggu, berjalan pergi perlahan, lalu hilang ke patung lain.',
+    lore: 'Wajah-wajah yang retak dan saling tumpang tindih, semuanya menjerit tanpa suara. Lengan-lengannya panjang seperti tali daging dan berujung tangan manusia. Ia membeku setiap kali ditatap.\n\nDi Museum Bisu ia tidak berjalan di lorong. Ia masuk ke dalam patung dan menunggu di arah yang kamu tuju, berpindah hanya saat kamu tidak melihat. Kalau kamu berdiri terlalu dekat, patungnya berderak selama dua detik lalu pecah. Ia berdiri diam sejenak sebelum mengejar. Kalau kehilangan jejakmu ia menunggu, berjalan pergi perlahan, lalu hilang ke patung lain.',
     name: 'Gema Retak',
     death: 'Kamu berpaling dari Gema Retak. Selama kamu menatapnya ia membeku, tapi begitu kamu berkedip atau lampu padam, ia sudah di depanmu.',
     hint: 'Gema Retak hanya bergerak saat tidak kamu lihat. Mundurlah sambil terus menatapnya, dan nyalakan senter saat gelap.',
   },
   squid: {
     lore: 'Seorang perempuan berambut basah yang pinggangnya berubah menjadi tentakel gurita. Ia berbisik dari ujung lorong supaya kamu mendekat. Organ-organnya terlihat di balik kain yang robek.',
-    name: 'Perempuan Gurita',
-    death: 'Perempuan Gurita menangkapmu. Bisikannya memancingmu mendekat. Begitu ia melihatmu, larilah dan putuskan pandangannya.',
-    hint: 'Kalau terdengar bisikan, Perempuan Gurita ada di dekat sana. Pendengarannya tajam: jalan pelan dan jongkok.',
+    name: 'Sang Pembisik',
+    death: 'Sang Pembisik menangkapmu. Bisikannya memancingmu mendekat. Begitu ia melihatmu, larilah dan putuskan pandangannya.',
+    hint: 'Kalau terdengar bisikan, Sang Pembisik ada di dekat sana. Pendengarannya tajam: jalan pelan dan jongkok.',
   },
 };
 
-// ------------------------------------------------------------ Si Pucat ----
+// ------------------------------------------------------------ Murid Pucat ----
 // Blind. Feels you at arm's length, otherwise hunts purely by sound.
 class Pale extends Monitor {
   constructor(game, cell) {
@@ -101,7 +101,7 @@ class Pale extends Monitor {
   }
 }
 
-// ------------------------------------------------------------- Kelabang ----
+// ------------------------------------------------------------- Kelabang Murid ----
 class Centipede extends Monitor {
   constructor(game, cell) {
     super(game, cell, 'centipede', { walk: 1.15, run: 3.8, sight: [12, 360, 28, 360], stepEvery: 0.45, stepVol: [0.1, 0.2], radius: 0.6 });
@@ -110,7 +110,7 @@ class Centipede extends Monitor {
   chaseSound() { this.game.audio.chorus(this.pos); }
 }
 
-// -------------------------------------------------------- Laba-Laba Kaki ----
+// -------------------------------------------------------- Induk Laba-Laba ----
 // Fast and far-sighted; the hanging woman screams when it starts a chase.
 class Spider extends Monitor {
   constructor(game, cell) {
@@ -126,7 +126,7 @@ class Spider extends Monitor {
   }
 }
 
-// ------------------------------------------------------------ Jam Kakek ----
+// ------------------------------------------------------------ Jam Berlidah ----
 // Ticks all the time (faster when hunting), chimes when it sees you.
 class Clock extends Monitor {
   constructor(game, cell) {
@@ -157,7 +157,7 @@ class Weaver extends Monitor {
   }
 }
 
-// ----------------------------------------------------- Perempuan Gurita ----
+// ----------------------------------------------------- Sang Pembisik ----
 // Whispers to lure you closer; keen ears.
 class Squid extends Monitor {
   constructor(game, cell) {
@@ -390,13 +390,13 @@ class StatueEcho extends Monitor {
   remove() { if (this.emptied) this.emptied.show(true); if (this.host && !this.host.hidden) this.host.set(this.hostRot); super.remove(); }
 }
 
-// ----------------------------------------------------------- Si Penganga ----
+// ----------------------------------------------------------- Spesimen Tiga ----
 class Gaper extends Substitute {
   constructor(game, cell) { super(game, cell, 'gaper'); this.speed = 4.6; this.radius = 0.35; }
   moveSound() { this.game.audio.bones(this.pos); }
 }
 
-// ---------------------------------------------------------- Bayang Kelas ----
+// ---------------------------------------------------------- Bayang Padam ----
 // Lives only in dark cells. Light pushes it back; a blackout sets it free.
 class Shade extends Entity {
   constructor(game, cell) {
@@ -539,7 +539,7 @@ class Shade extends Entity {
   }
 }
 
-// ------------------------------------------------------------ Mata Papan ----
+// ------------------------------------------------------------ Dinding Bermata ----
 // Grows out of chalkboards and walls. Standing in its sight fills a gaze
 // meter; loud noises make it jump to the board nearest the sound.
 class Eyes extends Entity {

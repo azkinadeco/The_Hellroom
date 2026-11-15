@@ -33,14 +33,14 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 | Level | Nama | Penghuni |
 |---|---|---|
-| LEVEL 0 | Sekolah Malam (dua lantai) | Si Pucat |
-| LEVEL 1 | Sayap Detensi (panoptikon tiga lantai) | Laba-Laba Kaki |
-| LEVEL 2 | Rumah Sakit (tiga lantai + hutan dalam ruangan) | Si Penganga |
-| LEVEL 3 | Mal Tanpa Ujung (tiga lantai mengelilingi atrium) | Bayang Kelas |
-| LEVEL 4 | Kolam Renang (lima lantai, perosotan air) | Kelabang |
-| LEVEL 5 | Ruang Patung (museum tiga lantai, final) | Gema Retak (bersembunyi di dalam patung; patung berderak 2 detik sebelum pecah) |
+| BAB I | Sekolah Senyap (dua lantai) | Murid Pucat |
+| BAB II | Blok Isolasi (panoptikon tiga lantai) | Induk Laba-Laba |
+| BAB III | Bangsal Hening (tiga lantai + hutan dalam ruangan) | Spesimen Tiga |
+| BAB IV | Plaza Abadi (tiga lantai mengelilingi atrium) | Bayang Padam |
+| BAB V | Kolam Pualam (lima lantai, perosotan air) | Kelabang Murid |
+| BAB VI | Museum Bisu (museum tiga lantai, final) | Gema Retak (bersembunyi di dalam patung; patung berderak 2 detik sebelum pecah) |
 
-Jam Kakek, Penenun Tulang, Mata Papan, dan Perempuan Gurita menghuni Mode Tanpa Ujung dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
+Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
 ## Fitur batch 36–45
 
@@ -48,10 +48,10 @@ Jam Kakek, Penenun Tulang, Mata Papan, dan Perempuan Gurita menghuni Mode Tanpa 
 - **Pengumuman per gedung** (detensi, rumah sakit, mal, kolam, museum, backroom) dan **tips** di kartu level.
 - **Jejak kematian**: saat mengulang level, baterai kamera lamamu tertinggal di tempat kamu mati. Arsip punya bagian **Statistik**.
 - **Putaran Kedua** (setelah ending): gedung yang sama dihuni penghuni lain (`NG_CAST`), lebih gelap; rekor dan peringkat terpisah.
-- **Akhir yang sebenarnya**: tamatkan LEVEL 5 dengan keenam kaset rahasia dan bukti enam penghuni.
+- **Akhir yang sebenarnya**: tamatkan BAB VI dengan keenam kaset rahasia dan bukti enam penghuni.
 - **Atur ulang tombol keyboard** (16 aksi) dan **menu tanpa mouse** (panah/d-pad, Enter/A, B kembali).
 - **Pecahan kaca** (`src/level/glass.js`): berbunyi keras kalau diinjak; jongkok atau memutar.
-- **Data progres**: salin/tempel kode progres, hapus progres, penghitung FPS, salin hasil Kaset Harian.
+- **Data progres**: salin/tempel kode progres, hapus progres, penghitung FPS, salin hasil Rekaman Harian.
 - **Kesulitan Mimpi Buruk**: tanpa denah, titik simpan, dan bantuan.
 
 ## Fitur batch 26–35
@@ -61,35 +61,35 @@ Jam Kakek, Penenun Tulang, Mata Papan, dan Perempuan Gurita menghuni Mode Tanpa 
 - **Rekam bukti**: tahan zoom (Z) ke arah penghuni selama 6 detik untuk membuka *rekaman lapangan* penghuni itu di Arsip.
 - **Ritme patroli**: setelah kamu lolos dari kejaran, penghuni menjauh sebentar; setelah lama sepi, patroli berikutnya berakhir di dekatmu. Lamanya mengikuti tingkat kesulitan.
 - **Peringkat & lencana**: tiap level story dinilai S/A/B/C (waktu terhadap par, berapa kali terlihat, catatan, kaset, bukti). Ada 17 lencana di menu Arsip.
-- **Mode Tanpa Ujung**: mulai lantai -2 setiap lantai punya *kutukan* (listrik sekarat, kabut tebal, lantai bergema, baterai bocor, penghuni gelisah, pemadaman bergilir, lantai angker). Run yang ditinggalkan bisa dilanjutkan dari lantai terakhir. **Kaset Harian** adalah satu bangunan tetap per hari dengan catatan waktu terbaik.
+- **Mode Jurang**: mulai lantai -2 setiap lantai punya *kutukan* (listrik sekarat, kabut tebal, lantai bergema, baterai bocor, penghuni gelisah, pemadaman bergilir, lantai angker). Run yang ditinggalkan bisa dilanjutkan dari lantai terakhir. **Rekaman Harian** adalah satu bangunan tetap per hari dengan catatan waktu terbaik.
 - **Gamepad & kenyamanan**: gamepad standar didukung; getaran di HP/gamepad. Pengaturan baru: sudut pandang 60–95°, teks besar, goyangan langkah, kurangi kedip lampu, getaran.
 - **Jam weker (Q / WEKER)**: item baru. Letakkan, lima detik kemudian ia berdering sembilan detik dan memanggil penghuni ke sana.
-- **Titik simpan**: memasang sekring di kotak panel menyimpan rekaman (bukan di Sulit / Tanpa Ujung). Setelah mati kamu bisa *Lanjut dari Panel*; tiap lanjut mengurangi nilai peringkat.
+- **Titik simpan**: memasang sekring di kotak panel menyimpan rekaman (bukan di Mencekam / Jurang). Setelah mati kamu bisa *Lanjut dari Panel*; tiap lanjut mengurangi nilai peringkat.
 - **PWA**: `manifest.webmanifest` + `sw.js` (network-first) membuat game bisa dipasang dan dimainkan offline bila disajikan lewat HTTPS atau localhost.
 
 Level 3–5 sengaja dibuat **bersih tanpa perabot**: hanya ruangan kosong, loker untuk bersembunyi, dan suasana yang janggal (musik mal yang samar, tetesan air kolam, dengung lampu backroom). Di kolam, berjalan di dalam air memperlambat langkahmu dan membuat setiap langkah terdengar jauh.
 
 **Tampilan layar**: di Pengaturan ada pilihan **Jernih HD** yang menghilangkan semua efek kaset rusak (garis, getaran, noise, kedip, dan guncangan saat mati) untuk pemain yang pusing melihatnya.
 
-**Anomali**: di Mal Tanpa Ujung, beberapa lorong benar-benar berulang. Kamu diam-diam dikirim mundur satu blok, dua atau tiga kali, sebelum lorongnya membiarkanmu lewat (tokonya dibuat identik supaya tidak terlihat). Di Ruang Patung, patung yang tidak sedang kamu lihat pelan-pelan menoleh ke arahmu.
+**Anomali**: di Plaza Abadi, beberapa lorong benar-benar berulang. Kamu diam-diam dikirim mundur satu blok, dua atau tiga kali, sebelum lorongnya membiarkanmu lewat (tokonya dibuat identik supaya tidak terlihat). Di Museum Bisu, patung yang tidak sedang kamu lihat pelan-pelan menoleh ke arahmu.
 
-**Pilih Level**: selama `DEV_ROOMS = true`, semua level terbuka dan bisa dimainkan tanpa menamatkan level sebelumnya.
+**Pilih Bab**: selama `DEV_ROOMS = true`, semua level terbuka dan bisa dimainkan tanpa menamatkan level sebelumnya.
 
 **Langkah kaki**: karpet backroom meredam langkahmu (lebih senyap), keramik mal dan kolam memantulkannya (lebih berisik), dan air kolam selalu berisik.
 
-**Kartu level & ending**: setiap kartu level menampilkan potret penghuninya (dirender di Blender, `blender/portraits.py`) setelah kamu pernah melihatnya. Menamatkan LEVEL 5 memutar ending dan kredit, lalu judul menampilkan ★ ENDING TERBUKA.
+**Kartu level & ending**: setiap kartu level menampilkan potret penghuninya (dirender di Blender, `blender/portraits.py`) setelah kamu pernah melihatnya. Menamatkan BAB VI memutar ending dan kredit, lalu judul menampilkan ★ ENDING TERBUKA.
 
 **Loker**: di dalam loker kamu aman dari serangan langsung. Penghuni hanya bisa menarikmu keluar kalau ia melihatmu masuk, atau kalau ia mendengar napasmu cukup lama saat memeriksa loker (tahan napas!).
 
-**Pilih Room (uji)**: menu khusus pengembangan untuk langsung masuk ke level mana pun. Penghuni bisa diganti (atau dikosongkan untuk jelajah bebas), ada **mode kebal**, dan ada **Galeri Penghuni** untuk memutar model 3D beserta animasinya. Untuk rilis, set `DEV_ROOMS = false` di `src/config.js`, dan menu ini akan hilang.
+**Ruang Uji**: menu khusus pengembangan untuk langsung masuk ke level mana pun. Penghuni bisa diganti (atau dikosongkan untuk jelajah bebas), ada **mode kebal**, dan ada **Galeri Penghuni** untuk memutar model 3D beserta animasinya. Untuk rilis, set `DEV_ROOMS = false` di `src/config.js`, dan menu ini akan hilang.
 
-**Mode Tanpa Ujung**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar dan gelap; tiap lantai dihuni satu penghuni acak. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
+**Mode Jurang**: lantai demi lantai dibuat acak (LANTAI -1, -2, …), makin dalam makin besar dan gelap; tiap lantai dihuni satu penghuni acak. Mati berarti mulai lagi dari -1, dan rekor lantai terdalam tersimpan.
 
 **Arsip Penghuni**: setiap penghuni yang pernah kamu lihat langsung tercatat di menu **Arsip**, lengkap dengan model 3D yang bisa diputar, animasinya, kisahnya, dan cara bertahan darinya.
 
 **Lab Biologi**: level 2 kini dipenuhi ruang lab berisi meja praktikum, rak toples spesimen, dan rangka anatomi (aset Blender baru di `blender/props3.py`).
 
-**Meteran tatapan**: saat Mata Papan (Mode Tanpa Ujung / Putaran Kedua) menatapmu, muncul meteran 👁 DITATAP dan layar memerah. Kalau meterannya penuh, kamu mati.
+**Meteran tatapan**: saat Dinding Bermata (mode Jurang / Putaran Kedua) menatapmu, muncul meteran 👁 DITATAP dan layar memerah. Kalau meterannya penuh, kamu mati.
 
 **Kaset rahasia & Arsip**: tiap level story menyimpan satu kaset VHS di salah satu ruangan terjauh. Kaset dan catatan yang sudah ditemukan bisa dibaca ulang di menu **Arsip**.
 

@@ -9,7 +9,7 @@ export const NOTES = {
   1: [
     { title: 'Daftar Hadir — Kelas Tambahan', body: 'Hadir: 31 siswa.\nPulang: 0.\n\nCatatan wali kelas: "Lorongnya bertambah panjang setiap kali bel berbunyi. Ada yang merangkak di sana. Kulitnya pucat dan wajahnya cuma satu sobekan penuh gigi."' },
     { title: 'Coretan di Meja', body: 'Pintu darurat di ujung gedung butuh listrik. Ada tiga SEKRING yang hilang dari kotak panel.\n\nSalah satunya di ruang yang dikunci. Kuncinya disembunyikan Pak Penjaga di salah satu kelas.' },
-    { title: 'Surat Teguran', body: 'Kepada siswa yang berkeliaran di lorong:\n\nSi Pucat tidak punya mata. Ia mendengar.\nJONGKOK. Berjalan pelan. Jangan berlari.\nKalau ia sudah dekat, lempar sesuatu ke arah lain.\n\n— Tata Tertib, Pasal 0' },
+    { title: 'Surat Teguran', body: 'Kepada siswa yang berkeliaran di lorong:\n\nMurid Pucat tidak punya mata. Ia mendengar.\nJONGKOK. Berjalan pelan. Jangan berlari.\nKalau ia sudah dekat, lempar sesuatu ke arah lain.\n\n— Tata Tertib, Pasal 0' },
   ],
   2: [
     { title: 'Laporan Penjaga Sel', body: 'Ada sesuatu yang bersarang di langit-langit sayap detensi.\n\nKakinya kaki manusia. Empat. Lututnya menekuk ke atas seperti laba-laba.\nDi bawah perutnya tergantung seorang perempuan, terbalik. Kalau kamu dengar ia menjerit, lari. Jangan menoleh.' },

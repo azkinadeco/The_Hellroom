@@ -81,6 +81,13 @@ export class HUD {
     this.louvers.classList.toggle('show', ov === 'louvers');
     this.louvers.classList.toggle('peek', ov === 'peek');
     document.body.classList.toggle('hiding', !!p.hidden);
+    if (g.input.touch) {
+      const tb = this._tb || (this._tb = Object.fromEntries([...document.querySelectorAll('.tbtn')].map((b) => [b.dataset.action, b])));
+      if (tb.flashlight) tb.flashlight.classList.toggle('on', !!p.flashlight && !p.nightVision);
+      if (tb.nightvision) tb.nightvision.classList.toggle('on', !!p.nightVision);
+      if (tb.crouch) tb.crouch.classList.toggle('on', !!p.crouched);
+      if (tb.map) tb.map.classList.toggle('on', !!(g.automap && g.automap.open));
+    }
 
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) this.toastEl.classList.remove('show'); }
     if (this.capT > 0) { this.capT -= dt; if (this.capT <= 0) this.captionEl.classList.remove('show'); }

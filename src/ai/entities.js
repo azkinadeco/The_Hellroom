@@ -166,7 +166,7 @@ export class Entity {
 
 // ---------------------------------------------------------------------------
 // Configurable hunter: patrols, sees & hears, chases, checks hiding spots.
-// Several residents (Petugas, Guru Bertopeng, Si Pucat, Kelabang) are tuned versions.
+// Several residents (Petugas, Guru Bertopeng, Murid Pucat, Kelabang Murid) are tuned versions.
 export class Monitor extends Entity {
   constructor(game, cell, kind = 'monitor', o = {}) {
     super(game, kind, cell);

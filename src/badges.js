@@ -6,27 +6,27 @@ import { FILM_NEED } from './story.js';
 const filmed = (save) => RESIDENTS.filter((k) => (save.film[k] || 0) >= FILM_NEED).length;
 
 export const BADGES = [
-  { id: 'lulus', icon: '🎓', name: 'Lulus Kelas Tambahan', desc: 'Selesaikan LEVEL 0.', test: (c) => c.win && c.story && c.g.def.id === 1 },
-  { id: 'ending', icon: '🚪', name: 'Rekaman Terakhir', desc: 'Selesaikan LEVEL 5 dan lihat ending.', test: (c) => c.win && c.story && c.g.def.id === LEVELS.length },
+  { id: 'lulus', icon: '🎓', name: 'Lulus Kelas Tambahan', desc: 'Selesaikan BAB I.', test: (c) => c.win && c.story && c.g.def.id === 1 },
+  { id: 'ending', icon: '🚪', name: 'Rekaman Terakhir', desc: 'Selesaikan BAB VI dan lihat ending.', test: (c) => c.win && c.story && c.g.def.id === LEVELS.length },
   { id: 'pulang', icon: '🌅', name: 'Pulang', desc: 'Temukan akhir yang sebenarnya.', test: (c) => !!c.save.trueEnding },
-  { id: 'hantu', icon: '👻', name: 'Tidak Pernah Ada', desc: 'Selesaikan satu level tanpa pernah terlihat penghuni.', test: (c) => c.win && c.story && c.g.stats.spotted === 0 },
-  { id: 'kilat', icon: '⏱', name: 'Bel Pulang', desc: 'Selesaikan satu level di bawah waktu par.', test: (c) => c.win && c.story && c.g.time < parOf(c.g.def) },
-  { id: 'hemat', icon: '🔋', name: 'Hemat Baterai', desc: 'Selesaikan satu level dengan baterai kamera 60% atau lebih.', test: (c) => c.win && c.story && c.g.player.battery >= 60 },
+  { id: 'hantu', icon: '👻', name: 'Tidak Pernah Ada', desc: 'Selesaikan satu bab tanpa pernah terlihat penghuni.', test: (c) => c.win && c.story && c.g.stats.spotted === 0 },
+  { id: 'kilat', icon: '⏱', name: 'Bel Pulang', desc: 'Selesaikan satu bab di bawah waktu par.', test: (c) => c.win && c.story && c.g.time < parOf(c.g.def) },
+  { id: 'hemat', icon: '🔋', name: 'Hemat Baterai', desc: 'Selesaikan satu bab dengan baterai kamera 60% atau lebih.', test: (c) => c.win && c.story && c.g.player.battery >= 60 },
   { id: 'pustaka', icon: '📄', name: 'Murid Teladan', desc: 'Baca semua catatan di satu level sebelum keluar.', test: (c) => c.win && c.story && c.g.stats.notes >= c.g.def.notes },
   { id: 'lolos', icon: '🏃', name: 'Tiga Kali Lolos', desc: 'Lolos dari tiga kejaran dalam satu level, lalu keluar hidup-hidup.', test: (c) => c.win && (c.g.stats.escapes || 0) >= 3 },
   { id: 'napas', icon: '🫁', name: 'Tahan Napas', desc: 'Selamat saat penghuni memeriksa tempat persembunyianmu.', test: (c) => (c.g.stats.inspected || 0) > 0 },
   { id: 'umpan', icon: '🧽', name: 'Pengalih Perhatian', desc: 'Pancing penghuni dengan lemparan.', test: (c) => (c.g.stats.lures || 0) > 0 },
   { id: 'patung', icon: '🗿', name: 'Bukan Patung', desc: 'Lolos dari Gema Retak setelah ia keluar dari patung, lalu selesaikan levelnya.', test: (c) => c.win && (c.g.stats.emerged || 0) > 0 },
   { id: 'saksi', icon: '🕴', name: 'Ada yang Berdiri di Sana', desc: 'Tatap sosok di ujung lorong sampai ia menghilang.', test: (c) => (c.g.stats.ghosts || 0) > 0 },
-  { id: 'sulit', icon: '💀', name: 'Jam Pelajaran Tambahan', desc: 'Selesaikan satu level pada kesulitan Sulit.', test: (c) => c.win && c.story && c.g.diffKey === 'sulit' },
-  { id: 'ng', icon: '🔁', name: 'Putaran Kedua', desc: 'Selesaikan satu level di Putaran Kedua.', test: (c) => c.win && c.story && !!c.g.def.ng },
-  { id: 'mimpi', icon: '🌑', name: 'Terjaga', desc: 'Selesaikan satu level pada kesulitan Mimpi Buruk.', test: (c) => c.win && c.story && c.g.diffKey === 'mimpi' },
+  { id: 'sulit', icon: '💀', name: 'Tak Tergoyahkan', desc: 'Selesaikan satu bab pada kesulitan Mencekam.', test: (c) => c.win && c.story && c.g.diffKey === 'sulit' },
+  { id: 'ng', icon: '🔁', name: 'Putaran Kedua', desc: 'Selesaikan satu bab di Putaran Kedua.', test: (c) => c.win && c.story && !!c.g.def.ng },
+  { id: 'mimpi', icon: '🌑', name: 'Terjaga', desc: 'Selesaikan satu bab pada kesulitan Mimpi Buruk.', test: (c) => c.win && c.story && c.g.diffKey === 'mimpi' },
   { id: 'peringkatS', icon: '🅢', name: 'Nilai Sempurna', desc: 'Raih peringkat S di satu level.', test: (c) => c.win && c.story && c.rank === 'S' },
   { id: 'kaset', icon: '📼', name: 'Kolektor Kaset', desc: 'Temukan keenam kaset rahasia.', test: (c) => c.save.tapes.length >= LEVELS.length },
   { id: 'film5', icon: '🎥', name: 'Juru Kamera', desc: 'Rekam bukti lima penghuni.', test: (c) => filmed(c.save) >= 5 },
   { id: 'film10', icon: '🎬', name: 'Dokumenter Lengkap', desc: 'Rekam bukti semua penghuni.', test: (c) => filmed(c.save) >= RESIDENTS.length },
-  { id: 'dalam5', icon: '⬇', name: 'Lima Lantai ke Bawah', desc: 'Lewati lantai -5 di Mode Tanpa Ujung.', test: (c) => c.save.bestFloor >= 5 },
-  { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di Mode Tanpa Ujung.', test: (c) => c.save.bestFloor >= 10 },
+  { id: 'dalam5', icon: '⬇', name: 'Lima Lantai ke Bawah', desc: 'Lewati lantai -5 di mode Jurang.', test: (c) => c.save.bestFloor >= 5 },
+  { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 
 // par time in seconds: bigger buildings and more fuses take longer

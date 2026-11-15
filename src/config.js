@@ -67,14 +67,14 @@ export const hideOf = (L) => HIDE[(L && L.kind) || 'locker'] || HIDE.locker;
 export const DIFFICULTY = {
   // quiet: seconds without any threat before a patrol drifts towards you
   // grace: seconds after an escape during which patrols drift away from you
-  mudah:  { label: 'Mudah',  speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150, desc: 'Penghuni lebih lambat dan kurang awas, baterai lebih banyak, bantuan arah datang lebih cepat.' },
-  normal: { label: 'Normal', speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24, desc: 'Seperti yang dimaksudkan. Kotak panel menyimpan rekamanmu.' },
-  sulit:  { label: 'Sulit',  speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420, noCheckpoint: true, desc: 'Penghuni lebih cepat dan lebih awas, baterai sedikit, tanpa titik simpan.' },
+  mudah:  { label: 'Cerita', speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150, desc: 'Penghuni lebih lambat dan kurang awas, baterai lebih banyak, bantuan arah datang lebih cepat.' },
+  normal: { label: 'Standar', speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24, desc: 'Seperti yang dimaksudkan. Kotak panel menyimpan rekamanmu.' },
+  sulit:  { label: 'Mencekam', speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420, noCheckpoint: true, desc: 'Penghuni lebih cepat dan lebih awas, baterai sedikit, tanpa titik simpan.' },
   mimpi:  { label: 'Mimpi Buruk', speed: 1.18, sight: 1.35, hearing: 1.45, batteries: 0.5, quiet: 25, grace: 8, noCheckpoint: true, noMap: true, noAssist: true, desc: 'Tanpa denah, tanpa titik simpan, tanpa bantuan. Penghuni hampir tidak pernah jauh darimu.' },
 };
 
-// Test rooms in the main menu (Pilih Room): every map playable, resident
-// override and invulnerability. Pilih Level itself stays unlocked in order. Set to false for the public release.
+// Test rooms in the main menu (Ruang Uji): every map playable, resident
+// override and invulnerability. Pilih Bab itself stays unlocked in order. Set to false for the public release.
 export const DEV_ROOMS = true;
 export const VERSION = '0.49';
 
@@ -82,7 +82,7 @@ export const VERSION = '0.49';
 // generated from the seed so every run of a level is identical.
 export const LEVELS = [
   {
-    id: 1, code: 'LEVEL 0', name: 'Sekolah Malam',
+    id: 1, code: 'BAB I', name: 'Sekolah Senyap',
     subtitle: 'Dua lantai, satu lapangan, dan tidak ada yang pulang.',
     tint: [1.02, 0.95, 0.8], fogColor: 0x080806, grade: [1.03, 1.0, 0.94], seed: 1996, layout: 'school', arch: 'school', size: [26, 22], floors: 2, rail: 'parapet',
     lightsOff: 0.14, flicker: 0.12, fog: 0.05,
@@ -90,7 +90,7 @@ export const LEVELS = [
     entities: [{ type: 'pale' }], hallTheme: 'hall',
   },
   {
-    id: 2, code: 'LEVEL 1', name: 'Sayap Detensi',
+    id: 2, code: 'BAB II', name: 'Blok Isolasi',
     subtitle: 'Tiga lantai sel mengelilingi satu menara. Jeritannya terdengar sebelum langkahnya.',
     tint: [0.82, 0.92, 1.04], fogColor: 0x05070a, grade: [0.94, 0.99, 1.06], seed: 451, layout: 'detention', arch: 'detention', size: [28, 24], floors: 3, rail: 'bars', seeAll: true,
     textures: ['floor_tile', 'floor_tile', 'ceiling_tile', 'cell_wall', 'cell_wall'],
@@ -99,7 +99,7 @@ export const LEVELS = [
     entities: [{ type: 'spider' }], hallTheme: 'hall',
   },
   {
-    id: 3, code: 'LEVEL 2', name: 'Rumah Sakit',
+    id: 3, code: 'BAB III', name: 'Bangsal Hening',
     subtitle: 'Jangan berkedip. Di lantai bawah ada hutan.',
     tint: [0.92, 1.0, 0.93], fogColor: 0x050806, grade: [0.97, 1.02, 0.98], seed: 7031, layout: 'hospital', arch: 'hospital', size: [28, 20], floors: 3, rail: 'bars', seeAll: true,
     textures: ['hosp_floor', 'hosp_floor', 'ceiling_tile', 'hosp_wall', 'hosp_wall'],
@@ -108,7 +108,7 @@ export const LEVELS = [
     entities: [{ type: 'gaper' }], hallTheme: 'hall',
   },
   {
-    id: 4, code: 'LEVEL 3', name: 'Mal Tanpa Ujung',
+    id: 4, code: 'BAB IV', name: 'Plaza Abadi',
     subtitle: 'Satu bulevar panjang, tiga lantai, dan manekin yang selalu menghadap ke arahmu. Mal sudah tutup sejak tadi.',
     tint: [1.02, 0.97, 0.9], fogColor: 0x0a0807, grade: [1.03, 0.99, 0.96], seed: 2207, layout: 'mall', arch: 'mall', dress: 'pakuwon', size: [36, 18], floors: 3, theme: 'mall', clean: true, rail: 'glass', seeAll: true,
     lightsOff: 0.5, flicker: 0.25, fog: 0.05, lockerReach: 7, chunk: 108,
@@ -116,7 +116,7 @@ export const LEVELS = [
     entities: [{ type: 'shade' }], hallTheme: 'hall',
   },
   {
-    id: 5, code: 'LEVEL 4', name: 'Kolam Renang',
+    id: 5, code: 'BAB V', name: 'Kolam Pualam',
     subtitle: 'Lima lantai keramik putih di sekeliling kolam yang sudah dikuras. Airnya masih ada. Hanya saja di tempat yang salah.',
     tint: [0.92, 1.0, 1.04], fogColor: 0x0c1416, grade: [0.96, 1.02, 1.05], seed: 3112, layout: 'poolrooms', arch: 'pool', size: [28, 26], floors: 5, theme: 'pool', clean: true, rail: 'parapet', railColor: 0xe9eef0, railCap: 0x5aa6b8, seeAll: true, seeNear: 1, sparseFixtures: true,
     lightsOff: 0.04, flicker: 0.04, fog: 0.028,
@@ -124,7 +124,7 @@ export const LEVELS = [
     entities: [{ type: 'centipede' }], hallTheme: 'hall',
   },
   {
-    id: 6, code: 'LEVEL 5', name: 'Ruang Patung',
+    id: 6, code: 'BAB VI', name: 'Museum Bisu',
     subtitle: 'Museum tiga lantai. Salah satu patung di dekatmu bukan patung.',
     tint: [1.06, 0.94, 0.78], fogColor: 0x0a0705, grade: [1.05, 0.99, 0.92], seed: 1313, layout: 'museum', arch: 'museum', size: [30, 26], floors: 3, rail: 'parapet', railColor: 0xd9d4c8, railCap: 0x6b5a3e, seeAll: true,
     textures: ['marble', 'marble', 'ceiling_tile', 'gallery_wall', 'gallery_wall'],

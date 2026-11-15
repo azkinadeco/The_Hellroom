@@ -74,14 +74,14 @@ export class Input {
     const knob = document.getElementById('stick-knob');
     let stickId = null, sx = 0, sy = 0;
     let lookId = null, lx = 0, ly = 0;
-    const R = 55;
+    const R = 46;
     const onStart = (e) => {
       if (!this.enabled) return;
       for (const t of e.changedTouches) {
         if (t.target.closest('.tbtn')) continue;
         if (t.clientX < innerWidth * 0.4 && stickId === null) {
           stickId = t.identifier; sx = t.clientX; sy = t.clientY;
-          stick.style.left = (sx - 70) + 'px'; stick.style.top = (sy - 70) + 'px';
+          { const h = stick.offsetWidth / 2 || 62; stick.style.left = (sx - h) + 'px'; stick.style.top = (sy - h) + 'px'; stick.style.bottom = 'auto'; }
           stick.classList.add('active');
         } else if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; }
       }

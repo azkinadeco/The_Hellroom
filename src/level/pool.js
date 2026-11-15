@@ -1,4 +1,4 @@
-// LEVEL 4 — Kolam Renang ("poolrooms"). Five storeys of white tile that keep
+// BAB V — Kolam Pualam ("poolrooms"). Five storeys of white tile that keep
 // folding back into water. Registers LAYOUTS.poolrooms (overriding the old
 // plan in layouts.js), its room furnishing and the level dressing.
 //
