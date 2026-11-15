@@ -89,7 +89,16 @@ export class Entity {
         const door = this.game.map.doorAt(mx, mz, d);
         if (door && door.openAmount < 0.7) {
           if (door.locked) { this.path = null; return true; }
-          if (door.wedged) { this.velocity = 0; this.faceToward(door.x, door.z, dt); if (!this.game.batterDoor(door, this, dt)) return false; }
+          if (door.wedged) {
+            // first look for a way round: if it is not much longer than going through, take it instead of battering
+            if (this.wedgeChecked !== door) {
+              this.wedgeChecked = door;
+              const goal = this.path[this.path.length - 1], left = this.path.length - this.pathIdx;
+              door.locked = true; const alt = findPath(this.game.map, mx, mz, goal[0], goal[1]); door.locked = false;
+              if (alt && alt.length <= left + 6) { this.path = alt; this.pathIdx = 0; this.game.stats.wedgeDetours = (this.game.stats.wedgeDetours || 0) + 1; return false; }
+            }
+            this.velocity = 0; this.faceToward(door.x, door.z, dt); if (!this.game.batterDoor(door, this, dt)) return false;
+          }
           this.game.doorSys.open(door, this, this.pos);
           this.faceToward(door.x, door.z, dt);
           if (door.openAmount < 0.6) { this.velocity = 0; return false; }

@@ -663,6 +663,15 @@ export class Game {
     d.wedged = false; d.bang = 0; this.removeWedge(d); this.stats.battered = (this.stats.battered || 0) + 1;
     this.audio.crack({ x: d.x, y: 0.4, z: d.z });
     this.doorSys.open(d, e, e.pos);
+    // a door jammed shut from inside means someone is in there: it goes through every hiding spot in the room
+    if (d.room && e.state !== 'chase' && e.lockers !== false && e.searchPts !== undefined) {
+      const R = d.room, spots = (this.built.lockers || []).filter((L) => { const [cx, cz] = this.map.cellOf(L.x, L.z); return this.map.reg(cx, cz) === R.id; }).slice(0, 4);
+      if (spots.length) {
+        e.searchPts = spots.map((L) => ({ L })); e.peek = null; e.peekNext = null; e.path = null; e.finalPoint = null; e.setState('search');
+        e.awareness = Math.max(e.awareness || 0, 0.6); this.stats.roomRaids = (this.stats.roomRaids || 0) + 1;
+        this.hint('raid', 'Pintu yang diganjal dari dalam memberi tahu penghuni ada sesuatu di ruangan itu: ia akan memeriksa semua tempat sembunyinya.', 6);
+      }
+    }
     return true;
   }
 
