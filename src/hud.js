@@ -48,6 +48,20 @@ export class HUD {
     for (const q of this.pings) if (q.t <= 0 && q.el) q.el.remove();
     this.pings = this.pings.filter((q) => q.t > 0);
   }
+  drawBrains(g) {
+    const layer = $('brain-layer'), list = this._brains || (this._brains = []), V = this._bv || (this._bv = new g.camera.position.constructor());
+    while (list.length < g.entities.length) { const el = document.createElement('div'); el.className = 'brain'; layer.appendChild(el); list.push(el); }
+    while (list.length > g.entities.length) list.pop().remove();
+    g.entities.forEach((e, i) => {
+      const el = list[i]; V.set(e.pos.x, 2.3, e.pos.z).project(g.camera);
+      if (V.z > 1 || Math.abs(V.x) > 1.2 || Math.abs(V.y) > 1.2) { el.style.display = 'none'; return; }
+      el.style.display = 'block'; el.style.left = ((V.x + 1) / 2 * 100) + '%'; el.style.top = ((1 - V.y) / 2 * 100) + '%';
+      const aw = Math.min(1, e.awareness || 0), hunt = g.chasers.has(e);
+      const extra = [e.form && e.form !== 'free' ? e.form : '', e.listenT > 0 ? 'mendengar' : '', e.cautious ? 'hati-hati' : '', e.intercept ? 'menghadang' : '', e.stunT > 0 ? 'silau' : '', e.culled ? 'tak digambar' : ''].filter(Boolean).join(' · ');
+      el.className = 'brain' + (hunt ? ' hunt' : '');
+      el.innerHTML = `${e.kind} <b>${e.state || '-'}</b>${extra ? '\n' + extra : ''}\nwaspada ${aw.toFixed(2)} · ${Math.round(e.distTo(g.player.pos))} m<i style="width:${Math.round(aw * 100)}%"></i>`;
+    });
+  }
   showObjectives(text, dur = 4) { this.objectives.textContent = text; this.objectives.classList.add('show'); this.objT = dur; }
   _set(el, key, val, prop = 'textContent') { if (this._last[key] !== val) { this._last[key] = val; el[prop] = val; } }
 
@@ -125,6 +139,8 @@ export class HUD {
     }
 
     this.updateRing(dt);
+    // test rooms: a label over each resident with what it is thinking
+    if (g.brainView) this.drawBrains(g); else if (this._brains) { this._brains.forEach((el) => el.remove()); this._brains = null; }
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) this.toastEl.classList.remove('show'); }
     if (this.capT > 0) { this.capT -= dt; if (this.capT <= 0) this.captionEl.classList.remove('show'); }
     if (this.objT > 0) { this._set(this.objectives, 'objtxt', g.objectiveText()); this.objT -= dt; if (this.objT <= 0) this.objectives.classList.remove('show'); }

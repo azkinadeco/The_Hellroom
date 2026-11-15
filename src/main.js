@@ -36,6 +36,7 @@ function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save));
 
 // ---------------------------------------------------------------- screens
 let current = 'splash', returnTo = 'title';
+let pendingBrain = false;
 function show(id) {
   for (const s of document.querySelectorAll('.screen')) if (s.id !== 'splash') s.classList.toggle('active', s.id === id);   // the intro fades out on its own
   current = id;
@@ -228,7 +229,7 @@ function startLevel(index, test = null) {
   if (test) {
     const ents = test.resident === 'default' ? def.entities : test.resident === 'none' ? [] : [{ type: test.resident }];
     pendingDef = def = { ...def, entities: ents, test: true };
-    pendingGod = test.god;
+    pendingGod = test.god; pendingBrain = !!test.brain;
   } else if (ngOn()) {
     pendingDef = def = { ...def, ng: true, entities: [{ type: NG_CAST[index] }], lightsOff: Math.min(0.7, def.lightsOff + 0.12), batteries: Math.max(2, def.batteries - 1),
       subtitle: 'PUTARAN KEDUA · Gedungnya sama. Penghuninya bukan yang kamu kenal.' };
@@ -277,7 +278,7 @@ function startDaily() {
 // Ruang Latihan: a small floor with a slow resident that cannot kill you, and a list of
 // things to try (crouch, lean, knock, hide and hold your breath, wedge a door, escape)
 function startTraining() {
-  pendingLevel = -1; pendingGod = true;
+  pendingLevel = -1; pendingGod = true; pendingBrain = false;
   const base = endlessDef(1, 4711);
   pendingDef = { ...base, id: 'training', training: true, test: true, endless: false, code: 'LATIHAN', name: 'Ruang Latihan', mods: [], odd: 0,
     subtitle: 'Tidak ada yang bisa mati di sini. Belum.', entities: [{ type: 'clock' }], fuses: 1, keys: 0, wedges: 2, lightsOff: 0.1, flicker: 0.05 };
@@ -294,7 +295,7 @@ function beginPlay(cp = null) {
   try {
     const retries = cp ? game.retries : 0;
     game.loadLevel(pendingLevel, save.diff, pendingDef);
-    game.godMode = pendingGod;
+    game.godMode = pendingGod; game.brainView = !!(pendingDef && pendingDef.test) && pendingBrain;
     if (cp) { game.retries = retries; game.restore(cp); }
     game.countedT = game.time; game.countedEsc = game.stats.escapes || 0; for (const k of ['knocks', 'peeks', 'noticed']) game['counted_' + k] = game.stats[{ knocks: 'knocks', peeks: 'peeks', noticed: 'doorsNoticed' }[k]] || 0;
     if (lastDeath && lastDeath.key === levelKey(game.def)) game.placeGrave(lastDeath);
@@ -447,7 +448,7 @@ function buildArchive() {
   $('archive-count').textContent = `${have}/${total} ditemukan  ·  Rekor mode Jurang: ${save.bestFloor} lantai`;
 }
 // test rooms: every level unlocked, pick the resident, optional invulnerability
-const roomOpts = { resident: 'default', god: false };
+const roomOpts = { resident: 'default', god: false, brain: false };
 function buildRooms() {
   const list = $('room-list'); list.innerHTML = '';
   LEVELS.forEach((l, i) => {
@@ -465,6 +466,8 @@ function buildRooms() {
   sel.onchange = () => { roomOpts.resident = sel.value; };
   $('room-god').checked = roomOpts.god;
   $('room-god').onchange = () => { roomOpts.god = $('room-god').checked; };
+  $('room-brain').checked = roomOpts.brain;
+  $('room-brain').onchange = () => { roomOpts.brain = $('room-brain').checked; };
   // model gallery
   if (!viewer) viewer = new ModelViewer($('viewer-canvas'), assets);
   const pick = $('viewer-pick'); pick.innerHTML = '';

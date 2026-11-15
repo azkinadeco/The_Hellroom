@@ -102,11 +102,11 @@ void main(){
   // horizontal line jitter (danger / glitch)
   float row = floor(uv.y * 240.0);
   float jit = (hash(vec2(row, floor(uTime * 24.0))) - 0.5);
-  float j = jit * (0.0015 + uDanger * 0.012 + uGlitch * 0.06) * step(0.6 - uDanger * 0.5 - uGlitch, hash(vec2(row * 0.37, floor(uTime * 12.0))));
+  float j = jit * (0.0008 + uDanger * 0.005 + uGlitch * 0.05) * step(0.75 - uDanger * 0.35 - uGlitch, hash(vec2(row * 0.37, floor(uTime * 12.0))));
   uv.x += j;
   // tracking band rolling up the screen
-  float band = smoothstep(0.0, 0.02, abs(fract(uv.y * 0.5 - uTime * 0.07) - 0.5) - 0.47);
-  uv.x += (1.0 - band) * 0.004 * (hash(vec2(uTime, row)) - 0.5);
+  float band = smoothstep(0.0, 0.03, abs(fract(uv.y * 0.5 - uTime * 0.07) - 0.5) - 0.44);   // a soft, wide roll, not a hard bright line
+  uv.x += (1.0 - band) * 0.0015 * (hash(vec2(uTime, row)) - 0.5);
 
   float ca = 0.0012 + uDanger * 0.004 + uGlitch * 0.02;
   vec3 col;
@@ -135,9 +135,9 @@ void main(){
   float g = hash(uv * uRes + fract(uTime * 7.0) * 100.0);
   col += (g - 0.5) * (0.045 + uNV * 0.09 + uDanger * 0.05);
   col *= 0.94 + 0.06 * sin(vUv.y * uRes.y * 1.6);
-  col += (1.0 - band) * 0.035;
+  col += (1.0 - band) * 0.012;
   // random static flecks when danger is high
-  if (hash(vec2(floor(vUv.y * 120.0), floor(uTime * 30.0))) > 0.995 - uDanger * 0.02) col += 0.3 * g;
+  if (hash(vec2(floor(vUv.y * 120.0), floor(uTime * 30.0))) > 0.997 - uDanger * 0.008) col += 0.12 * g;
 
   // vignette
   float vig = smoothstep(0.85, 0.25, length(cc * vec2(1.1, 1.25)));
@@ -272,7 +272,7 @@ export class VHS {
     this.fx = q;
     this.uniforms.uTaps.value = q > 1 ? 12 : 8;
     this.aoStrength = q > 1 ? 0.95 : q ? 0.85 : 0;
-    this.uniforms.uSharp.value = q ? (clean ? 0.55 : 0.3) : 0;
+    this.uniforms.uSharp.value = q ? (clean ? 0.55 : 0.15) : 0;   // less in tape mode: sharpening drew the tape's line noise out
   }
   setSize(w, h, pr) {
     const s = this.scale * pr;
