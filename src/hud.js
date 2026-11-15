@@ -120,6 +120,7 @@ export class HUD {
     this.louvers.classList.toggle('peek', ov === 'peek');
     document.body.classList.toggle('hiding', !!p.hidden);
     document.body.classList.toggle('panting', !!p.exhausted && !p.hidden);
+    document.body.classList.toggle('focusing', !!g.focusing);
     if (this._touch !== g.input.touch) { this._touch = g.input.touch; document.body.classList.toggle('touch', !!g.input.touch); }
     { // the eye: fills as the most alert resident notices you, red while you are hunted
       let w = 0; for (const e of g.entities) w = Math.max(w, e.awareness || 0);

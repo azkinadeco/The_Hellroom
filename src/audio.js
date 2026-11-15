@@ -21,7 +21,8 @@ export class Audio {
     comp.threshold.value = -14; comp.ratio.value = 4;
     this.master.connect(comp).connect(ctx.destination);
     this.sfx = ctx.createGain(); this.sfx.connect(this.master);
-    this.amb = ctx.createGain(); this.amb.gain.value = 0; this.amb.connect(this.master);
+    this.amb = ctx.createGain(); this.amb.gain.value = 0;
+    this.ambDuck = ctx.createGain(); this.amb.connect(this.ambDuck).connect(this.master);   // pulled down while you listen
     // hallway reverb
     this.verb = ctx.createConvolver();
     this.verb.buffer = this._impulse(2.6, 2.2);
@@ -78,7 +79,7 @@ export class Audio {
       this.rainLv = 0;
     }
     this.rainLv += (v - this.rainLv) * Math.min(1, dt * 1.5);
-    this.rain.gain.setTargetAtTime(this.rainLv * 0.11, this.t, 0.2);
+    this.rain.gain.setTargetAtTime(this.rainLv * 0.11 * (1 - 0.6 * (this.focusLv || 0)), this.t, 0.2);
     this.rainLP.frequency.setTargetAtTime(1800 + this.rainLv * 5000, this.t, 0.3);   // muffled from indoors
   }
   // 0..1: how close the most alert resident is to noticing you (the chase bed takes over at 1)
@@ -673,6 +674,13 @@ export class Audio {
     for (const f of [55, 58.3, 82.4, 110, 116.5]) { const o = this._osc('sawtooth', f); o.connect(ws); o.start(t); o.stop(t + 1.8); }
     const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf; src.connect(ws); src.start(t); src.stop(t + 1.8);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.7, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+  }
+  // listening: the building's hum and the rain sink, everything with a position comes forward
+  setFocus(k, dt) {
+    if (!this.ready) return;
+    this.focusLv = (this.focusLv || 0) + (k - (this.focusLv || 0)) * Math.min(1, dt * 2.5);
+    this.ambDuck.gain.setTargetAtTime(1 - 0.65 * this.focusLv, this.t, 0.1);
+    this.sfx.gain.setTargetAtTime(1 + 0.4 * this.focusLv, this.t, 0.1);
   }
   // a rising tone that climbs as a hunter closes in (silent outside a chase)
   setChaseDist(d, dt) {

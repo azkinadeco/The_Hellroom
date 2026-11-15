@@ -503,3 +503,6 @@ body.panting .tbtn.breath { display: flex; }
 
 /* batch 118: the hunter falters */
 .watch.hunt.lull { animation: none; opacity: 0.55; transform: translateX(-50%) scaleY(0.45); transition: transform .15s, opacity .15s; }
+
+/* batch 123: listening */
+body.focusing #hud::before { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 14vh 2vh rgba(0,0,0,0.55); transition: opacity .4s; }

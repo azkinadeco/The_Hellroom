@@ -1189,6 +1189,12 @@ export class Game {
     this.danger = damp(this.danger, danger, 3, dt);
     if (this.graceT > 0) this.graceT -= dt;
     this.direct(dt, danger, chase);
+    // listening: crouched (or hidden) and still for a second, the building quietens and footsteps stand out
+    { const still = p.alive && (p.hidden || (p.crouched && (p.moving || 0) < 0.1));
+      this.listenHold = still ? (this.listenHold || 0) + dt : 0;
+      const k = this.listenHold > 1 ? 1 : 0;
+      this.audio.setFocus(k, dt); this.focusing = !!k;
+      if (k && this.entities.some((e) => Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z) < 25)) this.hint('focus', 'Jongkok diam sebentar untuk menyimak: suara bangunan meredup dan langkah penghuni terdengar lebih jelas.', 5); }
     // near misses: a hunter passes within arm's reach of you (hidden or crouched) without noticing, then moves on
     for (const e of this.entities) {
       if (!e.sight || this.chasers.has(e) || !p.alive) { e.nearMiss = false; continue; }
