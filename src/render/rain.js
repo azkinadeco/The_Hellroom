@@ -14,18 +14,20 @@ void main(){
   p = mod(p - uCam + B * 0.5, B) + uCam - B * 0.5;
   p.y = mod(p.y, B.y) - 1.0;                 // from just under the floor up to 11 m
   vec3 wind = vec3(0.12, -1.0, 0.05);
-  p += wind * tip * 0.55;                    // the second vertex of each streak trails behind
-  // only over roofless cells
+  // only over roofless cells - decided once per streak (its head), so a streak is never half in a room
   vec2 uv = (floor(p.xz / ${CELL.toFixed(1)}) + 0.5) / uGrid;
+  p += wind * tip * 0.55;                    // the second vertex of each streak trails behind
   float open = texture2D(uMask, uv).r * step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
   float d = length(p.xz - uCam.xz);
-  vA = open * smoothstep(9.0, 3.0, d) * smoothstep(-0.9, 0.2, p.y) * (0.35 + 0.65 * seed.z);
+  // a streak right in front of the lens would cross the whole screen like a scratch on the tape: fade those out
+  float near = smoothstep(1.4, 3.2, length(p - uCam));
+  vA = open * near * smoothstep(9.0, 3.0, d) * smoothstep(-0.9, 0.2, p.y) * (0.35 + 0.65 * seed.z);
   gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
 }`;
 const frag = /* glsl */`
 uniform vec3 uCol; uniform float uLit;
 varying float vA;
-void main(){ if (vA < 0.01) discard; gl_FragColor = vec4(uCol * uLit, vA * 0.5); }`;
+void main(){ if (vA < 0.01) discard; gl_FragColor = vec4(uCol * uLit, vA * 0.4); }`;
 
 export class Rain {
   constructor(n = 1400) {
@@ -58,7 +60,7 @@ export class Rain {
     }
     this.mask.dispose();
     this.mask = new THREE.DataTexture(data, m.W, m.H, THREE.RedFormat);
-    this.mask.magFilter = this.mask.minFilter = THREE.NearestFilter; this.mask.needsUpdate = true;
+    this.mask.magFilter = this.mask.minFilter = THREE.NearestFilter; this.mask.unpackAlignment = 1; this.mask.generateMipmaps = false; this.mask.needsUpdate = true;
     this.u.uMask.value = this.mask; this.u.uGrid.value.set(m.W, m.H);
     this.cells = n; this.open = data;
     this.lines.visible = n > 0;
