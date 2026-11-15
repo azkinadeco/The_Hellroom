@@ -412,10 +412,18 @@ export class Game {
 
   // ------------------------------------------------------------------ events
   emitNoise(x, z, radius, type) {
+    const m = this.map, rr = radius * this.diff.hearing * (type === 'step' ? this.def.noiseMul || 1 : 1);
+    let cost = null;
     for (const e of this.entities) {
-      const d = Math.hypot(e.pos.x - x, e.pos.z - z);
-      let r = radius * this.diff.hearing * (type === 'step' ? this.def.noiseMul || 1 : 1);
-      if (!this.world.los(e.pos.x, e.pos.z, x, z)) r *= 0.55;
+      let d = Math.hypot(e.pos.x - x, e.pos.z - z), r = rr;
+      if (d >= r) continue;
+      // out of sight the sound has to find its way round: through doorways (a closed door muffles it), along halls
+      if (!this.world.los(e.pos.x, e.pos.z, x, z)) {
+        if (!cost) { const [sx, sz] = m.cellOf(x, z); cost = m.soundCost(sx, sz, rr / CELL + 2); }
+        const [ex, ez] = m.cellOf(e.pos.x, e.pos.z), c = cost[ex + ez * m.W];
+        d = Math.max(d, (c - 0.5) * CELL);
+        r *= 0.8;
+      }
       if (d < r) { e.onNoise(x, z, 1 - d / r, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; }
     }
   }

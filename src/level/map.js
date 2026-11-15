@@ -87,6 +87,39 @@ export class LevelMap {
   cellOf(wx, wz) { return [Math.floor(wx / CELL), Math.floor(wz / CELL)]; }
   center(x, z) { return [(x + 0.5) * CELL, (z + 0.5) * CELL]; }
 
+  // How far a sound travels to every cell, in cells: it goes round walls,
+  // over railings and voids, and a closed door muffles it (counts as extra
+  // distance). Cells further than maxCost stay Infinity.
+  soundCost(sx, sz, maxCost = 20, doorCost = 2.5) {
+    const W = this.W, N = W * this.H, cost = this._snd && this._snd.length === N ? this._snd : (this._snd = new Float32Array(N));
+    cost.fill(Infinity);
+    if (!this.inside(sx, sz)) return cost;
+    const heap = [[0, sx + sz * W]];
+    cost[sx + sz * W] = 0;
+    while (heap.length) {
+      // pop min
+      const top = heap[0], last = heap.pop();
+      if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[i], heap[m]] = [heap[m], heap[i]]; i = m; } }
+      const [c0, c] = top;
+      if (c0 > cost[c] || c0 > maxCost) continue;
+      const x = c % W, z = (c / W) | 0;
+      for (const d of DIRS) {
+        const nx = x + d.dx, nz = z + d.dz;
+        if (!this.inside(nx, nz) || this.reg(nx, nz) === -1) continue;
+        const e = this.edge(x, z, d);
+        if (e === EDGE.WALL || e === EDGE.NONE) continue;
+        let step = 1;
+        if (e === EDGE.DOOR) { const door = this.doorAt(x, z, d); if (!door || door.openAmount < 0.5) step += doorCost; }
+        const nc = c0 + step, n = nx + nz * W;
+        if (nc >= cost[n]) continue;
+        cost[n] = nc;
+        heap.push([nc, n]);
+        let i = heap.length - 1; while (i > 0) { const pi = (i - 1) >> 1; if (heap[pi][0] <= heap[i][0]) break; [heap[i], heap[pi]] = [heap[pi], heap[i]]; i = pi; }
+      }
+    }
+    return cost;
+  }
+
   bfs(sx, sz, mode = 'entity') {
     const dist = new Int32Array(this.W * this.H).fill(-1);
     const q = [sx + sz * this.W];
