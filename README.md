@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 95–104
+
+- **Napas terengah** setelah stamina habis terdengar penghuni; menahan napas meredamnya (juga di luar tempat sembunyi).
+- **Denah** mencatat sekring, kunci, baterai, kaset, catatan, dan weker yang pernah terlihat.
+- **Hemat daya**: dunia 3D berhenti digambar saat jeda/catatan/layar mati/menang; opsi batas 30 fps.
+- **Bekal Jurang**: setelah tiap lantai pilih 1 dari 3 bekal (Sol Karet, Bayangan Tebal, Ganjal Cadangan, Saku Baterai, Paru-Paru Kuat, Lensa Bersih, Jam Weker); menumpuk selama run.
+- **Analisis kematian**: potongan denah dengan jejakmu dan jejak penghuni 20 detik terakhir.
+- **Halusinasi** setelah takut berkepanjangan: alarm palsu, langkah palsu, sosok palsu.
+- **Ciri khas penghuni**: Jam Berlidah diam saat menunggu, Sang Pembisik meniru ketukan, Penenun Tulang melihat di gelap, Kelabang Murid mencium jejak basah dari jauh.
+- **Kartu Mode Lain** menampilkan penghuni & kutukan Rekaman Harian hari ini dan bekal run Jurang.
+- **Lencana**: Tiga Bekal, Tidak Nyata, Napas Tertahan, Juru Peta (35 lencana).
+
 ## Batch 85–94
 
 - **Lubang kunci**: condong di depan pintu tertutup untuk mengintip ke baliknya tanpa terlihat.
