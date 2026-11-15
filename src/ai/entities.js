@@ -403,7 +403,8 @@ export class Monitor extends Entity {
           if (d < 1.25) { this.attack(); break; }
         } else {
           this.lostT += dt;
-          if (!this.path && this.lastSeen) this.goToWorld(this.lastSeen.x, this.lastSeen.z);
+          // lost sight: it runs on to where you were going, not to where you vanished
+          if (!this.path && this.lastSeen) { const q = this.predictEscape(); this.goToWorld(q.x, q.z); }
           if (this.followPath(dt, speed) || this.lostT > 5) {
             this.setState('search');
             this.suspicion = 0.6;
@@ -578,6 +579,28 @@ export class Monitor extends Entity {
     this.investigatePt = { x: tx, z: tz }; this.intercept = true;
     this.setState('investigate'); this.lookT = 0; this.goToWorld(tx, tz);
     return true;
+  }
+
+  // Dead reckoning from the trail of sightings: the walkable cell nearest to where the
+  // player would be 1.6 s after vanishing at their last speed (at most 7 m on), reachable
+  // within a few cells of the vanishing point.
+  predictEscape() {
+    const g = this.game, m = g.map, ls = this.lastSeen, tr = this.trail || [];
+    const old = tr.filter((q) => ls.t - q.t >= 0.4).pop();
+    if (!old || ls.t - old.t > 1.6) return ls;
+    const dt = Math.max(0.2, ls.t - old.t), vx = (ls.x - old.x) / dt, vz = (ls.z - old.z) / dt, sp = Math.hypot(vx, vz);
+    if (sp < 0.6) return ls;
+    const k = Math.min(1.6, 7 / sp), tx = ls.x + vx * k, tz = ls.z + vz * k;
+    const [lx, lz] = m.cellOf(ls.x, ls.z), dist = m.bfs(lx, lz);
+    let best = null, bd = Infinity;
+    for (let i = 0; i < dist.length; i++) {
+      if (dist[i] < 0 || dist[i] > 4) continue;
+      const [x, z] = m.center(i % m.W, (i / m.W) | 0), d = Math.hypot(x - tx, z - tz);
+      if (d < bd) { bd = d; best = { x, z }; }
+    }
+    if (!best) return ls;
+    this.predicted = best; g.stats.predicted = (g.stats.predicted || 0) + 1;
+    return Math.hypot(best.x - ls.x, best.z - ls.z) < 1 ? ls : best;
   }
 
   // Where to look after losing them: ahead along the way they were running,
