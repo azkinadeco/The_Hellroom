@@ -227,6 +227,8 @@ export class Monitor extends Entity {
       this.suspicion = Math.min(1.2, this.suspicion + see * dt * (this.distTo(p.pos) < 4 ? 6 : 1.9));
       this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time };
       this.lostT = 0;
+      const tr = this.trail || (this.trail = []);
+      if (!tr.length || g.time - tr[tr.length - 1].t > 0.25) { tr.push({ x: p.pos.x, z: p.pos.z, t: g.time }); if (tr.length > 8) tr.shift(); }
     } else this.suspicion = Math.max(0, this.suspicion - dt * (this.state === 'chase' ? 0 : 0.12));
 
     // seen = hunted: no slow suspicion build-up, it comes straight for you and
@@ -296,8 +298,7 @@ export class Monitor extends Entity {
           if (this.followPath(dt, speed) || this.lostT > 5) {
             this.setState('search');
             this.suspicion = 0.6;
-            const [cx, cz] = this.cell();
-            this.searchPts = [0, 1, 2].map(() => randomReachableCell(g.map, Math.random, cx, cz, 1, 4)).filter(Boolean);
+            this.searchPts = this.planSearch();
             this.path = null;
           }
         }
@@ -305,9 +306,16 @@ export class Monitor extends Entity {
       }
       case 'search': {
         speed = this.walk * 1.4 * this.speedMul;
-        if (!this.path || this.pathIdx >= this.path.length) {
+        if (this.peek) {                                   // standing in front of a hiding spot, looking at it
+          this.velocity = 0; this.faceToward(this.peek.x, this.peek.z, dt, 6);
+          this.peekT -= dt; if (this.peekT <= 0) this.peek = null;
+        } else if ((!this.path || this.pathIdx >= this.path.length) && !this.finalPoint) {
+          if (this.peekNext) { this.peek = this.peekNext; this.peekNext = null; this.peekT = 1.3; break; }
           const n = this.searchPts.shift();
-          if (n) this.goTo(...n); else { this.setState('patrol'); this.waitT = 1; this.suspicion = 0.2; g.onChaseEnd(this); }
+          if (!n) { this.setState('patrol'); this.waitT = 1; this.suspicion = 0.2; g.onChaseEnd(this); }
+          else if (n.L) { const q = this.lockerPoint(n.L); if (this.goToWorld(q.x, q.z)) this.peekNext = n.L; else this.finalPoint = null; }
+          else this.goTo(...n);
+          const [cx, cz] = this.cell(); (this.searched || (this.searched = new Map())).set(cx + cz * g.map.W, g.time);
         } else this.followPath(dt, speed);
         this.checkLockers(dt);
         break;
@@ -365,6 +373,40 @@ export class Monitor extends Entity {
     const breathing = !p.holdingBreath;
     const chance = (breathing ? 0.35 + p.fear * 0.5 : 0.02) * this.game.diff.hearing * (1 - d / 4.5);
     if (Math.random() < chance * dt) this.targetLocker(L, false);
+  }
+
+  // Where to look after losing them: ahead along the way they were running,
+  // the hiding spots nearest that guess, and one spot nearby it has not
+  // searched lately. It knows nothing about where the player really is.
+  planSearch() {
+    const g = this.game, m = g.map, ls = this.lastSeen, tr = this.trail || [], pts = [];
+    if (!ls) return pts;
+    this.peek = null; this.peekNext = null;
+    const old = tr.filter((q) => ls.t - q.t >= 0.5).pop() || tr[0];
+    let hx = 0, hz = 0;
+    if (old) { const dx = ls.x - old.x, dz = ls.z - old.z, d = Math.hypot(dx, dz); if (d > 0.4) { hx = dx / d; hz = dz / d; } }
+    const [lx, lz] = m.cellOf(ls.x, ls.z), dist = m.bfs(lx, lz);
+    const fresh = (i) => !this.searched || !(g.time - (this.searched.get(i) ?? -1e9) < 30);
+    const guess = { x: ls.x + hx * 9, z: ls.z + hz * 9 };
+    // 1. the cell nearest to where they were heading
+    if (hx || hz) {
+      let best = -1, bd = Infinity;
+      for (let i = 0; i < dist.length; i++) {
+        if (dist[i] < 1 || dist[i] > 6 || (m.avoid && m.avoid[i]) || !fresh(i)) continue;
+        const [x, z] = m.center(i % m.W, (i / m.W) | 0), q = Math.hypot(x - guess.x, z - guess.z);
+        if (q < bd) { bd = q; best = i; }
+      }
+      if (best >= 0) pts.push([best % m.W, (best / m.W) | 0]);
+    }
+    // 2. up to two hiding spots near the guess (or near where it lost them)
+    const at = hx || hz ? guess : ls;
+    const spots = (g.built.lockers || []).filter((L) => { const [cx, cz] = m.cellOf(L.x, L.z), i = cx + cz * m.W; return dist[i] >= 0 && dist[i] <= 6 && Math.hypot(L.x - ls.x, L.z - ls.z) < 12; })
+      .sort((a, b) => Math.hypot(a.x - at.x, a.z - at.z) - Math.hypot(b.x - at.x, b.z - at.z)).slice(0, 3);
+    for (const L of spots.slice(0, Math.random() < 0.5 ? 1 : 2)) if (this.lockers) pts.push({ L });
+    // 3. somewhere close it has not looked yet
+    const [cx, cz] = this.cell();
+    for (let k = 0; k < 4; k++) { const c = randomReachableCell(m, Math.random, cx, cz, 1, 4); if (c && fresh(c[0] + c[1] * m.W)) { pts.push(c); break; } }
+    return pts;
   }
 
   targetLocker(L, sure) {
