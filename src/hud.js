@@ -15,6 +15,7 @@ export class HUD {
     this.captionEl = $('caption'); this.capT = 0;
     this._last = {};
     this.watch = $('hud-watch'); this.watchFill = $('watch-fill');
+    this.ring = $('sound-ring'); this.pings = [];
   }
   show(v) { this.el.classList.toggle('hidden', !v); }
   toast(msg, dur = 2.6) {
@@ -26,6 +27,26 @@ export class HUD {
     this.captionEl.textContent = text;
     this.captionEl.classList.add('show');
     this.capT = dur;
+  }
+  // a sound at screen angle a (0 = straight ahead, clockwise), loudness 0..1
+  ping(a, k, resident) {
+    const near = this.pings.find((q) => Math.abs(((q.a - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < 0.35 && q.res === resident);
+    if (near) { near.a = a; near.k = Math.max(near.k, k); near.t = 1.6; return; }
+    this.pings.push({ a, k, res: resident, t: 1.6, el: null });
+    if (this.pings.length > 8) { const o = this.pings.shift(); if (o.el) o.el.remove(); }
+  }
+  updateRing(dt) {
+    for (const q of this.pings) {
+      q.t -= dt;
+      if (!q.el) { q.el = document.createElementNS('http://www.w3.org/2000/svg', 'path'); this.ring.appendChild(q.el); }
+      const R = 74, w = 0.22 + q.k * 0.25, a0 = q.a - w, a1 = q.a + w;
+      const P = (a) => `${(Math.sin(a) * R).toFixed(1)} ${(-Math.cos(a) * R).toFixed(1)}`;
+      q.el.setAttribute('d', `M ${P(a0)} A ${R} ${R} 0 0 1 ${P(a1)}`);
+      q.el.setAttribute('class', q.res ? 'res' : 'env');
+      q.el.style.opacity = (Math.min(1, q.t / 0.6) * (0.35 + 0.65 * q.k)).toFixed(2);
+    }
+    for (const q of this.pings) if (q.t <= 0 && q.el) q.el.remove();
+    this.pings = this.pings.filter((q) => q.t > 0);
   }
   showObjectives(text, dur = 4) { this.objectives.textContent = text; this.objectives.classList.add('show'); this.objT = dur; }
   _set(el, key, val, prop = 'textContent') { if (this._last[key] !== val) { this._last[key] = val; el[prop] = val; } }
@@ -101,6 +122,7 @@ export class HUD {
       if (tb.map) tb.map.classList.toggle('on', !!(g.automap && g.automap.open));
     }
 
+    this.updateRing(dt);
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) this.toastEl.classList.remove('show'); }
     if (this.capT > 0) { this.capT -= dt; if (this.capT <= 0) this.captionEl.classList.remove('show'); }
     if (this.objT > 0) { this._set(this.objectives, 'objtxt', g.objectiveText()); this.objT -= dt; if (this.objT <= 0) this.objectives.classList.remove('show'); }

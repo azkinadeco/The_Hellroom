@@ -1285,10 +1285,16 @@ export class Game {
 
   // ---------------------------------------------------------------- subtitles
   onCue(kind, pos) {
-    if (!this.settings.subs || this.state !== 'playing' || !CUES[kind]) return;
+    if (this.state !== 'playing' || !CUES[kind]) return;
     const p = this.player;
     const dx = pos.x - p.pos.x, dz = pos.z - p.pos.z, d = Math.hypot(dx, dz);
     if (d > 32) return;
+    // sound ring: an arc round the crosshair pointing at the sound (red for the residents' own noises)
+    if (this.settings.soundRing && !((kind === 'door' || kind === 'locker' || kind === 'glass') && d < 3)) {
+      const rel = angleDiff(Math.atan2(-Math.sin(p.yaw), -Math.cos(p.yaw)), Math.atan2(dx, dz));
+      this.hud.ping(-rel, Math.max(0.25, 1 - d / 32), ['step', 'whistle', 'hiss', 'chorus', 'scream', 'bones', 'squelch', 'tick', 'chime', 'whisper', 'scrape'].includes(kind));
+    }
+    if (!this.settings.subs) return;
     if ((kind === 'door' || kind === 'locker') && d < 3) return; // the player's own actions
     const now = this.time;
     if ((this.cueCd[kind] || 0) > now) return;

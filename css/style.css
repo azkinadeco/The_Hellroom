@@ -454,3 +454,9 @@ body.can-knock .tbtn.knock { display: flex; }
 /* batch 75: brightness calibration */
 .calib canvas { display: block; width: 100%; max-width: 480px; margin: 10px auto; background: #000; border: 1px solid var(--line); }
 .calib .primary { margin-top: 14px; }
+
+/* batch 76: sound direction ring */
+.sound-ring { position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; margin: -100px 0 0 -100px; overflow: visible; pointer-events: none; }
+.sound-ring path { fill: none; stroke-width: 5; stroke-linecap: round; }
+.sound-ring path.res { stroke: #ff4a3d; }
+.sound-ring path.env { stroke: #e9e6d6; }
