@@ -356,6 +356,20 @@ export class Monitor extends Entity {
       }
       case 'chase': {
         speed = this.run * this.speedMul;
+        // the torch full in its face from close by: it flinches for a moment (not the blind, and only now and then)
+        if (this.stunT > 0) { this.stunT -= dt; this.velocity = 0; this.faceToward(p.pos.x, p.pos.z, dt, 2); break; }
+        if (p.flashlight && !p.hidden && this.kind !== 'pale' && g.time > (this.dazzleCd || 0)) {
+          const d = this.distTo(p.pos), cd = g.camera.getWorldDirection(PV);
+          const q = ((this.pos.x - p.pos.x) * cd.x + (this.pos.z - p.pos.z) * cd.z) / Math.max(d, 1e-3) / Math.max(Math.hypot(cd.x, cd.z), 1e-3);
+          if (d < 5 && d > 1.4 && q > 0.94 && g.world.los(p.pos.x, p.pos.z, this.pos.x, this.pos.z)) {
+            this.stunT = 0.9; this.dazzleCd = g.time + 15;
+            p.battery = Math.max(0, p.battery - 3);
+            g.audio.scrape(this.pos, 0.4, 0.35);
+            g.stats.dazzles = (g.stats.dazzles || 0) + 1;
+            g.hint('dazzle', 'Sorotan senter tepat ke wajahnya dari dekat membuatnya silau sesaat. Hanya sekali tiap beberapa belas detik — pakai untuk kabur.', 6);
+            break;
+          }
+        }
         const d = this.distTo(p.pos);
         // saw them climb into the locker? then it knows exactly where they are
         if (p.hidden && this.lastSeen && g.time - this.lastSeen.t < 1.2) { this.targetLocker(p.hidden, true); break; }
