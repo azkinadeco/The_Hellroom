@@ -197,10 +197,22 @@ export class Entity {
   }
 
   updateCommon(dt) {
-    // far away the skeleton only needs ten updates a second
+    // occlusion: beyond the torch's shadow range and with walls in every line from the eye, it is not drawn
+    // (three lines: centre and both flanks, so a wide body round a corner still shows)
     const cam = this.game.camera.position;
+    this.cullT = (this.cullT || 0) - dt;
+    if (this.cullT <= 0) {
+      this.cullT = 0.2;
+      const m = this.game.map, dx = this.pos.x - cam.x, dz = this.pos.z - cam.z, d = Math.hypot(dx, dz);
+      let seen = d < 13 || !m;
+      if (!seen) { const ox = -dz / d * (this.radius + 0.3), oz = dx / d * (this.radius + 0.3); seen = m.los(cam.x, cam.z, this.pos.x, this.pos.z) || m.los(cam.x, cam.z, this.pos.x + ox, this.pos.z + oz) || m.los(cam.x, cam.z, this.pos.x - ox, this.pos.z - oz); }
+      if (!seen && this.game.openness && this.game.openness(this.pos.x, this.pos.z)) seen = true;   // open voids: other storeys look in
+      this.culled = !seen;
+      for (const c of this.obj.children) if (!c.isLight) c.visible = seen;
+    }
+    // far away the skeleton only needs ten updates a second
     this.mixAcc = (this.mixAcc || 0) + dt;
-    if (Math.hypot(cam.x - this.pos.x, cam.z - this.pos.z) < 20 || this.mixAcc >= 0.1) { this.mixer.update(this.mixAcc); this.mixAcc = 0; }
+    if ((Math.hypot(cam.x - this.pos.x, cam.z - this.pos.z) < 20 && !this.culled) || this.mixAcc >= (this.culled ? 0.25 : 0.1)) { this.mixer.update(this.mixAcc); this.mixAcc = 0; }
     this.obj.position.copy(this.pos);
     if (this.game.stairs && this.game.stairs.length) this.obj.position.y += this.game.groundY(this.pos.x, this.pos.z);
     this.obj.rotation.y = this.yaw;
