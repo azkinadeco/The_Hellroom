@@ -273,6 +273,12 @@ export class Monitor extends Entity {
 
   onNoise(x, z, strength, type) {
     if (this.state === 'chase' || this.state === 'attack' || this.state === 'locker') return;
+    // a faint everyday sound only makes it stop and look that way
+    if (strength < 0.22 && ['step', 'door', 'pant', 'pickup', 'locker'].includes(type) && this.state === 'patrol') {
+      this.awareness = Math.max(this.awareness || 0, 0.22); this.glimpse = { x, z, t: this.game.time }; this.waitT = Math.max(this.waitT || 0, 1.2);
+      this.game.stats.glances = (this.game.stats.glances || 0) + 1;
+      return;
+    }
     this.investigatePt = { x, z };
     this.suspicion = Math.max(this.suspicion, type === 'alert' ? 0.75 : 0.35);
     this.setState('investigate');

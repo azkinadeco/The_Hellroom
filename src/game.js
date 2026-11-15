@@ -506,7 +506,12 @@ export class Game {
         d = Math.max(d, (c - 0.5) * CELL);
         r *= 0.8;
       }
-      if (d < r) { e.onNoise(x, z, 1 - d / r, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; if (type === 'knock') this.stats.knockLures = (this.stats.knockLures || 0) + 1; }
+      if (d < r) {
+        // where it thinks the sound came from: faint and round corners means a wider guess
+        const st = 1 - d / r, err = type === 'alert' ? 0 : (1 - st) * (this.world.los(e.pos.x, e.pos.z, x, z) ? 1.2 : 3.5), a = Math.random() * Math.PI * 2;
+        let ex = x + Math.cos(a) * err * Math.random(), ez = z + Math.sin(a) * err * Math.random();
+        { const [cx, cz] = m.cellOf(ex, ez); if (m.reg(cx, cz) < 0) { ex = x; ez = z; } }
+        e.onNoise(ex, ez, st, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; if (type === 'knock') this.stats.knockLures = (this.stats.knockLures || 0) + 1; }
     }
   }
   alert(x, z, src) {
