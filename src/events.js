@@ -96,7 +96,7 @@ const KINDS = {
   // a door nearby swings open (or shut) with nobody there
   door() {
     const g = this.game, p = g.player;
-    const c = g.built.doors.filter((d) => { if (d.locked) return false; const q = Math.hypot(d.x - p.pos.x, d.z - p.pos.z); return q > 3.5 && q < 14 && g.entities.every((e) => Math.hypot(e.pos.x - d.x, e.pos.z - d.z) > 3); });
+    const c = g.built.doors.filter((d) => { if (d.locked || d.wedged) return false; const q = Math.hypot(d.x - p.pos.x, d.z - p.pos.z); return q > 3.5 && q < 14 && g.entities.every((e) => Math.hypot(e.pos.x - d.x, e.pos.z - d.z) > 3); });
     if (!c.length) return false;
     const d = c[Math.floor(Math.random() * c.length)], pos = { x: d.x, y: 1.2, z: d.z };
     d.byPlayer = false;

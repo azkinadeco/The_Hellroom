@@ -89,6 +89,7 @@ export class Entity {
         const door = this.game.map.doorAt(mx, mz, d);
         if (door && door.openAmount < 0.7) {
           if (door.locked) { this.path = null; return true; }
+          if (door.wedged) { this.velocity = 0; this.faceToward(door.x, door.z, dt); if (!this.game.batterDoor(door, this, dt)) return false; }
           this.game.doorSys.open(door, this, this.pos);
           this.faceToward(door.x, door.z, dt);
           if (door.openAmount < 0.6) { this.velocity = 0; return false; }

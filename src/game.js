@@ -253,7 +253,7 @@ export class Game {
     p.water = this.gen.water; p.y = 0;
     this.audio.setTheme(def.theme || null); this.themeT = 0;
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
-    p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0 };
+    p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
     this.alarms = [];
     if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
     this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
@@ -587,6 +587,44 @@ export class Game {
     return Math.max(0.2, Math.min(0.8, 0.8 - (Math.max(0, (c - 0.5) * CELL - d)) / 30));
   }
 
+  // Door wedges: crouch at a closed door and jam it. A resident has to batter it open (loud, a few
+  // seconds), which breaks the wedge; crouch at it again to pull the wedge out and keep it.
+  wedgeDoor(d) {
+    const p = this.player;
+    if (d.wedged) {
+      d.wedged = false; p.inventory.wedges++; this.removeWedge(d);
+      this.hud.toast('Ganjal dilepas.', 1.6); this.audio.click(); return;
+    }
+    if (d.target || d.openAmount > 0.05) { this.hud.toast('Tutup pintunya dulu.', 1.6); return; }
+    if (!p.inventory.wedges) { this.hud.toast('Tidak punya ganjal pintu lagi.', 1.6); return; }
+    p.inventory.wedges--; d.wedged = true; d.bang = 0;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.12), new THREE.MeshLambertMaterial({ color: 0x5a3c22 }));
+    m.position.set(d.x, 0.035 + (this.player.y || 0), d.z); m.rotation.y = Math.random();
+    this.levelRoot.add(m); d.wedgeObj = m;
+    this.audio.knock({ x: d.x, y: 0.3, z: d.z });
+    this.emitNoise(d.x, d.z, NOISE.locker, 'locker');
+    this.stats.wedges = (this.stats.wedges || 0) + 1;
+    this.hud.toast('Pintu diganjal. Penghuni harus mendobraknya.', 2.2);
+    this.hint('wedge', 'Ganjal membuat penghuni mendobrak pintu beberapa detik, dan suaranya terdengar jauh. Gunakan waktu itu untuk kabur atau sembunyi.', 6);
+  }
+  removeWedge(d) { if (d.wedgeObj) { d.wedgeObj.parent && d.wedgeObj.parent.remove(d.wedgeObj); d.wedgeObj = null; } }
+  // a resident batters a wedged door; true once it gives
+  batterDoor(d, e, dt) {
+    d.bang = (d.bang || 0) + dt;
+    e.bangT = (e.bangT || 0) - dt;
+    if (e.bangT <= 0) {
+      e.bangT = 0.55;
+      this.audio.doorSlam({ x: d.x, y: 1.2, z: d.z });
+      if (d.setLeaf) d.setLeaf(-0.06 - Math.random() * 0.06); else if (d.leaf) d.leaf.rotation.y = d.baseRot - 0.08;
+      this.input.rumble(40, 0.25 * Math.max(0, 1 - Math.hypot(d.x - this.player.pos.x, d.z - this.player.pos.z) / 15));
+    }
+    if (d.bang < 2.8 * (this.diff.speed > 1.1 ? 0.75 : 1)) return false;
+    d.wedged = false; d.bang = 0; this.removeWedge(d);
+    this.audio.crack({ x: d.x, y: 0.4, z: d.z });
+    this.doorSys.open(d, e, e.pos);
+    return true;
+  }
+
   // the wall straight in front of the player, if there is one within reach
   wallAhead() {
     const p = this.player;
@@ -819,7 +857,7 @@ export class Game {
     const p = this.player, fb = this.fuseFloor.gen.fusebox;
     return {
       floorK: this.fuseFloor.k, x: fb.x + Math.sin(fb.rot) * 0.95, z: fb.z + Math.cos(fb.rot) * 0.95, yaw: fb.rot,
-      battery: p.battery, inventory: { ...p.inventory }, fusesInstalled: this.fusesInstalled, time: this.time,
+      battery: p.battery, inventory: { ...p.inventory, wedges: (p.inventory.wedges || 0) + this.floors.reduce((a, f) => a + f.built.doors.filter((d) => d.wedged).length, 0) }, fusesInstalled: this.fusesInstalled, time: this.time,
       stats: { ...this.stats },
       taken: this.floors.map((f) => f.built.items.slice(0, f.gen.items.length).map((it, i) => (it.taken ? i : -1)).filter((i) => i >= 0)),
       read: this.floors.map((f) => f.built.items.slice(0, f.gen.items.length).map((it, i) => (it.read ? i : -1)).filter((i) => i >= 0)),

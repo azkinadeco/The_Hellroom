@@ -91,6 +91,8 @@ export class Interactor {
       case 'door': {
         const d = t.ref;
         if (d.locked) return inv.keys > 0 ? 'Buka kunci pintu' : 'Terkunci — butuh kunci';
+        if (d.wedged) return g.player.crouched ? 'Lepas ganjal pintu' : 'Pintu diganjal';
+        if (!d.target && g.player.crouched && inv.wedges > 0) return `Ganjal pintu (${inv.wedges})`;
         return d.target ? 'Tutup pintu' : 'Buka pintu';
       }
       case 'locker': { const n = hideOf(t.ref).label; return g.player.hidden ? `Keluar dari ${n}` : `Sembunyi di ${n}`; }
@@ -121,6 +123,8 @@ export class Interactor {
           } else { g.audio.doorLocked({ x: d.x, y: 1, z: d.z }); g.hud.toast('Terkunci. Kuncinya pasti ada di suatu ruangan.'); }
           break;
         }
+        if (p.crouched && !d.target) { g.wedgeDoor(d); break; }
+        if (d.wedged) { g.hud.toast('Pintu ini diganjal. Jongkok di depannya untuk melepas ganjal.', 2); break; }
         if (d.target) g.doorSys.close(d); else g.doorSys.open(d, 'player', p.pos);
         break;
       }
