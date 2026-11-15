@@ -31,6 +31,11 @@ export const BADGES = [
   { id: 'jejak', icon: '👣', name: 'Jejak Basah', desc: 'Selesaikan bab setelah penghuni mengikuti jejak kakimu.', test: (c) => c.win && (c.g.stats.printsFollowed || 0) > 0 },
   { id: 'hadang', icon: '⚔', name: 'Dua Arah', desc: 'Selesaikan lantai Jurang tempat dua penghuni saling memanggil.', test: (c) => c.win && (c.g.stats.calls || 0) > 0 },
   { id: 'bayang', icon: '🕯', name: 'Tak Tersentuh Cahaya', desc: 'Selesaikan satu bab tanpa ikon mata pernah terisi setengah.', test: (c) => c.win && c.story && (c.g.stats.maxWatch || 0) < 0.5 },
+  { id: 'latih', icon: '◎', name: 'Siap Merekam', desc: 'Selesaikan Ruang Latihan.', test: (c) => !!c.save.trained },
+  { id: 'lubang', icon: '🗝', name: 'Lubang Kunci', desc: 'Lihat penghuni lewat lubang kunci.', test: (c) => (c.g.stats.keyholeSpots || 0) > 0 },
+  { id: 'dobrak', icon: '🚪', name: 'Tiga Detik Berharga', desc: 'Lolos setelah penghuni mendobrak pintu yang kamu ganjal.', test: (c) => c.win && (c.g.stats.battered || 0) > 0 },
+  { id: 'silau', icon: '🔦', name: 'Silau', desc: 'Buat pengejar silau dengan senter.', test: (c) => (c.g.stats.dazzles || 0) > 0 },
+  { id: 'kutuk', icon: '☠', name: 'Terkutuk', desc: 'Selesaikan lantai Jurang dengan dua kutukan atau lebih.', test: (c) => c.win && c.g.def.endless && (c.g.def.mods || []).length >= 2 },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 

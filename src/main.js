@@ -687,7 +687,7 @@ async function boot() {
   game.onMeet = (kind) => { if (save.met.includes(kind)) return false; save.met.push(kind); persist(); return true; };
   game.film = save.film;
   game.onFilm = () => persist();
-  game.onTrainingDone = () => { save.trained = true; persist(); setTimeout(() => { if (game.def && game.def.training) quitToMenu(); }, 5000); };
+  game.onTrainingDone = () => { save.trained = true; const nb = awardBadges({ g: game, save, win: false, story: false }); if (nb.length) hud.toast(nb.map((b) => `${b.icon} Lencana baru: ${b.name}`).join('\n'), 4); persist(); setTimeout(() => { if (game.def && game.def.training) quitToMenu(); }, 5000); };
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
   if (!DEV_ROOMS) $('btn-rooms').remove();

@@ -631,7 +631,7 @@ export class Game {
       this.input.rumble(40, 0.25 * Math.max(0, 1 - Math.hypot(d.x - this.player.pos.x, d.z - this.player.pos.z) / 15));
     }
     if (d.bang < 2.8 * (this.diff.speed > 1.1 ? 0.75 : 1)) return false;
-    d.wedged = false; d.bang = 0; this.removeWedge(d);
+    d.wedged = false; d.bang = 0; this.removeWedge(d); this.stats.battered = (this.stats.battered || 0) + 1;
     this.audio.crack({ x: d.x, y: 0.4, z: d.z });
     this.doorSys.open(d, e, e.pos);
     return true;
@@ -1216,6 +1216,7 @@ export class Game {
       this.stats.maxWatch = Math.max(this.stats.maxWatch || 0, chase ? 1 : w);
       // a peek: leaning out with a resident in view, unnoticed
       if (Math.abs(p.lean || 0) > 0.15 && !chase && w < 0.45 && this.entities.some((e) => this.isSeenByPlayer(e))) this.peekT = (this.peekT || 0) + dt; else this.peekT = 0;
+      if (p.peekDoor && this.entities.some((e) => this.isSeenByPlayer(e))) this.stats.keyholeSpots = (this.stats.keyholeSpots || 0) + 1;
       if (this.peekT > 1.5) { this.peekT = -1e9; this.stats.peeks = (this.stats.peeks || 0) + 1; }
       // first time something half-notices you: say what the eye means
       if (w > 0.35 && !chase && who) this.hint('watch', 'Ikon mata terisi: penghuni mulai menyadarimu. Jongkok, matikan senter, menjauh dari pandangannya, atau berlindung di balik meja sebelum matanya penuh.', 6);
