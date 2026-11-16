@@ -564,7 +564,7 @@ export class Game {
   // and halls the player has spent time in (an old trail, never where they stand now).
   // a hiding spot the player keeps going back to, worth a look now and then
   favouriteHide(e) {
-    const L = (this.built.lockers || []).filter((q) => (q.used || 0) >= 2 && this.time - (q.checkedT ?? -1e9) > 60).sort((a, b) => b.used - a.used)[0];
+    const L = (this.built.lockers || []).filter((q) => (q.used || 0) >= 2 && this.time - (q.checkedT ?? -1e9) > 60 && !(e.isCleared && e.isCleared(q, 90))).sort((a, b) => b.used - a.used)[0];
     return L && Math.random() < 0.3 + 0.1 * Math.min(4, L.used - 2) ? L : null;
   }
   coverPatrol(e, px, pz, cx, cz) {
@@ -668,7 +668,7 @@ export class Game {
     this.doorSys.open(d, e, e.pos);
     // a door jammed shut from inside means someone is in there: it goes through every hiding spot in the room
     if (d.room && e.state !== 'chase' && e.lockers !== false && e.searchPts !== undefined) {
-      const R = d.room, spots = (this.built.lockers || []).filter((L) => { const [cx, cz] = this.map.cellOf(L.x, L.z); return this.map.reg(cx, cz) === R.id; }).slice(0, 4);
+      const R = d.room, spots = (this.built.lockers || []).filter((L) => { const [cx, cz] = this.map.cellOf(L.x, L.z); return this.map.reg(cx, cz) === R.id && !(e.isCleared && e.isCleared(L)); }).slice(0, 4);
       if (spots.length) {
         e.searchPts = spots.map((L) => ({ L })); e.peek = null; e.peekNext = null; e.path = null; e.finalPoint = null; e.setState('search');
         e.awareness = Math.max(e.awareness || 0, 0.6); this.stats.roomRaids = (this.stats.roomRaids || 0) + 1;
@@ -1149,7 +1149,8 @@ export class Game {
       this.audio.setRadio(this.radioOn && this.player.alive, k, dt);
       if (this.radioOn && k > 0.25) this.hint('radio', 'Radio saku berdesis makin keras saat penghuni mendekat, bahkan dari balik tembok. Tapi dari dekat ia juga bisa mendengarnya: matikan (' + (this.input.touch ? 'tombol radio' : this.input.keyName('radio')) + ') saat bersembunyi.', 7);
       this.radioNoiseT = (this.radioNoiseT || 0) - dt;
-      if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
+      // (muffled in your pocket inside a hiding spot)
+      if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0 && !this.player.hidden) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
     { // the building is never silent: creaks in the structure, water dripping, somewhere 6-15 m off

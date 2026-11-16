@@ -469,7 +469,7 @@ export class Monitor extends Entity {
         speed = this.walk * 1.4 * this.speedMul;
         if (this.peek) {                                   // standing in front of a hiding spot, looking at it
           this.velocity = 0; this.faceToward(this.peek.x, this.peek.z, dt, 6);
-          this.peekT -= dt; if (this.peekT <= 0) this.peek = null;
+          this.peekT -= dt; if (this.peekT <= 0) { if (this.peek && this.peek.rot !== undefined) this.clearLocker(this.peek); this.peek = null; }
         } else if ((!this.path || this.pathIdx >= this.path.length) && !this.finalPoint) {
           if (this.peekNext) { this.peek = this.peekNext; this.peekNext = null; this.peekT = 1.3; break; }
           const n = this.searchPts.shift();
@@ -477,7 +477,7 @@ export class Monitor extends Entity {
             g.onChaseEnd(this);
             this.suspicion = 0.2; this.awareness = 0.3;
             // sometimes it only pretends to give up: it stands stock-still near the spot, watching, then leaves
-            if (!this.statue && this.lastSeen && Math.random() < 0.35) { this.setState('wait'); this.lurkT = 8 + Math.random() * 4; this.velocity = 0; g.stats.lurks = (g.stats.lurks || 0) + 1; }
+            if (!this.statue && this.lastSeen && Math.random() < 0.35 && !(p.hidden && this.distTo(p.pos) < 12)) { this.setState('wait'); this.lurkT = 8 + Math.random() * 4; this.velocity = 0; g.stats.lurks = (g.stats.lurks || 0) + 1; }
             else { this.setState('patrol'); this.waitT = 1; }
           }
           else if (n.L) { const q = this.lockerPoint(n.L); if (this.goToWorld(q.x, q.z)) this.peekNext = n.L; else this.finalPoint = null; }
@@ -516,7 +516,12 @@ export class Monitor extends Entity {
           if (p.hidden === L && this.inspectT > 0.6 && !p.holdingBreath && this.game.time - (p.hideT || 0) > 1.0) this.breathHeard += dt;
           const caught = this.lockerSure || this.breathHeard > 1.3;
           if (caught && p.hidden === L) { this.game.lockerReason = this.lightLeak ? 'light' : this.lockerSure ? 'seen' : 'breath'; this.attack(L); break; }
-          if (this.inspectT > 3.4) { if (p.hidden === L) g.stats.inspected = (g.stats.inspected || 0) + 1; this.inspectT = 0; this.setState('patrol'); this.waitT = 1; this.suspicion = 0.3; g.onChaseEnd(this); }
+          if (this.inspectT > 3.4) {
+            if (p.hidden === L) g.stats.inspected = (g.stats.inspected || 0) + 1;
+            this.inspectT = 0; this.suspicion = 0.1; this.awareness = 0; this.lockerSure = false;
+            this.clearLocker(L); g.onChaseEnd(this);
+            this.leaveFrom(L.x, L.z);
+          }
         }
         break;
       }
@@ -566,11 +571,30 @@ export class Monitor extends Entity {
     this.updateCommon(dt);
   }
 
+  // a hiding spot it has just looked into and found empty: left alone for a while
+  clearLocker(L) { (this.cleared || (this.cleared = new Map())).set(L, this.game.time); }
+  isCleared(L, sec = 50) { return !!this.cleared && this.game.time - (this.cleared.get(L) ?? -1e9) < sec; }
+  // done here: head off to a patrol point well away from (x, z) straight away
+  leaveFrom(x, z) {
+    const g = this.game, m = g.map, [cx, cz] = this.cell(), dist = m.bfs(cx, cz);
+    let best = null, bd = -1;
+    for (let k = 0; k < 14; k++) {
+      const i = Math.floor(Math.random() * dist.length);
+      if (dist[i] < 6 || dist[i] > 22 || (m.avoid && m.avoid[i])) continue;
+      const [wx, wz] = m.center(i % m.W, (i / m.W) | 0), d = Math.hypot(wx - x, wz - z);
+      if (d > bd) { bd = d; best = [i % m.W, (i / m.W) | 0]; }
+    }
+    this.setState('patrol'); this.path = null; this.finalPoint = null; this.peek = null; this.peekNext = null; this.searchPts = [];
+    if (best && this.goTo(...best)) this.waitT = 0; else this.waitT = 0.5;
+    this.nextListen = Math.max(this.nextListen || 0, g.time + 15);   // and no stopping to listen right outside
+    g.graceT = Math.max(g.graceT || 0, g.diff.grace * 0.6);
+  }
   // occasionally sniff out a breathing player in a nearby locker
   checkLockers(dt) {
     const p = this.game.player;
     if (!p.hidden || !this.lockers) return;
     const L = p.hidden;
+    const cleared = this.isCleared(L);
     // a lit torch inside a hiding spot shows through every gap: in view and within 10 m, it knows
     if (p.flashlight && this.state !== 'locker') {
       const fd = hideOf(L).front + 0.3, fx = L.x + Math.sin(L.rot) * fd, fz = L.z + Math.cos(L.rot) * fd, dl = Math.hypot(fx - this.pos.x, fz - this.pos.z);
@@ -583,7 +607,9 @@ export class Monitor extends Entity {
     const fd = hideOf(L).front + 0.3;
     if (d > 4.5 || !this.game.world.los(this.pos.x, this.pos.z, L.x + Math.sin(L.rot) * fd, L.z + Math.cos(L.rot) * fd)) return;
     const breathing = !p.holdingBreath;
-    const chance = (breathing ? 0.35 + p.fear * 0.5 : 0.02) * this.game.diff.hearing * (1 - d / 4.5);
+    // holding your breath is silence; a spot it has just looked into it only re-checks if it hears you breathing
+    if (!breathing || (cleared && Math.random() < 0.7)) return;
+    const chance = (0.35 + p.fear * 0.5) * this.game.diff.hearing * (1 - d / 4.5);
     if (Math.random() < chance * dt) this.targetLocker(L, false);
   }
 
@@ -732,7 +758,7 @@ export class Monitor extends Entity {
     }
     // 2. up to two hiding spots near the guess (or near where it lost them)
     const at = hx || hz ? guess : ls;
-    const spots = (g.built.lockers || []).filter((L) => { const [cx, cz] = m.cellOf(L.x, L.z), i = cx + cz * m.W; return dist[i] >= 0 && dist[i] <= 6 && Math.hypot(L.x - ls.x, L.z - ls.z) < 12; })
+    const spots = (g.built.lockers || []).filter((L) => { const [cx, cz] = m.cellOf(L.x, L.z), i = cx + cz * m.W; return !this.isCleared(L) && dist[i] >= 0 && dist[i] <= 6 && Math.hypot(L.x - ls.x, L.z - ls.z) < 12; })
       .sort((a, b) => Math.hypot(a.x - at.x, a.z - at.z) - Math.hypot(b.x - at.x, b.z - at.z)).slice(0, 3);
     for (const L of spots.slice(0, Math.random() < 0.5 ? 1 : 2)) if (this.lockers) pts.push({ L });
     // 3. the nearest rooms off the spot, in order, each looked into from its doorway (not ones searched lately)
