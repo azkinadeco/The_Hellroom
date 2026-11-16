@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 161–170
+
+- **Meter uji mikrofon** di Pengaturan (161).
+- **Hujan** mengurangi jarak pandang penghuni di luar ruangan; kilat mengungkapmu (162).
+- **Geraman** saat penghuni mulai curiga (163).
+- **Denah**: mata ◉ di tempat terakhir kamu melihat tiap penghuni (164).
+- **Luka** 20 detik setelah meronta lepas: lari 82%, stamina lebih boros (165).
+- **Kilau** pada sekring, kunci, baterai, kaset saat disorot senter (166).
+- **Jaga pintu**: penghuni menjaga pintu ruangan tempat kamu menghilang 5–7 detik sebelum masuk (167).
+- **Lencana**: Terluka Tapi Hidup, Pintu yang Dijaga, Bisik-Bisik (50) (168).
+- **Kesulitan** mengatur lama jaga pintu dan efek hujan (169).
+
 ## Batch 159–160
 
 - **Mikrofon** (src/mic.js, Pengaturan → "Mikrofon: suaramu terdengar penghuni", nonaktif bawaan, dengan kepekaan): suara pemain dianalisis lokal (tidak direkam/dikirim) dan menjadi bunyi 'voice' di posisi pemain. Butuh halaman HTTPS atau localhost.
