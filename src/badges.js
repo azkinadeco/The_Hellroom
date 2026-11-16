@@ -52,6 +52,9 @@ export const BADGES = [
   { id: 'diam', icon: '🫥', name: 'Tidak Ada Siapa-Siapa', desc: 'Tahan napas sampai penghuni yang memeriksa tempat sembunyimu pergi.', test: (c) => (c.g.stats.inspected || 0) > 0 && c.win },
   { id: 'kustom', icon: '🎛', name: 'Aturan Sendiri', desc: 'Selesaikan satu bab pada kesulitan Kustom.', test: (c) => c.win && c.story && c.g.diffKey === 'kustom' },
   { id: 'bersama', icon: '👥', name: 'Bukan Satu, Tapi Dua', desc: 'Lolos dari pencarian dua penghuni di lantai yang sama.', test: (c) => c.win && c.g.entities && c.g.entities.length > 1 && (c.g.stats.escapes || 0) > 0 },
+  { id: 'luka', icon: '🩸', name: 'Terluka Tapi Hidup', desc: 'Selesaikan satu bab setelah meronta lepas.', test: (c) => c.win && (c.g.stats.struggles || 0) > 0 },
+  { id: 'jaga', icon: '🚪', name: 'Pintu yang Dijaga', desc: 'Lolos saat penghuni menjaga pintu ruangan tempatmu bersembunyi.', test: (c) => c.win && (c.g.stats.doorGuards || 0) > 0 },
+  { id: 'bisik', icon: '🎙', name: 'Bisik-Bisik', desc: 'Selesaikan satu bab dengan mikrofon menyala.', test: (c) => c.win && c.story && !!(c.g.settings && c.g.settings.mic) },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 
