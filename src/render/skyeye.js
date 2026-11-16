@@ -86,7 +86,7 @@ const cloudFrag = /* glsl */`
 uniform vec2 uHalf;      // half extents of the cloud plane, metres
 uniform vec2 uEye;       // half extents of the opening the eye sits over, metres
 uniform vec2 uLook;
-uniform float uTime, uBlink, uPower;
+uniform float uTime, uBlink, uPower, uStare, uFlash;
 varying vec2 vP;
 float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 float noise(vec2 p){
@@ -112,6 +112,7 @@ void main(){
   col += vec3(0.5, 0.06, 0.02) * exp(-max(0.0, r - R) / (R * 1.4)) * 0.55;
   // a slow pulse through the whole sky
   col *= 0.85 + 0.15 * sin(uTime * 0.7 + r * 0.05);
+  col += vec3(0.9, 0.18, 0.08) * uFlash * (0.4 + dens);            // lightning inside the clouds
   // the eye: almond lids drawn from cloud, opening and closing
   vec2 a = vec2(p.x / W, p.y / R);
   float open = (1.0 - a.x * a.x) * (1.0 - uBlink);
@@ -126,8 +127,9 @@ void main(){
     float fib = fbm(vec2(ang * 9.0, d / ri * 3.0));
     vec3 iris = mix(vec3(0.55, 0.08, 0.03), vec3(0.95, 0.45, 0.08), fib);
     iris = mix(iris, vec3(0.15, 0.0, 0.0), smoothstep(0.65, 1.0, d / ri));
+    iris *= 1.0 + uStare * 0.8;
     e = mix(e, iris, smoothstep(ri * 1.02, ri * 0.97, d));
-    float rp = ri * (0.30 + 0.05 * sin(uTime * 0.5));
+    float rp = ri * (0.30 + 0.05 * sin(uTime * 0.5)) * (1.0 + uStare * 1.1);   // fixed on you: the slit opens wide
     e = mix(e, vec3(0.0), smoothstep(rp * 1.05, rp * 0.95, abs(p.x - c.x) * 2.2 + abs(p.y - c.y) * 0.55));   // slit pupil
     e += vec3(1.0, 0.9, 0.8) * smoothstep(ri * 0.14, ri * 0.04, length(p - c - vec2(-0.3, 0.3) * ri)) * 0.7;
     e *= smoothstep(-0.0, -0.35, lid) * 0.6 + 0.4;
@@ -139,7 +141,7 @@ void main(){
 
 const eyes = new Set();
 export function cloudEye(w, d, ew, ed) {
-  const u = { uHalf: { value: new THREE.Vector2(w / 2, d / 2) }, uEye: { value: new THREE.Vector2(ew / 2, ed / 2) }, uLook: { value: new THREE.Vector2() }, uTime: { value: 0 }, uBlink: { value: 0 }, uPower: { value: 0.9 } };
+  const u = { uHalf: { value: new THREE.Vector2(w / 2, d / 2) }, uEye: { value: new THREE.Vector2(ew / 2, ed / 2) }, uLook: { value: new THREE.Vector2() }, uTime: { value: 0 }, uBlink: { value: 0 }, uPower: { value: 0.9 }, uStare: { value: 0 }, uFlash: { value: 0 } };
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d, 48, 48).rotateX(Math.PI / 2),
     new THREE.ShaderMaterial({ uniforms: u, vertexShader: cloudVert, fragmentShader: cloudFrag, fog: false, side: THREE.DoubleSide }));
   const v = new THREE.Vector3();
@@ -165,7 +167,7 @@ export function skyEye(w, d) {
 }
 // per frame: time and the blink (a quick close every 6–14 s)
 let nextBlink = 5, blinkT = -1;
-export function updateSkyEyes(t, dt, power) {
+export function updateSkyEyes(t, dt, power, stare = 0, flash = 0) {
   if (blinkT < 0 && t > nextBlink) blinkT = 0;
   let b = 0;
   if (blinkT >= 0) {
@@ -173,5 +175,6 @@ export function updateSkyEyes(t, dt, power) {
     b = blinkT < 0.12 ? blinkT / 0.12 : blinkT < 0.22 ? 1 : Math.max(0, 1 - (blinkT - 0.22) / 0.25);
     if (blinkT > 0.5) { blinkT = -1; nextBlink = t + 6 + Math.random() * 8; }
   }
-  for (const u of eyes) { u.uTime.value = t; u.uBlink.value = b; u.uPower.value = u.uEye ? 0.75 + 0.25 * power : 0.4 + 0.35 * power; }
+  if (stare > 0.6) b *= 0.2;   // it does not blink while it watches you
+  for (const u of eyes) { if (u.uStare) { u.uStare.value = stare; u.uFlash.value = flash; } u.uTime.value = t; u.uBlink.value = b; u.uPower.value = u.uEye ? 0.75 + 0.25 * power : 0.4 + 0.35 * power; }
 }

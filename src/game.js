@@ -187,7 +187,7 @@ export class Game {
     resetSkyEyes();
     const def = this.def = defOverride || LEVELS[index];
     this.levelIndex = index;
-    this.diffKey = difficulty;
+    this.diffKey = difficulty; this.eyeStare = 0;
     this.diff = DIFFICULTY[difficulty];
     // mercy: after the third death on the same map this session residents lose a step (never on the two hardest settings)
     const dk = (def.endless ? 'endless' : def.id) + ':' + difficulty, nd = DEATHS.get(dk) || 0;
@@ -1252,6 +1252,20 @@ export class Game {
       }
     }
     if (this.def.training) this.updateTraining();
+    // BAB I: the eye in the red sky. Linger in the open yard and it fixes on you; when it has
+    // you, every resident is told where you are standing.
+    if (this.def.sky === 'clouds' && this.state === 'playing') {
+      const out = !p.hidden && p.alive && this.openness(p.pos.x, p.pos.z) === 2;
+      const need = ({ mudah: 9, normal: 7, sulit: 5.5, mimpi: 4.5 })[this.diffKey] ?? 7;
+      this.eyeStare = Math.max(0, Math.min(1, (this.eyeStare || 0) + (out ? dt / need * (p.crouched ? 0.6 : 1) : -dt / 3)));
+      if (out && this.eyeStare > 0.45) this.hint('skyeye', 'Mata di langit mulai menatapmu. Jangan berlama-lama di lapangan: kalau matanya terbuka penuh, semua penghuni tahu kamu di mana.', 6);
+      if (this.eyeStare >= 1) {
+        this.eyeStare = 0.35; this.stats.eyeCaught = (this.stats.eyeCaught || 0) + 1;
+        for (const e of this.entities) if (!this.chasers.has(e)) { e.awareness = Math.max(e.awareness || 0, 0.6); e.glimpse = { x: p.pos.x, z: p.pos.z, t: this.time }; e.investigatePt = { x: p.pos.x, z: p.pos.z }; if (e.setState && e.goToWorld && e.state !== 'locker') { e.setState('investigate'); e.goToWorld(p.pos.x, p.pos.z); } }
+        this.audio.growl({ x: p.pos.x, y: 12, z: p.pos.z }); this.input.rumble(400, 0.5);
+        this.hud.caption('— matanya menemukanmu —', 2.2);
+      }
+    }
     { // rain: loudness from open sky round the player; standing in it soaks your shoes
       const R = this.rain, m = this.map, p = this.player;
       let lv = 0;
@@ -1549,7 +1563,7 @@ export class Game {
         V.uGround.value = this.mistY; V.uMistLight.value = fl;
         V.uMistCol.value.copy(this.mist.u.uCol.value).multiplyScalar(0.35 + 0.65 * bakeUniforms.uPower.value);
       } }
-    updateSkyEyes(t, Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t))), bakeUniforms.uPower.value); this.lastRenderT = t;
+    updateSkyEyes(t, Math.min(0.1, Math.max(0, t - (this.lastRenderT ?? t))), bakeUniforms.uPower.value, this.eyeStare || 0, this.lightning || 0); this.lastRenderT = t;
     this.vhs.render(this.scene, this.camera, t);
   }
 
