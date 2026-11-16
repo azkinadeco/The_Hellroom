@@ -135,6 +135,8 @@ export class Player {
       this._applyCamera(dt);
       return;
     }
+    // a look over the shoulder while you keep running the same way
+    this.back = damp(this.back || 0, input.lookingBack && input.lookingBack() && !this.hidden ? 1 : 0, 12, dt);
     const ax = input.axis();
     // lean round a corner: the head moves out, the body stays behind the wall
     const want = input.lean ? input.lean() : 0;
@@ -226,7 +228,7 @@ export class Player {
       const ln = this.lean || 0;
       c.position.set(this.pos.x + Math.cos(this.yaw) * (bx + ln), (this.y || 0) + this.eye + by - Math.abs(ln) * 0.12, this.pos.z - Math.sin(this.yaw) * (bx + ln));
     }
-    c.rotation.set(this.pitch, this.yaw, Math.cos(this.bob) * bobAmt * 0.25 - (this.hidden ? 0 : (this.lean || 0) * 0.32));
+    c.rotation.set(this.pitch * (1 - (this.back || 0)), this.yaw + (this.back || 0) * Math.PI * 0.92, Math.cos(this.bob) * bobAmt * 0.25 - (this.hidden ? 0 : (this.lean || 0) * 0.32));
   }
   // where a resident would see you: your head when you lean out, otherwise your body
   headPos() {

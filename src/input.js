@@ -3,14 +3,14 @@
 export const DEFAULT_BINDS = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft', crouch: 'KeyC', interact: 'KeyE',
   flashlight: 'KeyF', nightvision: 'KeyN', zoom: 'KeyZ', throw: 'KeyG', alarm: 'KeyQ', breath: 'Space',
-  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV', knock: 'KeyT',
+  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV', knock: 'KeyT', lookBack: 'KeyB',
 };
 export const BIND_LABELS = {
   forward: 'Maju', back: 'Mundur', left: 'Kiri', right: 'Kanan', sprint: 'Lari', crouch: 'Jongkok', interact: 'Interaksi',
   flashlight: 'Senter', nightvision: 'Mode malam', zoom: 'Zoom kamera', throw: 'Lempar penghapus', alarm: 'Pasang jam weker', breath: 'Tahan napas',
-  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan', knock: 'Ketuk dinding',
+  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan', knock: 'Ketuk dinding', lookBack: 'Menoleh ke belakang',
 };
-const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath', 'leanLeft', 'leanRight']);
+const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath', 'leanLeft', 'leanRight', 'lookBack']);
 export function keyLabel(code) {
   if (!code) return '—';
   return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace('ShiftLeft', 'Shift').replace('ShiftRight', 'Shift kanan')
@@ -123,12 +123,14 @@ export class Input {
         if (a === 'breath') { this.breathHeld = true; b.classList.add('on'); return; }
         if (a === 'zoom') { this.zoomToggle = !this.zoomToggle; b.classList.toggle('on', this.zoomToggle); return; }
         if (a === 'leanLeft' || a === 'leanRight') { this.leanTouch = a === 'leanLeft' ? -1 : 1; b.classList.add('on'); return; }
+        if (a === 'lookBack') { this.lookBackTouch = true; b.classList.add('on'); return; }
         this.pressed.add(a);
       }, { passive: false });
       b.addEventListener('touchend', (e) => {
         e.preventDefault();
         if (a === 'breath') { this.breathHeld = false; b.classList.remove('on'); }
         if (a === 'leanLeft' || a === 'leanRight') { this.leanTouch = 0; b.classList.remove('on'); }
+        if (a === 'lookBack') { this.lookBackTouch = false; b.classList.remove('on'); }
       });
     }
   }
@@ -185,6 +187,7 @@ export class Input {
   zooming() { return this.keys.has(this.binds.zoom) || this.zoomToggle || this.pad.zoom; }
   // -1 lean left, 1 lean right, 0 upright (keyboard, touch buttons, d-pad down + stick on a pad)
   lean() { return (this.keys.has(this.binds.leanRight) || this.leanTouch > 0 ? 1 : 0) - (this.keys.has(this.binds.leanLeft) || this.leanTouch < 0 ? 1 : 0) + (this.pad.lean || 0); }
+  lookingBack() { return this.keys.has(this.binds.lookBack) || !!this.lookBackTouch; }
   holdingBreath() { return this.keys.has(this.binds.breath) || this.breathHeld || this.pad.breath; }
   consume(a) { const had = this.pressed.has(a); this.pressed.delete(a); return had; }
   endFrame() { this.pressed.clear(); this.lookDX = 0; this.lookDY = 0; }
