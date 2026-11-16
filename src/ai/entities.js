@@ -194,6 +194,8 @@ export class Entity {
     let R = range * g.diff.sight;
     if (open === 2) { R = Math.max(R * 2.4, 42); vis = Math.max(vis, p.crouched ? 0.55 : 0.9); }   // a figure against the open sky
     else if (open === 1) R *= 1.5;
+    // a curtain of rain between you: you blur into it (until the lightning)
+    if (g.inRain && !(g.lightning > 0.5)) { R *= 0.65; vis *= 0.75; }
     const reach = R * (0.4 + 0.6 * Math.min(vis, 1.2) / 1.2);
     if (d > reach) return 0;
     // where in the cone
