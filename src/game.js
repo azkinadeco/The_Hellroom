@@ -9,6 +9,7 @@ import { Dust } from './render/dressing.js';
 import { Beam, Mist, buildWebs, flashlightCookie } from './render/ambience.js';
 import { Footprints } from './footprints.js';
 import { Rain } from './render/rain.js';
+import { Mic } from './mic.js';
 import { updateSkyEyes, resetSkyEyes } from './render/skyeye.js';
 import { World } from './world.js';
 import { Player } from './player.js';
@@ -108,6 +109,10 @@ export class Game {
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
     document.body.classList.toggle('clear-screen', this.clear);
     this.baseFov = s.fov || 72;
+    // your microphone: only when switched on in the settings (the browser asks for permission once)
+    if (!this.mic) this.mic = new Mic();
+    if (s.mic && !this.mic.active && !this.mic.starting) this.mic.start().then((ok) => { if (!ok) this.hud.toast('Mikrofon tidak bisa dipakai (izin ditolak atau tidak tersedia).', 3); });
+    if (!s.mic && this.mic.active) this.mic.stop();
     { const hud = document.getElementById('hud'); if (hud) hud.style.zoom = String(Math.max(0.8, Math.min(1.4, s.hudScale || 1))); }
     this.vhs.uniforms.uBright.value = Math.max(0.7, Math.min(1.5, s.bright || 1));
     this.calm = !!s.calm;
@@ -514,7 +519,7 @@ export class Game {
       }
       if (d < r) {
         // where it thinks the sound came from: faint and round corners means a wider guess
-        const st = 1 - d / r, err = type === 'alert' ? 0 : (1 - st) * (this.world.los(e.pos.x, e.pos.z, x, z) ? 1.2 : 3.5), a = Math.random() * Math.PI * 2;
+        const st = 1 - d / r, err = type === 'alert' || (e.hunting && e.hunting()) ? 0 : (1 - st) * (this.world.los(e.pos.x, e.pos.z, x, z) ? 1.2 : 3.5), a = Math.random() * Math.PI * 2;
         let ex = x + Math.cos(a) * err * Math.random(), ez = z + Math.sin(a) * err * Math.random();
         { const [cx, cz] = m.cellOf(ex, ez); if (m.reg(cx, cz) < 0) { ex = x; ez = z; } }
         e.onNoise(ex, ez, st, type); if (type === 'throw') this.stats.lures = (this.stats.lures || 0) + 1; if (type === 'knock') this.stats.knockLures = (this.stats.knockLures || 0) + 1; }
@@ -1160,6 +1165,16 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0 && !this.player.hidden) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    { // your voice: talking, gasping or screaming into the mic is a noise at your position
+      const p = this.player, lv = this.mic && this.settings.mic ? this.mic.update(dt, this.settings.micSens || 1) : 0;
+      this.voiceLv = lv; this.voiceT = (this.voiceT || 0) - dt;
+      if (lv > 0.12 && this.voiceT <= 0 && p.alive) {
+        this.voiceT = 0.35;
+        this.emitNoise(p.pos.x, p.pos.z, 3 + lv * 17, 'voice');
+        this.stats.voiceNoises = (this.stats.voiceNoises || 0) + 1;
+        this.hint('voice', 'Penghuni mendengar suaramu dari mikrofon. Diam, terutama saat bersembunyi.', 5);
+      }
+    }
     { // the building is never silent: creaks in the structure, water dripping, somewhere 6-15 m off
       this.ambT = (this.ambT ?? 4) - dt;
       if (this.ambT <= 0 && this.map) {

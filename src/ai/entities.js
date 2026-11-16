@@ -212,7 +212,7 @@ export class Entity {
     // cover: crouched behind a desk, a crate, a bench; anything tall hides you standing
     if (d > 1.6 && g.world.cover(this.pos.x, this.pos.z, p.pos.x, p.pos.z, p.crouched ? 0.7 : 1.75)) return 0;
     const k = Math.pow(1 - d / reach, 0.7);
-    return cone * (vis * k * 3.2 + (d < 2.5 ? 4 * (1 - d / 2.5) : 0));
+    return cone * (vis * k * 3.2 + (d < 2.5 ? 4 * (1 - d / 2.5) : 0)) * (open === 2 ? 2.5 : 1);   // out in the open there is no doubt about what it saw
   }
 
   updateCommon(dt) {
@@ -282,6 +282,7 @@ export class Monitor extends Entity {
 
   setState(s) {
     if (this.state === s) return;
+    if (this.state === 'chase' && s !== 'attack') this.awareness = Math.min(this.awareness || 0, 0.5);   // a lost chase leaves it alert, not all-seeing
     this.state = s; this.stateT = 0; this.cautious = false;
     if (s === 'chase') {
       if (this.whistleCd <= 0) { this.chaseSound(); this.whistleCd = 12; }
@@ -289,7 +290,21 @@ export class Monitor extends Entity {
     }
   }
 
+  // is it actively looking for you right now (confused, searching, or a chase that has just lost you)?
+  hunting() { return this.confused || this.state === 'search' || (this.state === 'chase' && this.lostT > 0) || (this.lastSeen && this.game.time - this.lastSeen.t < 20 && this.state !== 'patrol'); }
   onNoise(x, z, strength, type) {
+    const g = this.game, p = g.player, mine = ['voice', 'pant', 'gasp', 'step', 'locker', 'door', 'glass', 'pickup', 'radio', 'fuse'].includes(type);
+    // a sound you made while it is looking for you: it knows exactly where you are
+    if (mine && strength > 0.04 && this.state !== 'attack' && this.hunting()) {
+      if (p.hidden && Math.hypot(x - p.hidden.x, z - p.hidden.z) < 2.2) { this.confused = false; this.targetLocker(p.hidden, true); g.stats.betrayed = (g.stats.betrayed || 0) + 1; return; }
+      if (this.state === 'locker') return;
+      this.confused = false; this.lastSeen = { x, z, t: g.time }; this.suspicion = 1.2; this.path = null; this.finalPoint = null;
+      if (this.state !== 'chase') this.setState('chase'); else this.lostT = 0;
+      this.goToWorld(x, z); g.stats.betrayed = (g.stats.betrayed || 0) + 1;
+      return;
+    }
+    // your voice from inside a hiding spot gives it away to anything that hears it clearly
+    if (type === 'voice' && p.hidden && strength > 0.35 && this.state !== 'attack' && this.state !== 'locker' && Math.hypot(x - p.hidden.x, z - p.hidden.z) < 2.2) { this.targetLocker(p.hidden, strength > 0.6); return; }
     if (this.state === 'chase' || this.state === 'attack' || this.state === 'locker') return;
     // fooled twice in a minute by the same trick (a thrown eraser, an alarm clock, a knock), it starts to see through it
     if (['throw', 'alarm', 'knock'].includes(type)) {
@@ -332,7 +347,7 @@ export class Monitor extends Entity {
         g.stats.beamSpotted = (g.stats.beamSpotted || 0) + dt;
       }
       else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
-      if (this.awareness >= 1) see = 1;
+      if (this.awareness >= 1 && gain > 0) see = 1;   // full awareness only turns into a sighting while it can actually perceive you
       this.checkDoors(dt);
       this.checkPrints(dt);
     }
@@ -340,6 +355,7 @@ export class Monitor extends Entity {
       this.suspicion = Math.min(1.2, this.suspicion + see * dt * (this.distTo(p.pos) < 4 ? 6 : 1.9));
       this.lastSeen = { x: p.pos.x, z: p.pos.z, t: g.time };
       this.lostT = 0;
+      this.seenOutdoors = g.openness(p.pos.x, p.pos.z) === 2;
       const tr = this.trail || (this.trail = []);
       if (!tr.length || g.time - tr[tr.length - 1].t > 0.25) { tr.push({ x: p.pos.x, z: p.pos.z, t: g.time }); if (tr.length > 8) tr.shift(); }
     } else this.suspicion = Math.max(0, this.suspicion - dt * (this.state === 'chase' ? 0 : 0.12));
@@ -452,11 +468,19 @@ export class Monitor extends Entity {
         } else {
           this.lostT += dt;
           // lost sight: it runs on to where you were going, not to where you vanished
-          if (!this.path && this.lastSeen) { const q = this.predictEscape(); this.goToWorld(q.x, q.z); }
+          if (!this.path && this.lastSeen) { const q = this.seenOutdoors ? this.lastSeen : this.predictEscape(); this.goToWorld(q.x, q.z); }
           // the further you got before it lost you, the sooner it stops running and starts searching
           const gap = this.lastSeen ? Math.hypot(p.pos.x - this.pos.x, p.pos.z - this.pos.z) : 0;
           const giveUp = p.hidden ? 5 : gap > 18 ? 2.5 : gap > 12 ? 3.5 : 5;
-          if (this.followPath(dt, speed) || this.lostT > giveUp) {
+          const reached = this.followPath(dt, speed);
+          if (this.seenOutdoors && (reached || this.lostT > 9)) {   // outdoors it always runs all the way to the spot
+            // out in the open it ran to where it last saw you; you are gone - it stands there, lost, looking round
+            this.setState('wait'); this.confused = true; this.lurkT = 6 + Math.random() * 4; this.velocity = 0; this.path = null;
+            g.onChaseEnd(this); g.stats.confused = (g.stats.confused || 0) + 1;
+            g.hint('confused', 'Penghuni kehilanganmu dan berdiri bingung di tempat terakhir ia melihatmu. Jangan bersuara: sedikit bunyi saja memberi tahu lokasimu.', 6);
+            break;
+          }
+          if (!this.seenOutdoors && (reached || this.lostT > giveUp)) {
             this.setState('search');
             this.suspicion = 0.6;
             this.searchPts = this.planSearch();
@@ -494,8 +518,9 @@ export class Monitor extends Entity {
         this.yaw += Math.sin(g.time * 0.5) * dt * 0.25;
         this.checkLockers(dt);
         if (this.state !== 'wait') break;
+        if (this.confused) this.yaw += Math.sin(g.time * 0.9) * dt * 1.6;   // turning this way and that
         this.lurkT -= dt;
-        if (this.lurkT <= 0) { this.setState('patrol'); this.waitT = 0.5; }
+        if (this.lurkT <= 0) { this.confused = false; this.setState('patrol'); this.waitT = 0.5; }
         break;
       }
       case 'locker': { // walking to / inspecting a locker

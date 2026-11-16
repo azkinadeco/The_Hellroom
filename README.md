@@ -42,6 +42,13 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 159–160
+
+- **Mikrofon** (src/mic.js, Pengaturan → "Mikrofon: suaramu terdengar penghuni", nonaktif bawaan, dengan kepekaan): suara pemain dianalisis lokal (tidak direkam/dikirim) dan menjadi bunyi 'voice' di posisi pemain. Butuh halaman HTTPS atau localhost.
+- **Luar ruangan**: terlihat dari jauh → kejaran cepat (2,5× lebih cepat sadar), selalu berlari ke lokasi terakhir terlihat, lalu bingung 6–10 detik sambil menoleh.
+- **Bunyi membocorkan lokasi**: saat penghuni sedang mencari (bingung, mencari, baru kehilangan), bunyi apa pun darimu dipetakan tepat (tanpa galat); dari tempat sembunyi ia langsung tahu tempatnya.
+- **Perbaikan**: kewaspadaan penuh tidak lagi tersisa setelah kejaran (sebelumnya penghuni bisa langsung "melihat" posisimu lagi menembus tembok); pengaturan yang sejak Batch 76 salah tempat (di layar kalibrasi) dipindah ke Pengaturan.
+
 ## Batch 148–158
 
 - **Perbaikan loker** (148): penghuni tidak lagi bertahan di depan tempat sembunyi. Radio tidak lagi bersuara dari dalam tempat sembunyi; tempat yang sudah diperiksa kosong "dibersihkan" 50 detik; setelah memeriksa ia langsung pergi jauh; pura-pura pergi tidak terjadi dekat pemain yang bersembunyi.

@@ -81,6 +81,7 @@ export class HUD {
     const lines = [`SEKRING  ${g.fusesInstalled + inv.fuses}/${need}${g.fusesInstalled ? `  (${g.fusesInstalled} terpasang)` : ''}`];
     if (inv.keys) lines.push(`KUNCI    ×${inv.keys}`);
     if (inv.erasers) lines.push(`PENGHAPUS ×${inv.erasers}  [${g.input.touch ? 'LEMPAR' : g.input.keyName('throw')}]`);
+    if (g.settings.mic) lines.push(g.mic && g.mic.active ? `MIK ${'▮'.repeat(Math.round((g.voiceLv || 0) * 5)).padEnd(5, '▯')}` : 'MIK —');
     if (g.radioOn !== undefined) lines.push(`RADIO ${g.radioOn ? '▮'.repeat(1 + Math.round((g.radioK || 0) * 4)).padEnd(5, '▯') : 'mati'}  [${g.input.touch ? 'RADIO' : g.input.keyName('radio')}]`);
     if (inv.wedges) lines.push(`GANJAL PINTU ×${inv.wedges}  [jongkok + ${g.input.touch ? 'AKSI' : g.input.keyName('interact')} di pintu]`);
     if (inv.alarms) lines.push(`JAM WEKER ×${inv.alarms}  [${g.input.touch ? 'WEKER' : g.input.keyName('alarm')}]`);
