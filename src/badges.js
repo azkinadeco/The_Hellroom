@@ -55,6 +55,8 @@ export const BADGES = [
   { id: 'luka', icon: '🩸', name: 'Terluka Tapi Hidup', desc: 'Selesaikan satu bab setelah meronta lepas.', test: (c) => c.win && (c.g.stats.struggles || 0) > 0 },
   { id: 'jaga', icon: '🚪', name: 'Pintu yang Dijaga', desc: 'Lolos saat penghuni menjaga pintu ruangan tempatmu bersembunyi.', test: (c) => c.win && (c.g.stats.doorGuards || 0) > 0 },
   { id: 'bisik', icon: '🎙', name: 'Bisik-Bisik', desc: 'Selesaikan satu bab dengan mikrofon menyala.', test: (c) => c.win && c.story && !!(c.g.settings && c.g.settings.mic) },
+  { id: 'bawahmata', icon: '👁', name: 'Di Bawah Mata', desc: 'Selesaikan BAB I tanpa sekali pun ditemukan mata di langit.', test: (c) => c.win && c.story && c.g.def.id === 1 && !(c.g.stats.eyeCaught || 0) },
+  { id: 'belakang', icon: '🫥', name: 'Napas di Tengkuknya', desc: 'Menyelinap sedekat jangkauan tangan di belakang penghuni tiga kali dalam satu bab tanpa ketahuan.', test: (c) => (c.g.stats.sneakPast || 0) >= 3 },
   { id: 'bayangan', icon: '🌒', name: 'Bayangan', desc: 'Selesaikan satu bab dengan penilaian siluman Bayangan.', test: (c) => c.win && c.story && (c.g.stats.spotted || 0) === 0 && (c.g.stats.loudNoises || 0) === 0 && !(c.g.stats.inspected || 0) && !(c.g.stats.glass || 0) },
   { id: 'pintuakhir', icon: '🚨', name: 'Alarm Terakhir', desc: 'Buka pintu darurat sementara penghuni mendatangimu.', test: (c) => c.win && (c.g.stats.finalRuns || 0) > 0 && (c.g.stats.spotted || 0) > 0 },
   { id: 'foto', icon: '📷', name: 'Kenang-Kenangan', desc: 'Ambil foto dari layar jeda.', test: (c) => (c.g.stats.photos || 0) > 0 },
