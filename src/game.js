@@ -55,6 +55,12 @@ export class Game {
     // haze in the torch beam, mist on the floor, an uneven lens
     this.beam = new Beam(this.player.light); this.camera.add(this.beam.mesh);
     this.rain = new Rain(); this.scene.add(this.rain.lines);
+    // glints: a small star on a fuse, key, battery or tape the torch beam passes over
+    { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,255,240,1)'); gr.addColorStop(0.15, 'rgba(255,245,210,0.8)'); gr.addColorStop(1, 'rgba(255,240,200,0)');
+      x.fillStyle = gr; x.fillRect(0, 0, 64, 64); x.fillStyle = 'rgba(255,255,240,0.9)'; x.fillRect(31, 4, 2, 56); x.fillRect(4, 31, 56, 2);
+      const tex = new THREE.CanvasTexture(c); this.glints = [];
+      for (let i = 0; i < 6; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); sp.scale.set(0.35, 0.35, 1); sp.visible = false; sp.renderOrder = 5; this.scene.add(sp); this.glints.push(sp); } }
     this.mist = new Mist();   // settings holder; the mist itself is drawn by the post pass
     this.player.light.map = flashlightCookie();
     this.state = 'menu';
@@ -1477,6 +1483,18 @@ export class Game {
   }
 
   render(t) {
+    if (this.glints) { // which items catch the beam right now
+      const p = this.player, cam = this.camera, d = cam.getWorldDirection(this._gd || (this._gd = new THREE.Vector3())); let n = 0;
+      if (p.flashlight && !p.hidden && this.built && this.state === 'playing') for (const it of this.built.items) {
+        if (n >= this.glints.length) break;
+        if (it.taken || !['fuse', 'key', 'battery', 'tape'].includes(it.type)) continue;
+        const dx = it.x - cam.position.x, dz = it.z - cam.position.z, dy = (it.y || 0) + 0.2 - cam.position.y, dist = Math.hypot(dx, dy, dz);
+        if (dist > 9 || dist < 0.6 || (dx * d.x + dy * d.y + dz * d.z) / dist < 0.96 || !this.map.los(cam.position.x, cam.position.z, it.x, it.z)) continue;
+        const g = this.glints[n++]; g.visible = true; g.position.set(it.x, (it.y || 0) + 0.2, it.z);
+        g.material.opacity = 0.55 + 0.45 * Math.sin(t * 9 + it.x * 3); g.material.rotation = t * 0.8; const sc = 0.22 + dist * 0.03; g.scale.set(sc, sc, 1);
+      }
+      for (let i = n; i < this.glints.length; i++) this.glints[i].visible = false;
+    }
     if (this.prints && this.map) this.prints.render();
     const u = this.vhs.uniforms;
     if (this.deathT >= 0 && this.deathRoll) {
