@@ -180,8 +180,41 @@ export function generateBuilding(def, seed = def.seed) {
   };
 }
 
+// Escape routes: many rooms had a single door, a dead end in a chase. Give some of them a
+// second door - to the hall on another side, or into the room next door - so there are loops
+// to run round. Locked rooms and special spaces are left alone.
+const NO_LOOP = new Set(['stairs', 'lift', 'lapangan', 'forest', 'pool', 'flooded', 'statues', 'restroom', 'atrium']);
+function addLoops(b, rng, def) {
+  const share = def.loops ?? 0.6;
+  for (const f of b.F) {
+    const m = f.map;
+    for (const r of f.out.rooms) {
+      if (NO_LOOP.has(r.type) || r.locked || r.doors.length !== 1 || r.doors.some((d) => d.locked) || rng.next() > share) continue;
+      const d0 = r.doors[0], cand = [];
+      for (let z = r.z0; z <= r.z1; z++) for (let x = r.x0; x <= r.x1; x++) for (const [s, d] of Object.entries(SIDES)) {
+        const nr = m.reg(x + d.dx, z + d.dz);
+        if (nr === r.id || nr < 0) continue;
+        const other = nr > 0 ? f.out.rooms.find((q) => q.id === nr) : null;
+        if (other && (NO_LOOP.has(other.type) || other.locked || other.doors.some((q) => q.locked))) continue;
+        const [kind, ex, ez] = m.edgeOf(x, z, d), k = m.key(kind, ex, ez);
+        if (m.doors.has(k) || m.wallKeys.has(k) || m.railKeys.has(k)) continue;
+        const dx = (kind === 'v' ? ex * CELL : (ex + 0.5) * CELL) - d0.x, dz = (kind === 'h' ? ez * CELL : (ez + 0.5) * CELL) - d0.z;
+        const far = Math.hypot(dx, dz);
+        if (far < CELL * 2) continue;                       // a second door right next to the first is no escape
+        cand.push({ x, z, s, score: far + (nr === 0 ? 6 : 0) + rng.next() * 3 });
+      }
+      if (!cand.length) continue;
+      cand.sort((a, c) => c.score - a.score);
+      const c = cand[0];
+      const nd = b.F[f.k].door(r, c.x, c.z, c.s); nd.loop = true;
+      b.loopDoors = (b.loopDoors || 0) + 1;
+    }
+  }
+}
+
 function finish(b, rng, def) {
   const F = b.F, W = b.W;
+  addLoops(b, rng, def);
   for (const f of F) f.map.computeEdges();
   // open space above: the same cell on the floor above is VOID
   for (const f of F) {
@@ -232,6 +265,16 @@ function finish(b, rng, def) {
     const reserved = new Set([f.map.exitKey, f.out.fusebox && f.out.fusebox.key].filter(Boolean));
     for (const r of f.out.rooms) if (!furnishExtra(r, f, rng, def)) furnishRoom(r, f.map, rng, f.out);
     dressExtra(f, rng, def, reserved);
+    // a loop door that furniture ended up blocking on either side is walled up again
+    { const cols = f.out.colliders || [], m = f.map; let changed = false;
+      for (const r of f.out.rooms) for (const d of [...r.doors]) {
+        if (!d.loop) continue;
+        const nx = d.kind === 'v' ? 1 : 0, nz = d.kind === 'h' ? 1 : 0;
+        const hit = [-0.75, 0.75].some((sd) => { const x = d.x + nx * sd, z = d.z + nz * sd; return cols.some((c) => x > c.minX - 0.3 && x < c.maxX + 0.3 && z > c.minZ - 0.3 && z < c.maxZ + 0.3); });
+        if (!hit) continue;
+        m.doors.delete(d.key); r.doors.splice(r.doors.indexOf(d), 1); changed = true; b.loopDoors--;
+      }
+      if (changed) m.computeEdges(); }
     // changing rooms line every wall with lockers; keep one in three
     for (const r of f.out.rooms) {
       if (r.type !== 'changing') continue;
