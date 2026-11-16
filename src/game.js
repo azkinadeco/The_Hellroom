@@ -260,6 +260,7 @@ export class Game {
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: def.startAlarms || 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
     this.alarms = [];
+    this.radioOn = def.radio !== false;
     this.installing = null;
     this.trainDone = null; this.trainFinished = false;
     this.trace = null;
@@ -1104,6 +1105,15 @@ export class Game {
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
     this.prints.update(dt);
+    { // the pocket radio hisses louder the nearer a resident is (within 22 m, through walls) - and a resident
+      // right next to it hears it too
+      let dmin = Infinity; for (const e of this.entities) if (e.form !== 'statue') dmin = Math.min(dmin, Math.hypot(e.pos.x - this.player.pos.x, e.pos.z - this.player.pos.z));
+      const k = Math.max(0, 1 - dmin / 22); this.radioK = k;
+      this.audio.setRadio(this.radioOn && this.player.alive, k, dt);
+      if (this.radioOn && k > 0.25) this.hint('radio', 'Radio saku berdesis makin keras saat penghuni mendekat, bahkan dari balik tembok. Tapi dari dekat ia juga bisa mendengarnya: matikan (' + (this.input.touch ? 'tombol radio' : this.input.keyName('radio')) + ') saat bersembunyi.', 7);
+      this.radioNoiseT = (this.radioNoiseT || 0) - dt;
+      if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
+    }
     this.updateInstall(dt);
     { // where the torch beam lands: residents that cannot see you may still see your light on a dark wall
       this.beamT = (this.beamT || 0) - dt;
@@ -1173,6 +1183,7 @@ export class Game {
     if (input.consume('throw')) this.throwEraser();
     if (input.consume('alarm')) this.setAlarm();
     if (input.consume('knock')) this.knock();
+    if (input.consume('radio')) { this.radioOn = !this.radioOn; this.audio.click(); this.hud.toast(this.radioOn ? 'Radio saku menyala.' : 'Radio saku dimatikan.', 1.2); }
     this.updateAlarms(dt);
     this.updateProjectiles(dt);
     this.updateHints(dt);

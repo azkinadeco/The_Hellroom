@@ -682,6 +682,24 @@ export class Audio {
     this.ambDuck.gain.setTargetAtTime(1 - 0.65 * this.focusLv, this.t, 0.1);
     this.sfx.gain.setTargetAtTime(1 + 0.4 * this.focusLv, this.t, 0.1);
   }
+  // the pocket radio: static that thickens as something comes near, with crackles; k = 0..1
+  setRadio(on, k, dt) {
+    if (!this.ready) return;
+    if (!this.radio) {
+      const ctx = this.ctx, src = ctx.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.7;
+      this.radio = ctx.createGain(); this.radio.gain.value = 0; this.radioBP = bp;
+      src.connect(bp).connect(this.radio).connect(this.master); src.start();
+      this.radioLv = 0; this.crackT = 0;
+    }
+    this.radioLv += ((on ? k : 0) - this.radioLv) * Math.min(1, dt * 4);
+    const base = on ? 0.004 : 0;   // a faint hiss even when nothing is near, so you know it is on
+    this.radio.gain.setTargetAtTime(base + this.radioLv * this.radioLv * 0.11, this.t, 0.08);
+    this.radioBP.frequency.setTargetAtTime(1500 + this.radioLv * 2500, this.t, 0.2);
+    // crackles come faster as it gets closer
+    this.crackT -= dt;
+    if (on && this.radioLv > 0.15 && this.crackT <= 0) { this.crackT = 0.08 + (1 - this.radioLv) * 0.5 * Math.random(); this._thud(null, this.t, 0.04 + this.radioLv * 0.08); }
+  }
   // a rising tone that climbs as a hunter closes in (silent outside a chase)
   setChaseDist(d, dt) {
     if (!this.ready) return;

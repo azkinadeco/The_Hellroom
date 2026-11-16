@@ -3,12 +3,12 @@
 export const DEFAULT_BINDS = {
   forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', sprint: 'ShiftLeft', crouch: 'KeyC', interact: 'KeyE',
   flashlight: 'KeyF', nightvision: 'KeyN', zoom: 'KeyZ', throw: 'KeyG', alarm: 'KeyQ', breath: 'Space',
-  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV', knock: 'KeyT', lookBack: 'KeyB',
+  map: 'KeyM', mapfloor: 'KeyR', objectives: 'Tab', leanLeft: 'KeyX', leanRight: 'KeyV', knock: 'KeyT', lookBack: 'KeyB', radio: 'KeyY',
 };
 export const BIND_LABELS = {
   forward: 'Maju', back: 'Mundur', left: 'Kiri', right: 'Kanan', sprint: 'Lari', crouch: 'Jongkok', interact: 'Interaksi',
   flashlight: 'Senter', nightvision: 'Mode malam', zoom: 'Zoom kamera', throw: 'Lempar penghapus', alarm: 'Pasang jam weker', breath: 'Tahan napas',
-  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan', knock: 'Ketuk dinding', lookBack: 'Menoleh ke belakang',
+  map: 'Denah', mapfloor: 'Denah: ganti lantai', objectives: 'Tujuan', leanLeft: 'Condong kiri', leanRight: 'Condong kanan', knock: 'Ketuk dinding', lookBack: 'Menoleh ke belakang', radio: 'Radio saku',
 };
 const HELD = new Set(['forward', 'back', 'left', 'right', 'sprint', 'zoom', 'breath', 'leanLeft', 'leanRight', 'lookBack']);
 export function keyLabel(code) {
