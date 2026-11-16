@@ -703,6 +703,23 @@ $('note-close').onclick = () => {
   hideAll(); game.state = 'playing'; input.enabled = true; input.lock();
 };
 $('btn-resume').onclick = () => ui.resume();
+// a still from the tape: the frame behind the pause screen, with a camcorder stamp, saved as a PNG
+$('btn-photo').onclick = () => {
+  try {
+    game.render(performance.now() / 1000);
+    const src = game.renderer.domElement, c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+    const x = c.getContext('2d'); x.drawImage(src, 0, 0);
+    const k = Math.max(1, c.height / 540), d = new Date(), z = (n) => String(n).padStart(2, '0');
+    x.font = `${Math.round(22 * k)}px monospace`; x.fillStyle = 'rgba(255,255,255,0.9)'; x.shadowColor = '#000'; x.shadowBlur = 4 * k;
+    x.fillText(`REC  ${game.def.code} · ${game.def.name}`, 24 * k, 40 * k);
+    x.fillText(`NOV 12 1996  ${z(d.getHours())}:${z(d.getMinutes())}`, 24 * k, c.height - 24 * k);
+    x.textAlign = 'right'; x.fillText('THE HELLROOM', c.width - 24 * k, c.height - 24 * k);
+    const a = document.createElement('a'); a.download = `hellroom-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}.png`;
+    a.href = c.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove();
+    game.stats.photos = (game.stats.photos || 0) + 1;
+    hud.toast('Foto disimpan.', 1.4);
+  } catch (e) { hud.toast('Foto tidak bisa disimpan di sini.', 1.6); }
+};
 $('btn-restart').onclick = () => { audio.resume(); pendingLevel = game.levelIndex; beginPlay(); };
 $('btn-quit').onclick = quitToMenu;
 $('btn-retry').onclick = () => { if (game.def.daily) { startDaily(); return; } if (game.def.endless) { startEndless(1); return; } pendingLevel = game.levelIndex; beginPlay(); };
