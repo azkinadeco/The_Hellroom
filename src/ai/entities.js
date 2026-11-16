@@ -230,7 +230,7 @@ export class Entity {
     if (!k) return [0, false];
     const los = g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z);
     if (!los) { if (d > 4.5) return [0, false]; k *= 0.4; }
-    return [k * Math.pow(1 - d / R, 0.8) * 2.2, los];
+    return [k * Math.pow(1 - d / R, 0.8) * 2.2 * (g.diff.presence ?? 1), los];
   }
 
   updateCommon(dt) {
