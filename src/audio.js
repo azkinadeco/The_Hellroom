@@ -221,6 +221,15 @@ export class Audio {
     o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 2.2, t + 0.06);
     g.connect(this.poolGain); o.connect(g); this._env(g, t, 0.003, 0.05, 0.12); o.start(t); o.stop(t + 0.2);
   }
+  // a splash somewhere else (a resident wading)
+  splashAt(pos, vol = 0.7) {
+    if (!this.ready) return;
+    this._cue('squelch', pos);
+    const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const f = this._filter('bandpass', 1200 + Math.random() * 700, 0.9), g = this._out(pos, 0.5);
+    f.frequency.exponentialRampToValueAtTime(450, t + 0.25);
+    src.connect(f).connect(g); this._env(g, t, 0.01, 0.4 * vol, 0.3); src.start(t, Math.random()); src.stop(t + 0.35);
+  }
   splash(vol = 0.7) {
     if (!this.ready) return;
     const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;

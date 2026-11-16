@@ -620,7 +620,13 @@ export class Monitor extends Entity {
     // heavy footsteps
     if ((this.velocity || 0) > 0.3) {
       this.stepAcc += (this.velocity || 0) * dt;
-      if (this.stepAcc > this.stepEvery) { this.stepAcc = 0; g.audio.heavyStep(this.pos, this.stepVol[this.state === 'chase' ? 1 : 0]); }
+      if (this.stepAcc > this.stepEvery) {
+        this.stepAcc = 0; g.audio.heavyStep(this.pos, this.stepVol[this.state === 'chase' ? 1 : 0]);
+        // what it walks on tells you where it is: glass crunches, water splashes - loud, through walls
+        const f = g.floors[g.floorK], P = f && f.glass && f.glass.find((q) => Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < q.r + 0.2);
+        if (P) { g.audio.glassCrunch({ x: P.x, y: 0.1, z: P.z }, 0.9); g.stats.residentGlass = (g.stats.residentGlass || 0) + 1; }
+        else if ((g.gen.water || []).some((w) => this.pos.x > w.minX && this.pos.x < w.maxX && this.pos.z > w.minZ && this.pos.z < w.maxZ)) g.audio.splashAt && g.audio.splashAt(this.pos, 0.7);
+      }
     }
     this.updateCommon(dt);
   }
