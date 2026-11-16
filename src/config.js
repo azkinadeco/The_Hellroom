@@ -208,7 +208,15 @@ export function endlessDef(floor, seed) {
   };
   const keys = Object.keys(ENDLESS_MODS), mods = [];
   for (let n = f >= 6 ? 2 : f >= 2 ? 1 : 0; n > 0 && keys.length; n--) mods.push(keys.splice(ri(0, keys.length - 1), 1)[0]);
+  // every fifth floor is a Lantai Neraka: nearly dark, two hunters, thicker air - and a double provision after it
+  if (f % 5 === 0) {
+    def.hell = true; def.code = `LANTAI ${-f} · NERAKA`;
+    def.subtitle = 'Lampunya hampir semua mati. Dua langkah berbeda. Di bawahnya, bekal ganda.';
+    if (!mods.includes('gelap')) mods.push('gelap');
+    if (entities.length < 2) { const pool = HUNTERS.filter((k) => k !== entities[0].type); entities.push({ type: pool[(seed + f * 5) % pool.length] }); }
+  }
   for (const k of mods) { const M = ENDLESS_MODS[k]; Object.assign(def, M.def || {}); if (M.fog) def.fog = Math.min(0.11, def.fog * M.fog); }
+  if (def.hell) def.fog = Math.min(0.11, def.fog * 1.25);
   def.mods = mods;
   return def;
 }

@@ -162,12 +162,20 @@ const ui = {
       // pick one of three provisions for the rest of the run
       if (!game.def.daily) {
         const keys = Object.keys(PERKS); for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
-        const box = $('perk-pick'); box.innerHTML = '<h3>Pilih satu bekal</h3>'; box.classList.remove('hidden');
+        const want = game.def.hell ? 2 : 1, picked = [];
+        const box = $('perk-pick'); box.innerHTML = `<h3>${want > 1 ? 'Lantai Neraka dilewati: pilih dua bekal' : 'Pilih satu bekal'}</h3>`; box.classList.remove('hidden');
         $('btn-next').disabled = true;
         for (const k of keys.slice(0, 3)) {
           const P = PERKS[k], b = document.createElement('button'); b.className = 'perk';
           b.innerHTML = `<span class="pi">${P.icon}</span><b>${P.name}</b><small>${P.desc}</small>`;
-          b.onclick = () => { for (const o of box.querySelectorAll('.perk')) o.classList.toggle('on', o === b); save.endlessRun.chosen = k; persist(); $('btn-next').disabled = false; $('btn-next').focus(); };
+          b.onclick = () => {
+            const i = picked.indexOf(k);
+            if (i >= 0) picked.splice(i, 1); else { picked.push(k); if (picked.length > want) picked.shift(); }
+            for (const o of box.querySelectorAll('.perk')) o.classList.toggle('on', picked.includes(o.dataset.k));
+            save.endlessRun.chosen = [...picked]; persist();
+            $('btn-next').disabled = picked.length < want; if (picked.length >= want) $('btn-next').focus();
+          };
+          b.dataset.k = k;
           box.appendChild(b);
         }
       }
@@ -253,7 +261,7 @@ const modText = (def) => (def.mods && def.mods.length ? def.mods.map((k) => `☠
 function startEndless(floor, seed = null) {
   if (seed === null) seed = Math.floor(Math.random() * 1e6);
   const prev = save.endlessRun && save.endlessRun.seed === seed && floor > 1 ? save.endlessRun : null;
-  const perks = prev ? [...(prev.perks || []), ...(prev.chosen ? [prev.chosen] : [])] : [];
+  const perks = prev ? [...(prev.perks || []), ...[].concat(prev.chosen || [])] : [];
   save.endlessRun = { seed, floor, perks }; persist();
   pendingLevel = -1;
   pendingDef = endlessDef(floor, seed); pendingDef.runSeed = seed; pendingGod = false;
@@ -346,7 +354,7 @@ function buildTitle() {
   // today's tape: who lives there and what is wrong with it
   { const date = today(), dd = endlessDef(3 + (date % 4), date % 999983), who = dd.entities.map((e) => (ENTITY_INFO[e.type] || {}).name || e.type).join(' & ');
     $('mode-daily-who').textContent = `Hari ini: ${dd.name} · ${who}` + (dd.mods && dd.mods.length ? ' · ' + dd.mods.map((k) => ENDLESS_MODS[k].name).join(', ') : ''); }
-  { const pk = er && er.floor > 1 ? [...(er.perks || []), ...(er.chosen ? [er.chosen] : [])] : [];
+  { const pk = er && er.floor > 1 ? [...(er.perks || []), ...[].concat(er.chosen || [])] : [];
     $('mode-endless-perks').textContent = pk.length ? 'Bekal: ' + pk.map((k) => PERKS[k] ? PERKS[k].icon + ' ' + PERKS[k].name : k).join(', ') : ''; }
   $('mode-daily-sub').textContent = dr ? `Hari ini selesai dalam ${fmt(dr)}. Kembali besok untuk kaset baru.` : 'Satu lantai yang sama untuk semua pemain, berganti setiap hari.';
   document.querySelector('#title .tag').textContent = save.trueEnding ? '★★ Akhir sebenarnya ditemukan' : save.endingSeen ? '★ Rekaman terakhir sudah diputar' : 'Rekaman ditemukan · 1996';
