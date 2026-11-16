@@ -118,7 +118,9 @@ export class HUD {
     this.breath.classList.toggle('show', !!p.hidden);
     this.breath.classList.toggle('warn', br < 0.3);
     this.breath.querySelector('i').style.width = (br * 100) + '%';
-    const gz = g.gazeFx || 0;
+    // the gaze meter also shows the sky eye fixing on you (BAB I yard)
+    const sky = g.def && g.def.sky === 'clouds' ? (g.eyeStare || 0) : 0, gz = Math.max(g.gazeFx || 0, sky);
+    if (this._last.gzl !== (sky > (g.gazeFx || 0))) { this._last.gzl = sky > (g.gazeFx || 0); this.gaze.querySelector('label').textContent = this._last.gzl ? '👁 MATA LANGIT' : '👁 DITATAP'; }
     this.gaze.classList.toggle('show', gz > 0.02);
     this.gaze.classList.toggle('warn', gz > 0.6);
     this.gaze.querySelector('i').style.width = (gz * 100) + '%';

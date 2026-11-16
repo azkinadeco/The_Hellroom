@@ -1395,7 +1395,7 @@ export class Game {
       if (!e.sight || this.chasers.has(e) || !p.alive) { e.nearMiss = false; continue; }
       const d = Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z);
       // creeping up behind one, within arm's reach, unnoticed
-      if (d < 2.2 && !p.hidden && (e.awareness || 0) < 0.3 && Math.abs(angleDiffG(e.yaw, Math.atan2(p.pos.x - e.pos.x, p.pos.z - e.pos.z))) > 1.9) { if (!e.sneakT || this.time - e.sneakT > 15) { e.sneakT = this.time; this.stats.sneakPast = (this.stats.sneakPast || 0) + 1; } }
+      if (d < 2.2 && !p.hidden && (e.awareness || 0) < 0.3 && Math.abs(angleDiff(e.yaw, Math.atan2(p.pos.x - e.pos.x, p.pos.z - e.pos.z))) > 1.9) { if (!e.sneakT || this.time - e.sneakT > 15) { e.sneakT = this.time; this.stats.sneakPast = (this.stats.sneakPast || 0) + 1; } }
       if (d < 2.6 && (p.hidden || p.crouched) && (e.awareness || 0) < 0.45) e.nearMiss = true;
       else if (e.nearMiss && d > 4.5) {
         e.nearMiss = false;
@@ -1891,4 +1891,3 @@ export class Game {
     return k.deathText || (ENTITY_INFO[k.kind] && ENTITY_INFO[k.kind].death) || 'Sesuatu menemukanmu.';
   }
 }
-function angleDiffG(a, b) { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; }
