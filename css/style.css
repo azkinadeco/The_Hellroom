@@ -526,3 +526,5 @@ body.focusing #hud::before { content: ''; position: absolute; inset: 0; pointer-
 .breath-cue i { display: block; height: 100%; background: #bfe0ff; }
 @keyframes cuePulse { to { transform: scale(1.08); } }
 body.clear-screen .breath-cue b, body.big-text .breath-cue b { animation: none; }
+.custom-diff .row { font-size: 15px; padding: 5px 0; }
+#diff-list.seg { flex-wrap: wrap; }

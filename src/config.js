@@ -71,6 +71,8 @@ export const DIFFICULTY = {
   normal: { label: 'Standar', radio: 22, slam: 0.9, hitMul: 1, lull: [5, 8, 1.5, 0.55], catchUp: 1.03, speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24, desc: 'Seperti yang dimaksudkan. Kotak panel menyimpan rekamanmu.' },
   sulit:  { label: 'Mencekam', radio: 17, slam: 0.7, hitMul: 0.8, lull: [7, 10, 1.2, 0.65], catchUp: 1.06, speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420, noCheckpoint: true, desc: 'Penghuni lebih cepat dan lebih awas, baterai sedikit, tanpa titik simpan.' },
   mimpi:  { label: 'Mimpi Buruk', radio: 12, slam: 0.5, hitMul: 0.6, lull: [9, 12, 1.0, 0.72], catchUp: 1.08, speed: 1.18, sight: 1.35, hearing: 1.45, batteries: 0.5, quiet: 25, grace: 8, noCheckpoint: true, noMap: true, noAssist: true, desc: 'Tanpa denah, tanpa titik simpan, tanpa bantuan. Penghuni hampir tidak pernah jauh darimu.' },
+  // Kustom: Standar's rules with the four main dials set by the player (filled in from the settings)
+  kustom: { label: 'Kustom', radio: 22, slam: 0.9, hitMul: 1, lull: [5, 8, 1.5, 0.55], catchUp: 1.03, speed: 1, sight: 1, hearing: 1, batteries: 1, quiet: 55, grace: 24, desc: 'Atur sendiri kecepatan, penglihatan, dan pendengaran penghuni, serta jumlah baterai.' },
 };
 
 // Test rooms in the main menu (Ruang Uji): every map playable, resident

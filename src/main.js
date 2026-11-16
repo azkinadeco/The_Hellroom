@@ -420,7 +420,17 @@ function buildLevels() {
     dl.appendChild(b);
   }
   $('diff-desc').textContent = (DIFFICULTY[save.diff] || {}).desc || '';
+  // Kustom: four sliders right under the buttons
+  const box = $('custom-diff'); box.classList.toggle('hidden', save.diff !== 'kustom');
+  if (save.diff === 'kustom') {
+    const C = save.custom || (save.custom = { speed: 1, sight: 1, hearing: 1, batteries: 1 });
+    const rows = [['speed', 'Kecepatan penghuni', 0.7, 1.3], ['sight', 'Penglihatan', 0.6, 1.5], ['hearing', 'Pendengaran', 0.6, 1.6], ['batteries', 'Baterai', 0.4, 2]];
+    box.innerHTML = rows.map(([k, n, a, b]) => `<label class="row">${n} <span><span class="dim" id="cd-${k}-v">${Math.round(C[k] * 100)}%</span> <input type="range" id="cd-${k}" min="${a}" max="${b}" step="0.05" value="${C[k]}"></span></label>`).join('');
+    for (const [k] of rows) $('cd-' + k).oninput = (ev) => { C[k] = +ev.target.value; $('cd-' + k + '-v').textContent = Math.round(C[k] * 100) + '%'; applyCustom(); persist(); };
+  }
+  applyCustom();
 }
+function applyCustom() { const C = save.custom; if (C) Object.assign(DIFFICULTY.kustom, { speed: C.speed, sight: C.sight, hearing: C.hearing, batteries: C.batteries }); }
 function buildArchive() {
   const list = $('archive-list'); list.innerHTML = '';
   const found = new Set(save.notesRead), tapes = new Set(save.tapes.map(String));
@@ -751,6 +761,7 @@ function calibrate() {
 
 async function boot() {
   await assets.load((f) => { $('load-bar').style.width = (f * 100).toFixed(0) + '%'; });
+  applyCustom();
   game = new Game({ canvas: $('game'), assets, audio, input, hud, settings: save.settings, ui });
   game.hintsSeen = new Set(save.hints || []);
   game.onHint = (id) => { save.hints = [...game.hintsSeen]; persist(); };
