@@ -260,6 +260,7 @@ export class Game {
     this.camera.fov = this.baseFov; this.camera.updateProjectionMatrix();
     p.inventory = { fuses: 0, keys: 0, erasers: 0, alarms: def.startAlarms || 0, wedges: def.wedges ?? (def.endless ? 1 : 2) };
     this.alarms = [];
+    this.installing = null;
     this.trainDone = null; this.trainFinished = false;
     this.trace = null;
     this.fearT = 0; this.fakeHunt = 0;
@@ -900,10 +901,27 @@ export class Game {
     this.ui.showNote(n.title, n.body);
   }
 
+  // Seating fuses takes a moment per fuse, with the panel crackling and sparking (a little noise);
+  // walking off or being caught stops it, and the fuses stay in your pocket.
   useFusebox() {
     const p = this.player;
-    if (this.powered) return;
+    if (this.powered || this.installing) return;
     if (p.inventory.fuses <= 0) { this.hud.toast(`Butuh ${this.def.fuses - this.fusesInstalled} sekring lagi`); return; }
+    this.installing = { t: 0, need: Math.min(2.6, 0.9 + 0.55 * p.inventory.fuses), x: p.pos.x, z: p.pos.z, spark: 0 };
+    this.hint('install', 'Memasang sekring butuh waktu dan panelnya berderak. Tetap di tempat sampai selesai, atau menjauh untuk membatalkan.', 5);
+  }
+  updateInstall(dt) {
+    const I = this.installing, p = this.player;
+    if (!I) return;
+    if (!p.alive || p.hidden || Math.hypot(p.pos.x - I.x, p.pos.z - I.z) > 0.6) { this.installing = null; this.hud.toast('Pemasangan dibatalkan.', 1.4); return; }
+    I.t += dt; I.spark -= dt;
+    const fb = this.gen.fusebox;
+    if (I.spark <= 0) { I.spark = 0.35 + Math.random() * 0.2; this.audio.scrape({ x: fb.x, y: 1.4, z: fb.z }, 0.12, 0.18); this.emitNoise(fb.x, fb.z, NOISE.fuse * 0.45, 'fuse'); }
+    this.hud.caption(`Memasang sekring… ${Math.round(Math.min(1, I.t / I.need) * 100)}%`, 0.3);
+    if (I.t >= I.need) { this.installing = null; this.finishFuses(); }
+  }
+  finishFuses() {
+    const p = this.player;
     this.fusesInstalled += p.inventory.fuses;
     p.inventory.fuses = 0;
     const fb = this.gen.fusebox;
@@ -1086,6 +1104,7 @@ export class Game {
     if (!p.alive && this.automap.open) this.automap.setOpen(false);
     this.automap.update(dt);
     this.prints.update(dt);
+    this.updateInstall(dt);
     { // where the torch beam lands: residents that cannot see you may still see your light on a dark wall
       this.beamT = (this.beamT || 0) - dt;
       if (this.beamT <= 0) {
