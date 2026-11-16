@@ -351,7 +351,7 @@ export class Monitor extends Entity {
       }
       else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
       // crossing into suspicion it growls: a warning you can hear
-      if ((this.awareness || 0) >= 0.45 && (this.prevAw || 0) < 0.45 && g.time > (this.growlCd || 0)) { this.growlCd = g.time + 6; g.audio.growl({ x: this.pos.x, y: 1.5, z: this.pos.z }); }
+      if ((g.diff.warn ?? 1) > 0 && (this.awareness || 0) >= 0.45 && (this.prevAw || 0) < 0.45 && g.time > (this.growlCd || 0)) { this.growlCd = g.time + 6; g.audio.growl({ x: this.pos.x, y: 1.5, z: this.pos.z }); }
       this.prevAw = this.awareness || 0;
       if (this.awareness >= 1 && gain > 0) see = 1;   // full awareness only turns into a sighting while it can actually perceive you
       this.checkDoors(dt);

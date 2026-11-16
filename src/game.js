@@ -1405,7 +1405,7 @@ export class Game {
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);
     let interference = this.danger > 0.45 && !this.clear ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
     // the lights stutter when something is near, even unseen behind a wall (a warning, not a strobe)
-    if (!this.calm && interference === 1) { let near = Infinity; for (const e of this.entities) if (e.form !== 'statue') near = Math.min(near, Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z)); if (near < 8 && Math.random() < (1 - near / 8) * 0.05) interference = 0.55; }
+    if (!this.calm && interference === 1) { let near = Infinity; for (const e of this.entities) if (e.form !== 'statue') near = Math.min(near, Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z)); if (near < 8 && Math.random() < (1 - near / 8) * 0.05 * (this.diff.warn ?? 1)) interference = 0.55; }
     this.world.blackout = this.blackoutT > 0;
     if (this.blackoutT > 0) { this.blackoutT -= dt; interference = this.blackoutT < 0.6 || Math.random() < 0.02 ? 0.6 : 0.1; }
     if (this.calm) { this.flickerVal = Math.max(0.88, this.flickerVal); if (this.blackoutT <= 0) interference = Math.max(interference, 0.8); else interference = 0.1; }   // no strobing
@@ -1513,7 +1513,7 @@ export class Game {
   render(t) {
     if (this.glints) { // which items catch the beam right now
       const p = this.player, cam = this.camera, d = cam.getWorldDirection(this._gd || (this._gd = new THREE.Vector3())); let n = 0;
-      if (p.flashlight && !p.hidden && this.built && this.state === 'playing') for (const it of this.built.items) {
+      if (p.flashlight && !p.hidden && this.built && this.state === 'playing' && (this.diff.warn ?? 1) > 0) for (const it of this.built.items) {
         if (n >= this.glints.length) break;
         if (it.taken || !['fuse', 'key', 'battery', 'tape'].includes(it.type)) continue;
         const dx = it.x - cam.position.x, dz = it.z - cam.position.z, dy = (it.y || 0) + 0.2 - cam.position.y, dist = Math.hypot(dx, dy, dz);
