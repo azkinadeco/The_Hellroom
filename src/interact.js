@@ -125,7 +125,7 @@ export class Interactor {
         }
         if (p.crouched && !d.target) { g.wedgeDoor(d); break; }
         if (d.wedged) { g.hud.toast('Pintu ini diganjal. Jongkok di depannya untuk melepas ganjal.', 2); break; }
-        if (d.target) g.doorSys.close(d); else g.doorSys.open(d, 'player', p.pos);
+        if (d.target) { g.doorSys.close(d); g.onDoorSlam && g.onDoorSlam(d); } else g.doorSys.open(d, 'player', p.pos);
         break;
       }
       case 'locker': g.toggleLocker(t.ref); break;

@@ -690,6 +690,19 @@ export class Game {
     return best;
   }
 
+  // a door shut in a hunter's face: it reels back for a moment
+  onDoorSlam(d) {
+    const p = this.player, nx = d.kind === 'v' ? 1 : 0, nz = d.kind === 'h' ? 1 : 0;
+    const side = (x, z) => Math.sign((x - d.x) * nx + (z - d.z) * nz);
+    for (const e of this.chasers) {
+      if (Math.hypot(e.pos.x - d.x, e.pos.z - d.z) > 1.9 || side(e.pos.x, e.pos.z) === side(p.pos.x, p.pos.z)) continue;
+      e.stunT = 0.9; e.path = null;
+      this.audio.doorSlam({ x: d.x, y: 1.2, z: d.z }); this.input.rumble(120, 0.6);
+      this.stats.slams = (this.stats.slams || 0) + 1;
+      this.hint('slam', 'Pintu dibanting tepat di depannya: ia tertahan sesaat. Lari sekarang!', 4);
+    }
+  }
+
   // the wall straight in front of the player, if there is one within reach
   wallAhead() {
     const p = this.player;
