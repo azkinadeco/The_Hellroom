@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CELL, WALL_H, WALL_T, DOOR_W, DOOR_H, POOL_Y, HIDE, hideOf } from '../config.js';
 import { AOBuilder, contactShadows, lightGlows } from '../render/dressing.js';
 import { storyDecals } from '../render/storyDecals.js';
-import { skyEye } from '../render/skyeye.js';
+import { skyEye, cloudEye } from '../render/skyeye.js';
 import { normalFromTexture, GLOSS, RELIEF } from '../render/normals.js';
 const NORMALS = new Map();   // texture key -> derived normal map (shared by every level)
 import { DIRS, EDGE, VOID } from './map.js';
@@ -243,7 +243,7 @@ export function buildLevel(gen, assets, def, ctx = {}) {
   }
   const aoMesh = ao.mesh(def.aoStrength ?? 0.55);
   if (aoMesh) root.add(aoMesh);
-  if (sky.length) root.add(skyMesh(sky));
+  if (sky.length) root.add(skyMesh(sky, def.sky));
   if ((gen.signs || []).length) root.add(signsMesh(gen.signs, field));
 
   // ---------- pool water ----------
@@ -891,9 +891,14 @@ function buildSteps(st, FH, g, field, root, def) {
 }
 
 // wherever a level opens to the sky, the sky is one enormous eye
-function skyMesh(cells) {
+function skyMesh(cells, style) {
   let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
   for (const [x, z] of cells) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); }
+  if (style === 'clouds') {   // a red cloud lid over everything, one eye in it
+    const ew = (x1 - x0 + 1) * CELL, ed = (z1 - z0 + 1) * CELL, m = cloudEye(ew + 160, ed + 160, ew, ed);
+    m.position.set((x0 + x1 + 1) / 2 * CELL, WALL_H + 11, (z0 + z1 + 1) / 2 * CELL);
+    return m;
+  }
   const w = (x1 - x0 + 1) * CELL + 24, d = (z1 - z0 + 1) * CELL + 24;
   const m = skyEye(w, d);
   m.position.set((x0 + x1 + 1) / 2 * CELL, WALL_H + 9, (z0 + z1 + 1) / 2 * CELL);

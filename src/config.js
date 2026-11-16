@@ -86,7 +86,7 @@ export const LEVELS = [
   {
     id: 1, code: 'BAB I', name: 'Sekolah Senyap',
     subtitle: 'Dua lantai, satu lapangan, dan tidak ada yang pulang.',
-    tint: [1.02, 0.95, 0.8], fogColor: 0x080806, grade: [1.03, 1.0, 0.94], seed: 1996, layout: 'school', arch: 'school', size: [26, 22], floors: 2, rail: 'parapet',
+    tint: [1.02, 0.95, 0.8], fogColor: 0x080806, grade: [1.03, 1.0, 0.94], seed: 1996, layout: 'school', arch: 'school', sky: 'clouds', size: [26, 22], floors: 2, rail: 'parapet',
     lightsOff: 0.14, flicker: 0.12, fog: 0.05,
     fuses: 3, keys: 1, batteries: 4, notes: 3, erasers: 5, glass: 1,
     entities: [{ type: 'pale' }], hallTheme: 'hall',

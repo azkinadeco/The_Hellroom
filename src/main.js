@@ -515,13 +515,13 @@ function buildRooms() {
   LEVELS.forEach((l, i) => {
     const b = document.createElement('button');
     b.className = 'level-item';
-    const res = l.entities.map((e) => ENTITY_INFO[e.type].name).join(', ');
-    b.innerHTML = `${portrait(l.entities[0] && l.entities[0].type, true)}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">Penghuni: ${res}</div></span>`;
+    const res = l.entities.map((e) => save.met.includes(e.type) ? ENTITY_INFO[e.type].name : '???').join(', ');
+    b.innerHTML = `${portrait(l.entities[0] && l.entities[0].type, save.met.includes(l.entities[0] && l.entities[0].type))}<span class="code">${l.code}</span><span><div class="nm">${l.name}</div><div class="sub">Penghuni: ${res}</div></span>`;
     b.onclick = () => { viewer && viewer.stop(); startLevel(i, { ...roomOpts }); };
     list.appendChild(b);
   });
   const sel = $('room-resident');
-  sel.innerHTML = [['default', 'Bawaan bab'], ['none', 'Tanpa penghuni (jelajah bebas)'], ...RESIDENTS.map((k) => [k, ENTITY_INFO[k].name])]
+  sel.innerHTML = [['default', 'Bawaan bab'], ['none', 'Tanpa penghuni (jelajah bebas)'], ...RESIDENTS.map((k) => [k, save.met.includes(k) ? ENTITY_INFO[k].name : '??? (belum ditemui)'])]
     .map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   sel.value = roomOpts.resident;
   sel.onchange = () => { roomOpts.resident = sel.value; };
@@ -534,13 +534,17 @@ function buildRooms() {
   const pick = $('viewer-pick'); pick.innerHTML = '';
   const showModel = (k) => {
     for (const b of pick.children) b.classList.toggle('on', b.dataset.k === k);
+    // not met yet: a blank card with a question mark, no model, no name, no clues
+    const known = save.met.includes(k);
+    $('viewer-canvas').classList.toggle('hidden', !known); $('viewer-unknown').classList.toggle('hidden', known);
+    if (!known) { $('viewer-clips').innerHTML = ''; $('viewer-desc').textContent = 'Belum pernah ditemui. Temui penghuni ini di dalam permainan untuk membuka wujudnya.'; return; }
     const clips = viewer.show(k);
     const cl = $('viewer-clips'); cl.innerHTML = '';
     clips.forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { viewer.playClip(n); for (const x of cl.children) x.classList.toggle('on', x === b); }; cl.appendChild(b); });
     $('viewer-desc').textContent = ENTITY_INFO[k].hint || ENTITY_INFO[k].death;
   };
   RESIDENTS.forEach((k) => {
-    const b = document.createElement('button'); b.textContent = ENTITY_INFO[k].name; b.dataset.k = k;
+    const b = document.createElement('button'); b.textContent = save.met.includes(k) ? ENTITY_INFO[k].name : '???'; b.dataset.k = k;
     b.onclick = () => showModel(k); pick.appendChild(b);
   });
   showModel(RESIDENTS[0]);
@@ -814,7 +818,7 @@ async function boot() {
   game.onTrainingDone = () => { save.trained = true; const nb = awardBadges({ g: game, save, win: false, story: false }); if (nb.length) hud.toast(nb.map((b) => `${b.icon} Lencana baru: ${b.name}`).join('\n'), 4); persist(); setTimeout(() => { if (game.def && game.def.training) quitToMenu(); }, 5000); };
   game.onNoteRead = (key) => { if (!save.notesRead.includes(key)) { save.notesRead.push(key); persist(); } };
   window.__game = game; // debug handle
-  if (!DEV_ROOMS) $('btn-rooms').remove();
+  if (!DEV_ROOMS) { $('btn-rooms').remove(); $('btn-rooms-text').remove(); }
   $('version').textContent = 'v' + VERSION + (DEV_ROOMS ? ' · uji' : '');
   // installable + offline where the page is served securely
   try { if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (_) { /* sandboxed frames refuse service workers */ }

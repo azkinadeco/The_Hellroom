@@ -69,7 +69,85 @@ void main(){
   gl_FragColor = vec4(outc, 1.0);
 }`;
 
+// Variant: a full lid of blood-red cloud over everything, slowly turning round one giant eye
+// set in the middle of it, which follows you as you cross the yard below.
+// the cloud lid bends down past the opening like the inside of a dome, so no edge shows over the roofs
+const cloudVert = /* glsl */`
+uniform vec2 uEye;
+varying vec2 vP;
+void main(){
+  vP = position.xz;
+  vec3 q = position;
+  float r = max(0.0, length(q.xz) - max(uEye.x, uEye.y) * 1.2);
+  q.y -= r * r * 0.007;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(q, 1.0);
+}`;
+const cloudFrag = /* glsl */`
+uniform vec2 uHalf;      // half extents of the cloud plane, metres
+uniform vec2 uEye;       // half extents of the opening the eye sits over, metres
+uniform vec2 uLook;
+uniform float uTime, uBlink, uPower;
+varying vec2 vP;
+float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+float noise(vec2 p){
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+float fbm(vec2 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++) { s += a * noise(p); p *= 2.03; a *= 0.5; } return s; }
+void main(){
+  vec2 p = vP;
+  float R = min(uEye.x, uEye.y) * 0.62;            // eye half-height
+  float W = R * 1.65;                              // eye half-width (almond)
+  float r = length(p);
+  // clouds swirl round the eye, faster close in
+  float sw = 2.4 / (1.0 + r / (R * 2.5)) + uTime * 0.012;
+  vec2 cp = mat2(cos(sw), -sin(sw), sin(sw), cos(sw)) * p;
+  float c1 = fbm(cp / 14.0 + vec2(uTime * 0.01, 0.0));
+  float c2 = fbm(cp / 5.5 - vec2(0.0, uTime * 0.02) + c1 * 1.7);
+  float dens = smoothstep(0.25, 0.85, c1 * 0.6 + c2 * 0.6);
+  vec3 deep = vec3(0.10, 0.008, 0.006), mid = vec3(0.42, 0.04, 0.025), hi = vec3(0.85, 0.22, 0.10);
+  vec3 col = mix(deep, mid, dens);
+  col = mix(col, hi, smoothstep(0.62, 0.95, c2) * 0.55);
+  // glow bleeding out from the eye
+  col += vec3(0.5, 0.06, 0.02) * exp(-max(0.0, r - R) / (R * 1.4)) * 0.55;
+  // a slow pulse through the whole sky
+  col *= 0.85 + 0.15 * sin(uTime * 0.7 + r * 0.05);
+  // the eye: almond lids drawn from cloud, opening and closing
+  vec2 a = vec2(p.x / W, p.y / R);
+  float open = (1.0 - a.x * a.x) * (1.0 - uBlink);
+  float lid = abs(a.y) - open;
+  if (lid < 0.06) {
+    vec2 c = clamp(uLook * 0.18, -vec2(W, R) * 0.45, vec2(W, R) * 0.45);
+    c += vec2(sin(uTime * 0.41), cos(uTime * 0.33)) * R * 0.025;
+    float ri = R * 0.62, d = length(p - c), ang = atan(p.y - c.y, p.x - c.x);
+    vec3 e = vec3(0.80, 0.70, 0.58);
+    float veins = smoothstep(0.6, 0.9, fbm(vec2(ang * 3.0, d / R * 5.0))) * smoothstep(ri, W, d);
+    e = mix(e, vec3(0.6, 0.05, 0.04), clamp(veins + smoothstep(0.3, 1.0, length(a)) * 0.5, 0.0, 1.0));
+    float fib = fbm(vec2(ang * 9.0, d / ri * 3.0));
+    vec3 iris = mix(vec3(0.55, 0.08, 0.03), vec3(0.95, 0.45, 0.08), fib);
+    iris = mix(iris, vec3(0.15, 0.0, 0.0), smoothstep(0.65, 1.0, d / ri));
+    e = mix(e, iris, smoothstep(ri * 1.02, ri * 0.97, d));
+    float rp = ri * (0.30 + 0.05 * sin(uTime * 0.5));
+    e = mix(e, vec3(0.0), smoothstep(rp * 1.05, rp * 0.95, abs(p.x - c.x) * 2.2 + abs(p.y - c.y) * 0.55));   // slit pupil
+    e += vec3(1.0, 0.9, 0.8) * smoothstep(ri * 0.14, ri * 0.04, length(p - c - vec2(-0.3, 0.3) * ri)) * 0.7;
+    e *= smoothstep(-0.0, -0.35, lid) * 0.6 + 0.4;
+    col = mix(e * 1.15, col, smoothstep(-0.02, 0.05, lid));
+    col *= 1.0 - 0.8 * smoothstep(0.07, 0.0, abs(lid));     // dark rim of the lids
+  }
+  gl_FragColor = vec4(col * uPower, 1.0);
+}`;
+
 const eyes = new Set();
+export function cloudEye(w, d, ew, ed) {
+  const u = { uHalf: { value: new THREE.Vector2(w / 2, d / 2) }, uEye: { value: new THREE.Vector2(ew / 2, ed / 2) }, uLook: { value: new THREE.Vector2() }, uTime: { value: 0 }, uBlink: { value: 0 }, uPower: { value: 0.9 } };
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d, 48, 48).rotateX(Math.PI / 2),
+    new THREE.ShaderMaterial({ uniforms: u, vertexShader: cloudVert, fragmentShader: cloudFrag, fog: false, side: THREE.DoubleSide }));
+  const v = new THREE.Vector3();
+  m.onBeforeRender = (r, s, cam) => { v.copy(cam.getWorldPosition(v)); m.worldToLocal(v); u.uLook.value.set(v.x, v.z); };
+  m.name = 'skyeye'; m.userData.eye = u; m.userData.cloud = true; m.frustumCulled = false;
+  eyes.add(u);
+  return m;
+}
 export function resetSkyEyes() { eyes.clear(); }
 export function skyEye(w, d) {
   const u = { uHalf: { value: new THREE.Vector2(w / 2, d / 2) }, uLook: { value: new THREE.Vector2() }, uTime: { value: 0 }, uBlink: { value: 0 }, uPower: { value: 0.9 } };
@@ -95,5 +173,5 @@ export function updateSkyEyes(t, dt, power) {
     b = blinkT < 0.12 ? blinkT / 0.12 : blinkT < 0.22 ? 1 : Math.max(0, 1 - (blinkT - 0.22) / 0.25);
     if (blinkT > 0.5) { blinkT = -1; nextBlink = t + 6 + Math.random() * 8; }
   }
-  for (const u of eyes) { u.uTime.value = t; u.uBlink.value = b; u.uPower.value = 0.4 + 0.35 * power; }
+  for (const u of eyes) { u.uTime.value = t; u.uBlink.value = b; u.uPower.value = u.uEye ? 0.75 + 0.25 * power : 0.4 + 0.35 * power; }
 }

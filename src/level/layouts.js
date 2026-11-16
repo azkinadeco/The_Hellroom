@@ -3,7 +3,7 @@
 import { CELL } from '../config.js';
 
 // ---------------------------------------------------------------------------
-// BAB I — a real two-storey school round a roofed-over courtyard (lapangan).
+// BAB I — a real two-storey school round an open courtyard (lapangan) under a red sky.
 // Ring corridors face the yard through a colonnade on the ground floor and a
 // balcony upstairs; classrooms, offices, toilets, canteen, library, UKS and the
 // hall sit round the outside. Two stairwells link the floors.
@@ -21,8 +21,8 @@ function school(b, rng) {
   // every side, the flagpole and the old trees still standing indoors
   F0.room(7, 6, 18, 15, 'lapangan', { noLock: true, noLights: true, mat: { floor: 'paving' } });
   for (const s of ['N', 'S', 'W', 'E']) F0.edges(7, 6, 18, 15, s, (x, z, side) => F0.arch(x, z, side));
-  F1.void(7, 6, 18, 15);
-  for (const [x, z] of [[9.5, 8.5], [16.5, 8.5], [9.5, 13.5], [16.5, 13.5], [13, 11]]) b.tallLight(1, x * CELL, z * CELL, 3.6 + 2.95, { fall: 0.035, reach2: 380, fixture: 'lamp', state: rng.chance(0.35) ? 'flicker' : 'on' });
+  F1.void(7, 6, 18, 15); F1.sky(7, 6, 18, 15);   // no roof any more: red cloud and the eye above the yard
+  for (const [x, z] of [[9.5, 8.5], [16.5, 8.5], [9.5, 13.5], [16.5, 13.5], [13, 11]]) b.tallLight(1, x * CELL, z * CELL, 3.6 + 2.95, { fall: 0.035, reach2: 380, fixture: 'none', state: rng.chance(0.35) ? 'flicker' : 'on' });
 
   // north wing + stairwell (12) + store under the stairs (13)
   kelas(F0, 6, 1, 8, 4, 'KELAS 1-A'); kelas(F0, 9, 1, 11, 4, 'KELAS 1-B');

@@ -180,7 +180,7 @@ export class Entity {
     const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, d = Math.hypot(dx, dz);
     const open = g.openness(p.pos.x, p.pos.z), mov = Math.min(p.moving || 0, 1.5);
     // how much of you there is to see
-    let vis = g.world.isLit(p.pos.x, p.pos.z) || this.darkSight ? 1 : 0.45;   // some see as well in the dark
+    let vis = g.world.isLit(p.pos.x, p.pos.z) || this.darkSight ? 1 : 0.55;   // some see as well in the dark
     if (p.flashlight) {
       vis += 0.45;
       // the beam pointed straight at it gives you away from far off
@@ -215,6 +215,22 @@ export class Entity {
     if (d > 1.6 && g.world.cover(this.pos.x, this.pos.z, p.pos.x, p.pos.z, p.crouched ? 0.7 : 1.75)) return 0;
     const k = Math.pow(1 - d / reach, 0.7);
     return cone * (vis * k * 3.2 + (d < 2.5 ? 4 * (1 - d / 2.5) : 0)) * (open === 2 ? 2.5 : 1);   // out in the open there is no doubt about what it saw
+  }
+
+  // Presence: close by it hears you shuffle and breathe, whichever way it faces. Walking upright
+  // behind it within a few metres is noticed in about a second; creeping crouched is much slower,
+  // standing still crouched is silent. Through a wall it only gets a direction (never a sighting).
+  presence() {
+    const g = this.game, p = g.player;
+    if (p.hidden || !p.alive) return [0, false];
+    const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, d = Math.hypot(dx, dz), R = 6.5 * (g.diff.hearing ?? 1);
+    if (d > R) return [0, false];
+    const mov = Math.min(p.moving || 0, 1.5);
+    let k = mov > 0.1 ? (p.crouched ? 0.5 : 1.6) * mov * (p.sprinting ? 1.6 : 1) : (p.crouched ? 0 : 0.25);
+    if (!k) return [0, false];
+    const los = g.world.los(this.pos.x, this.pos.z, p.pos.x, p.pos.z);
+    if (!los) { if (d > 4.5) return [0, false]; k *= 0.4; }
+    return [k * Math.pow(1 - d / R, 0.8) * 2.2, los];
   }
 
   updateCommon(dt) {
@@ -341,15 +357,18 @@ export class Monitor extends Entity {
     let see = 0;
     if (hunting) see = this.sense();
     else {
-      const gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : this.cautious ? 1.25 : 1) * (g.def.awareMul || 1);
+      let gain = this.perceive(this.sight[0], this.sight[1]) * (this.state === 'wait' ? 1.5 : this.cautious ? 1.25 : 1) * (g.def.awareMul || 1);
+      const [pres, presLos] = this.presence();
+      if (pres > 0 && presLos) gain += pres;
       if (gain > 0) { this.awareness = Math.min(1.2, (this.awareness || 0) + gain * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }
+      else if (pres > 0) { this.awareness = Math.min(0.7, (this.awareness || 0) + pres * dt); this.glimpse = { x: p.pos.x, z: p.pos.z, t: g.time }; }   // heard through the wall: it comes to look
       else if (this.spotsLight !== false && g.beamSpot && this.seesSpot(g.beamSpot)) {
         // your light moving on a dark wall: it comes to see where it is coming from (never past half-aware on light alone)
         if ((this.awareness || 0) < 0.6) this.awareness = Math.min(0.6, (this.awareness || 0) + 0.45 * dt);
         this.glimpse = { x: (g.beamSpot.x + p.pos.x) / 2, z: (g.beamSpot.z + p.pos.z) / 2, t: g.time };
         g.stats.beamSpotted = (g.stats.beamSpotted || 0) + dt;
       }
-      else this.awareness = Math.max(0, (this.awareness || 0) - dt * 0.28);
+      else this.awareness = Math.max(0, (this.awareness || 0) - dt * (this.glimpse && g.time - this.glimpse.t < 4 ? 0.14 : 0.28));   // a fresh glimpse is not forgotten at once
       // crossing into suspicion it growls: a warning you can hear
       if ((g.diff.warn ?? 1) > 0 && (this.awareness || 0) >= 0.45 && (this.prevAw || 0) < 0.45 && g.time > (this.growlCd || 0)) { this.growlCd = g.time + 6; g.audio.growl({ x: this.pos.x, y: 1.5, z: this.pos.z }); }
       this.prevAw = this.awareness || 0;
@@ -377,7 +396,7 @@ export class Monitor extends Entity {
     // keeps coming for as long as it can see you (or until you hide)
     if (see > 0 && this.state !== 'chase' && this.state !== 'attack' && (this.state !== 'locker' || !this.lockerSure)) {
       this.suspicion = 1.2; this.path = null; this.setState('chase');
-    } else if (!hunting && this.state !== 'locker' && (this.awareness || 0) >= 0.45 && this.glimpse && g.time - this.glimpse.t < 0.3
+    } else if (!hunting && this.state !== 'locker' && (this.awareness || 0) >= 0.35 && this.glimpse && g.time - this.glimpse.t < 0.3
       && (this.state !== 'investigate' || !this.investigatePt || Math.hypot(this.investigatePt.x - this.glimpse.x, this.investigatePt.z - this.glimpse.z) > 2.5)) {
       // half-noticed: go and see what moved there
       this.investigatePt = { x: this.glimpse.x, z: this.glimpse.z };

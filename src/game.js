@@ -349,7 +349,7 @@ export class Game {
     if (this.player) this.player.water = f.gen.water;
     this.gen = f.gen; this.map = f.map; this.built = f.built; this.world = f.world; this.field = f.field; this.doorSys = f.doorSys;
     this.levelRoot = f.built.root;
-    if (this.rain) this.rain.setFloor(this.floors, k);
+    if (this.rain) { this.rain.setFloor(this.floors, k); if (this.def.sky === 'clouds') { this.rain.cells = 0; this.rain.open = new Uint8Array(this.rain.open.length); this.rain.lines.visible = false; } }   // the red cloud lid holds no rain
     for (const o of this.floors) {
       o.built.root.position.y = (o.k - k) * FH;
       o.built.root.updateMatrixWorld(true);

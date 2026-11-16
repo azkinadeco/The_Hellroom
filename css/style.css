@@ -546,3 +546,7 @@ body.clear-screen.injured .injury { animation: none; }
 .meter.noise i { background: #8fd0ff; transition: width .08s; }
 .meter.noise.loud i { background: var(--danger); }
 .meter.noise label { color: #8fd0ff; }
+
+/* batch 181: test rooms back in the title menu, unmet residents as a blank card */
+.title-menu .dev-item { color: var(--dim); font-size: 0.8em; }
+.viewer-unknown { display: flex; align-items: center; justify-content: center; font-size: 96px; color: #3a3230; background: radial-gradient(ellipse at 50% 40%, #1d1716 0%, #060505 70%); border: 1px solid var(--line); }
