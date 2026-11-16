@@ -42,6 +42,16 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 181–191
+
+- **Penghuni lebih awas dari dekat** (181): indera kehadiran ±6,5 m ke segala arah; jalan tegak 3 m di belakangnya ketahuan ±1 detik. Diatur kesulitan (188).
+- **Ruang Uji** kembali di menu judul (181); tombol buka/kunci semua penghuni dan **H** untuk memanggil penghuni (183).
+- **Kartu ???** untuk penghuni yang belum ditemui (181); kartu **PENGHUNI BARU** saat pertama bertemu (186).
+- **BAB I**: lapangan tanpa atap, **awan merah** dan **satu mata raksasa** yang mengikutimu (181); matanya **menatap** bila kamu berlama-lama dan memanggil penghuni (182), dengan meter MATA LANGIT (190).
+- **Panggilan**: penghuni yang mengejar memanggil penghuni lain dalam 25 m (184).
+- **Busur arah** penghuni yang mulai menyadarimu (185, bisa dimatikan 189); meter HUD tidak lagi menimpa teks.
+- **Lencana**: Di Bawah Mata, Napas di Tengkuknya (55) (187).
+
 ## Batch 171–180
 
 - **Langkah penghuni** di kaca berderak dan di air memercik (171).
