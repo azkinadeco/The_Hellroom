@@ -526,6 +526,24 @@ export class Monitor extends Entity {
         break;
     }
 
+    // stuck: it wants to move but has hardly shifted for 5 s - drop the path and head somewhere else;
+    // stuck twice in a row and unseen, it is put back on the nearest open floor
+    if (speed > 0.5 && !(this.stunT > 0) && !this.peek && this.state !== 'attack') {
+      const W = this.stuckW || (this.stuckW = { t: 0, x: this.pos.x, z: this.pos.z, n: 0 });
+      W.t += dt;
+      if (Math.hypot(this.pos.x - W.x, this.pos.z - W.z) > 0.6) { W.t = 0; W.x = this.pos.x; W.z = this.pos.z; if (W.t === 0 && W.n && g.time - (W.at || 0) > 10) W.n = 0; }
+      else if (W.t > 5) {
+        W.t = 0; W.n++; W.at = g.time; g.stats.unstuck = (g.stats.unstuck || 0) + 1;
+        const [cx, cz] = this.cell();
+        if (W.n >= 2 && !g.isSeenByPlayer(this)) {
+          const t = randomReachableCell(g.map, Math.random, cx, cz, 0, 2) || [cx, cz];
+          const [x, z] = g.map.center(...t); this.pos.x = x; this.pos.z = z; W.n = 0;
+        }
+        this.path = null; this.finalPoint = null; this.detourT = 1.5;
+        if (this.state === 'patrol') { const t = randomReachableCell(g.map, Math.random, cx, cz, 3, 8); if (t) this.goTo(...t); }
+        else if (this.state === 'investigate' || this.state === 'search') { this.setState('patrol'); this.waitT = 0.3; }
+      }
+    } else if (this.stuckW) { this.stuckW.t = 0; this.stuckW.x = this.pos.x; this.stuckW.z = this.pos.z; }
     // animation by speed
     if (this.state !== 'attack' && !this.busyAnim) {
       const v = this.velocity || 0;
