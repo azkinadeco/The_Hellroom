@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 138–147
+
+- **Menoleh ke belakang** (B / tombol sentuh) sambil tetap berlari.
+- **Radio saku** (Y): desis makin keras saat penghuni dekat (jarak bergantung kesulitan); dari dekat penghuni mendengarnya.
+- **Meronta**: sekali per bab saat tertangkap, tekan interaksi berulang dalam 1,6 detik untuk lepas (tidak di Mimpi Buruk).
+- **Suara bangunan**: derit struktur dan tetesan air di sekitar.
+- **Pintu ditutup penghuni** di belakangnya (25%) saat patroli.
+- **Rekor Jurang**: 8 run terdalam di Arsip.
+- **Layar jeda**: tujuan, waktu, statistik, kutukan, bekal, kesempatan meronta, tombol.
+- **Kesulitan** mengatur jangkauan radio, lama tertahan oleh bantingan pintu dan lemparan.
+- **Lencana**: Lepas dari Cengkeraman, Jangan Menoleh, Desis di Saku (44 lencana).
+
 ## Batch 128–137
 
 - **Pintu kedua**: ±60% ruangan berpintu satu mendapat pintu kedua (ke lorong atau ruangan sebelah) sehingga ada jalur memutar; pintu yang terhalang perabot dibatalkan.
