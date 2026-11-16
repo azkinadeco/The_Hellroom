@@ -110,7 +110,7 @@ export class Player {
     const holding = (this.hidden || this.exhausted) && input.holdingBreath() && this.breath > 0;   // also to stifle panting after a run
     this.holdingBreath = holding;
     if (holding) {
-      this.breath -= PLAYER.breathDrain * dt;
+      this.breath -= PLAYER.breathDrain * dt * (game.diff.breath ?? 1);   // held breath lasts ~12.8 / 10 / 8.3 / 7.2 s by difficulty
       if (this.breath <= 0) { this.breath = 0; game.audio.gasp(); game.emitNoise(this.pos.x, this.pos.z, NOISE.gasp, 'gasp'); game.hud.toast('Kamu terengah-engah!'); }
     } else this.breath = Math.min(PLAYER.breathMax, this.breath + PLAYER.breathRegen * dt);
 
