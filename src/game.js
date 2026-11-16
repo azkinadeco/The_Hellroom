@@ -514,7 +514,7 @@ export class Game {
 
   // ------------------------------------------------------------------ events
   emitNoise(x, z, radius, type) {
-    { const p = this.player; if (p && Math.hypot(x - p.pos.x, z - p.pos.z) < 1.6 && type !== 'alert') { const lv = radius * this.diff.hearing; if (lv >= (this.myNoise || 0)) { this.myNoise = lv; this.myNoiseType = type; } } }
+    { const p = this.player; if (p && Math.hypot(x - p.pos.x, z - p.pos.z) < 1.6 && type !== 'alert') { const lv = radius * this.diff.hearing; if (lv >= (this.myNoise || 0)) { this.myNoise = lv; this.myNoiseType = type; } if (lv > 12 && this.stats) this.stats.loudNoises = (this.stats.loudNoises || 0) + 1; } }
     const m = this.map, rr = radius * this.diff.hearing * (type === 'step' ? (this.def.noiseMul || 1) * (this.inRain ? 0.55 : 1) : 1);
     let cost = null;
     for (const e of this.entities) {

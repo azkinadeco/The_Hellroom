@@ -171,7 +171,7 @@ const ui = {
       persist();
       $('win-title').textContent = `${game.def.code} SELESAI`;
       $('win-stats').innerHTML = [['Waktu lantai ini', fmt(t)], ['Lantai dilewati', game.def.floor], ['Rekor terdalam', save.bestFloor],
-        ['Terlihat oleh penghuni', `${game.stats.spotted}×`]].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
+        ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Siluman', stealthRating(game)]].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
       $('win-rank').textContent = '';
       $('win-text').textContent = 'Di balik pintu darurat ada tangga. Tangga itu hanya mengarah ke bawah.' + badgeLine(newB);
       $('btn-next').textContent = `Turun ke Lantai ${-(game.def.floor + 1)}`;
@@ -213,7 +213,7 @@ const ui = {
     $('win-title').textContent = `${game.def.code} SELESAI`;
     $('win-stats').innerHTML = [
       ['Waktu rekaman', `${fmt(t)}  (par ${fmt(parOf(game.def))})`], ['Rekor', save.best[key] ? fmt(save.best[key]) : '—'], ['Catatan dibaca', `${game.stats.notes}/${game.def.notes}`],
-      ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Bukti direkam', game.stats.films ? `${game.stats.films} penghuni` : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label + (game.stats.retries ? `  ·  ${game.stats.retries}× lanjut dari panel` : '')],
+      ['Terlihat oleh penghuni', `${game.stats.spotted}×`], ['Siluman', stealthRating(game)], ['Kaset rahasia', game.stats.tape ? 'ditemukan' : '—'], ['Bukti direkam', game.stats.films ? `${game.stats.films} penghuni` : '—'], ['Kesulitan', DIFFICULTY[game.diffKey].label + (game.stats.retries ? `  ·  ${game.stats.retries}× lanjut dari panel` : '')],
     ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
     $('win-rank').textContent = gr.rank; $('win-rank').dataset.rank = gr.rank;
     const last = game.levelIndex >= LEVELS.length - 1;
@@ -227,6 +227,12 @@ const ui = {
 // lifetime numbers for the archive; called whenever a run ends or is left
 let lastDeath = null;
 const levelKey = (def) => (def.endless ? 'e' + def.seed : 's' + def.id);
+// how quietly a run went: seen, chased, loud noises, hiding spots inspected around you
+function stealthRating(g) {
+  const st = g.stats || {}, pts = (st.spotted || 0) * 3 + (st.loudNoises || 0) * 0.5 + (st.inspected || 0) * 1 + (st.glass || 0) * 1 + (st.voiceNoises || 0) * 0.3;
+  const name = pts < 1 ? 'Bayangan' : pts < 5 ? 'Senyap' : pts < 12 ? 'Hati-hati' : pts < 25 ? 'Berisik' : 'Gegabah';
+  return `${name}  (terlihat ${st.spotted || 0}×, bunyi keras ${st.loudNoises || 0}×)`;
+}
 function countRun(how, killer = null) {
   const S = save.stats = { ...defaults.stats, ...save.stats, deaths: { ...(save.stats && save.stats.deaths) } };
   S.time += Math.max(0, Math.round(game.time - (game.countedT || 0))); game.countedT = game.time;
