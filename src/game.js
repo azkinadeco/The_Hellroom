@@ -581,7 +581,11 @@ export class Game {
       if (Math.abs(x - px) + Math.abs(z - pz) < 5) continue;
       const stale = Math.min(this.time - (f.visit.get(m.region[i]) ?? -1e9), 150) / 150;
       let heat = 0; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (m.inside(x + dx, z + dz)) heat += f.heat[x + dx + (z + dz) * W];
-      const s = stale + Math.min(heat / 30, 1) * 0.6 + Math.random() * 0.35;
+      // spread out: keep away from the other residents and from where they are heading
+      let crowd = 0;
+      for (const o of this.entities) { if (o === e) continue; const [ox, oz] = o.cell(), goal = o.path && o.path[o.path.length - 1];
+        if (Math.abs(ox - x) + Math.abs(oz - z) < 5) crowd += 0.6; if (goal && Math.abs(goal[0] - x) + Math.abs(goal[1] - z) < 5) crowd += 0.8; }
+      const s = stale + Math.min(heat / 30, 1) * 0.6 + Math.random() * 0.35 - crowd;
       if (s > bs) { bs = s; best = i; }
     }
     return best >= 0 ? [best % W, (best / W) | 0] : null;
