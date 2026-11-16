@@ -262,6 +262,7 @@ export class Game {
     this.alarms = [];
     this.radioOn = def.radio !== false;
     this.installing = null;
+    this.struggle = null; this.struggleUsed = false;
     this.trainDone = null; this.trainFinished = false;
     this.trace = null;
     this.fearT = 0; this.fakeHunt = 0;
@@ -692,6 +693,31 @@ export class Game {
     return best;
   }
 
+  updateStruggle(dt) {
+    const S = this.struggle, p = this.player;
+    if (!S) return;
+    const e = S.e;
+    S.t += dt;
+    if (this.input.consume('interact')) { S.n++; this.input.rumble(40, 0.5); if (this.audio.ready) this.audio._thud(null, this.audio.t, 0.18); }
+    // you are held: no walking, eyes on it
+    p.vel.set(0, 0);
+    const dx = e.pos.x - p.pos.x, dz = e.pos.z - p.pos.z; p.yaw += angleDiff(p.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 10); p.pitch *= 0.9;
+    this.dread = 1;
+    const T = this.input.touch ? 'AKSI' : this.input.keyName('interact');
+    this.hud.caption(`MERONTA! tekan ${T} berulang  ${'■'.repeat(S.n).padEnd(S.need, '□')}`, 0.2);
+    if (S.n >= S.need) {
+      this.struggle = null; p.locked = false;
+      const d = Math.hypot(dx, dz) || 1; let nx = e.pos.x + dx / d * 1.8, nz = e.pos.z + dz / d * 1.8; [nx, nz] = this.world.collide(nx, nz, Math.min(e.radius || 0.4, 0.4));
+      e.pos.x = nx; e.pos.z = nz; e.stunT = 1.8; e.path = null;
+      if (e.state !== 'chase') { e.lastSeen = { x: p.pos.x, z: p.pos.z, t: this.time }; e.state = 'patrol'; e.setState('chase'); }
+      this.audio.impact(); this.input.rumble(220, 1); this.stats.struggles = (this.stats.struggles || 0) + 1;
+      this.hud.toast('Lepas! Lari!', 1.6);
+      this.hint('struggle', 'Kamu berhasil meronta lepas, tapi hanya sekali tiap bab. Lain kali cengkeramannya tidak terlepas.', 5);
+      return;
+    }
+    if (S.t >= S.dur) { this.struggle = null; p.locked = false; e.stunT = 0; this.killPlayer(e, null, true); }
+  }
+
   // a door shut in a hunter's face: it reels back for a moment
   onDoorSlam(d) {
     const p = this.player, nx = d.kind === 'v' ? 1 : 0, nz = d.kind === 'h' ? 1 : 0;
@@ -765,15 +791,25 @@ export class Game {
     return false;
   }
 
-  killPlayer(entity, locker = null) {
+  killPlayer(entity, locker = null, force = false) {
     const p = this.player;
-    if (!p.alive || this.liftRide || this.slideRide) return;
+    if (!p.alive || this.liftRide || this.slideRide || this.struggle) return;
     // inside (or climbing into) a hiding spot only a resident that pulls the door open can get you
     if ((p.hidden || p.entering) && !locker) {
       entity.state = entity.kind === 'shade' ? 'lurk' : entity.kind === 'eyes' ? 'watch' : 'patrol';
       entity.waitT = 1.5; entity.path = null;
       // a hunter that lost you at the door checks the hiding spot instead (hold your breath!)
       if (p.hidden && entity.targetLocker) entity.targetLocker(p.hidden, false);
+      return;
+    }
+    // once per chapter you can tear yourself free: mash interact before its grip closes
+    if (!force && !locker && !this.godMode && !this.struggleUsed && this.diffKey !== 'mimpi' && entity.sight && entity.form !== 'statue') {
+      this.struggleUsed = true;
+      this.struggle = { e: entity, t: 0, n: 0, need: { mudah: 5, normal: 7, sulit: 9 }[this.diffKey] || 7, dur: 1.6 }; p.locked = true;
+      entity.velocity = 0; entity.stunT = 99;
+      this.input.consume('interact');
+      this.audio.impact(); this.input.rumble(300, 0.9);
+      if (!this.calm) { this.glitch = Math.max(this.glitch, 0.35); this.schedule(0.12, () => { this.glitch = 0; }); }
       return;
     }
     if (this.godMode) { // test rooms: shrug the hit off and throw the resident back
@@ -1115,6 +1151,7 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    this.updateStruggle(dt);
     { // where the torch beam lands: residents that cannot see you may still see your light on a dark wall
       this.beamT = (this.beamT || 0) - dt;
       if (this.beamT <= 0) {
@@ -1190,7 +1227,7 @@ export class Game {
     this.cullChunks(dt);
     this.adaptResolution(dt);
     this.interactor.update();
-    if (input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
+    if (!this.struggle && input.consume('interact') && !this.busy && p.alive) this.interactor.activate();
 
     this.updateLift(dt);
     this.updateSlide(dt);
