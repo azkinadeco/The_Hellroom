@@ -55,7 +55,7 @@ export class AutoMap {
         const d = Math.hypot(it.x - p.pos.x, it.z - p.pos.z);
         if (d < 9 && m.los(p.pos.x, p.pos.z, it.x, it.z)) { it.mapped = true; this.dirty = true; g.stats.mapped = (g.stats.mapped || 0) + 1; }
       }
-      if (this.open && (this.lastX !== p.pos.x || this.lastZ !== p.pos.z || this.lastYaw !== p.yaw || (g.marks && g.marks.length))) this.dirty = true;
+      if (this.open && (this.lastX !== p.pos.x || this.lastZ !== p.pos.z || this.lastYaw !== p.yaw || (g.marks && g.marks.length) || (g.sightings && g.sightings.size))) this.dirty = true;
     }
     if (this.open && this.dirty) this.draw();
   }
@@ -133,6 +133,12 @@ export class AutoMap {
       c.globalAlpha = 1;
     }
     for (const A of g.alarms || []) if (A.floor === k) mark(A.x, A.z, '◷', '#6a4a12');
+    // where you last saw each resident: an eye that fades over 45 s
+    for (const S of (g.sightings || new Map()).values()) {
+      const age = g.time - S.t;
+      if (S.k !== k || age > 45) continue;
+      c.globalAlpha = Math.max(0.2, 1 - age / 45); mark(S.x, S.z, '◉', '#5a1a1a'); c.globalAlpha = 1;
+    }
     // the mark you did not draw
     const A = g.assist;
     if (A && A.k === k) {
@@ -163,6 +169,6 @@ export class AutoMap {
     if (cv !== this.canvas) return;
     const n = this.seen.length, touch = g.input.touch;
     this.label.textContent = `DENAH — ${g.def.name} · Lantai ${k + 1}/${n}${k === g.floorK ? '' : ' (bukan lantaimu)'}`
-      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci  ! kamu terlihat  ◷ weker  s sekring  k kunci  b baterai';
+      + (A && A.k !== k ? `  ·  ada tanda ? di Lantai ${A.k + 1}` : '') + (n > 1 ? (touch ? '  ·  ketuk denah: ganti lantai' : `  ·  ${g.input.keyName('mapfloor')}: ganti lantai`) : '') + '\n⚡ panel  ✚ pintu darurat  ▲▼ tangga  L lift  ━ merah: terkunci  ! kamu terlihat  ◉ penghuni terakhir terlihat  ◷ weker  s sekring  k kunci  b baterai';
   }
 }

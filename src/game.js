@@ -275,6 +275,7 @@ export class Game {
     this.fearT = 0; this.fakeHunt = 0;
     if (!this.prints) this.prints = new Footprints(this); this.prints.reset();
     this.marks = [];   // where residents spotted you (shown on the floor plan for a minute)
+    this.sightings = new Map();
     this.projectiles = [];
     this.hintT = 0;
     this.timers = [];
@@ -1165,6 +1166,10 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0 && !this.player.hidden) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    // where you last laid eyes on each resident, for the floor plan
+    this.sightT = (this.sightT || 0) - dt;
+    if (this.sightT <= 0) { this.sightT = 0.25; const S = this.sightings || (this.sightings = new Map());
+      for (const e of this.entities) if (e.form !== 'statue' && this.isSeenByPlayer(e)) S.set(e.kind, { k: this.floorK, x: e.pos.x, z: e.pos.z, t: this.time, kind: e.kind }); }
     { // your voice: talking, gasping or screaming into the mic is a noise at your position
       const p = this.player, lv = this.mic && this.settings.mic ? this.mic.update(dt, this.settings.micSens || 1) : 0;
       this.voiceLv = lv; this.voiceT = (this.voiceT || 0) - dt;
