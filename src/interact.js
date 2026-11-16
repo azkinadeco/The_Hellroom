@@ -17,12 +17,12 @@ export class DoorSystem {
     this.game.audio.doorCreak({ x: door.x, y: 1.2, z: door.z }, true);
     if (by === 'player') this.game.emitNoise(door.x, door.z, NOISE.door * (this.game.def.doorNoise || 1), 'door');
   }
-  close(door) {
+  close(door, by = 'player') {
     if (door.target === 0) return;
     door.target = 0;
-    door.byPlayer = true;
+    door.byPlayer = by === 'player';
     this.game.audio.doorCreak({ x: door.x, y: 1.2, z: door.z }, false);
-    this.game.emitNoise(door.x, door.z, NOISE.door * (this.game.def.doorNoise || 1), 'door');
+    if (by === 'player') this.game.emitNoise(door.x, door.z, NOISE.door * (this.game.def.doorNoise || 1), 'door');
   }
   update(dt) {
     for (const d of this.doors) {

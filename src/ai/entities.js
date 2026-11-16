@@ -99,7 +99,7 @@ export class Entity {
             }
             this.velocity = 0; this.faceToward(door.x, door.z, dt); if (!this.game.batterDoor(door, this, dt)) return false;
           }
-          this.game.doorSys.open(door, this, this.pos);
+          this.game.doorSys.open(door, this, this.pos); this.openedDoor = door;
           this.faceToward(door.x, door.z, dt);
           if (door.openAmount < 0.6) { this.velocity = 0; return false; }
         }
@@ -526,6 +526,14 @@ export class Monitor extends Entity {
         break;
     }
 
+    // now and then it shuts a door behind it on its rounds: the door you left open is closed when you come back
+    if (this.openedDoor) {
+      const d = this.openedDoor, dd = Math.hypot(d.x - this.pos.x, d.z - this.pos.z);
+      if (dd > 1.7) {
+        this.openedDoor = null;
+        if (this.state !== 'chase' && Math.random() < 0.25 && Math.hypot(d.x - p.pos.x, d.z - p.pos.z) > 1.5) { g.doorSys.close(d, this); g.stats.doorsShut = (g.stats.doorsShut || 0) + 1; }
+      }
+    }
     // stuck: it wants to move but has hardly shifted for 5 s - drop the path and head somewhere else;
     // stuck twice in a row and unseen, it is put back on the nearest open floor
     if (speed > 0.5 && !(this.stunT > 0) && !this.peek && this.state !== 'attack') {
