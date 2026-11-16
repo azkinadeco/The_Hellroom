@@ -108,6 +108,7 @@ export class Game {
     this.vhs.uniforms.uClean.value = this.clear ? 1 : 0;
     document.body.classList.toggle('clear-screen', this.clear);
     this.baseFov = s.fov || 72;
+    { const hud = document.getElementById('hud'); if (hud) hud.style.zoom = String(Math.max(0.8, Math.min(1.4, s.hudScale || 1))); }
     this.vhs.uniforms.uBright.value = Math.max(0.7, Math.min(1.5, s.bright || 1));
     this.calm = !!s.calm;
     this.player.bobScale = s.bob === false ? 0 : 1;
