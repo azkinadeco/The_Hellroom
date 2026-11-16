@@ -67,10 +67,10 @@ export const hideOf = (L) => HIDE[(L && L.kind) || 'locker'] || HIDE.locker;
 export const DIFFICULTY = {
   // quiet: seconds without any threat before a patrol drifts towards you
   // grace: seconds after an escape during which patrols drift away from you
-  mudah:  { label: 'Cerita', speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150, desc: 'Penghuni lebih lambat dan kurang awas, baterai lebih banyak, bantuan arah datang lebih cepat.' },
-  normal: { label: 'Standar', speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24, desc: 'Seperti yang dimaksudkan. Kotak panel menyimpan rekamanmu.' },
-  sulit:  { label: 'Mencekam', speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420, noCheckpoint: true, desc: 'Penghuni lebih cepat dan lebih awas, baterai sedikit, tanpa titik simpan.' },
-  mimpi:  { label: 'Mimpi Buruk', speed: 1.18, sight: 1.35, hearing: 1.45, batteries: 0.5, quiet: 25, grace: 8, noCheckpoint: true, noMap: true, noAssist: true, desc: 'Tanpa denah, tanpa titik simpan, tanpa bantuan. Penghuni hampir tidak pernah jauh darimu.' },
+  mudah:  { label: 'Cerita', lull: [4, 6, 1.9, 0.5], catchUp: 0.98, speed: 0.85, sight: 0.75, hearing: 0.7, batteries: 1.5, quiet: 80, grace: 35, assistAfter: 150, desc: 'Penghuni lebih lambat dan kurang awas, baterai lebih banyak, bantuan arah datang lebih cepat.' },
+  normal: { label: 'Standar', lull: [5, 8, 1.5, 0.55], catchUp: 1.03, speed: 1.0,  sight: 1.0,  hearing: 1.0, batteries: 1.0, quiet: 55, grace: 24, desc: 'Seperti yang dimaksudkan. Kotak panel menyimpan rekamanmu.' },
+  sulit:  { label: 'Mencekam', lull: [7, 10, 1.2, 0.65], catchUp: 1.06, speed: 1.12, sight: 1.25, hearing: 1.3, batteries: 0.6, quiet: 35, grace: 12, assistAfter: 420, noCheckpoint: true, desc: 'Penghuni lebih cepat dan lebih awas, baterai sedikit, tanpa titik simpan.' },
+  mimpi:  { label: 'Mimpi Buruk', lull: [9, 12, 1.0, 0.72], catchUp: 1.08, speed: 1.18, sight: 1.35, hearing: 1.45, batteries: 0.5, quiet: 25, grace: 8, noCheckpoint: true, noMap: true, noAssist: true, desc: 'Tanpa denah, tanpa titik simpan, tanpa bantuan. Penghuni hampir tidak pernah jauh darimu.' },
 };
 
 // Test rooms in the main menu (Ruang Uji): every map playable, resident

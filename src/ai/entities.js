@@ -638,23 +638,24 @@ export class Monitor extends Entity {
   // hear it - and close behind a sprinting player it only just gains on them.
   chasePace(dt) {
     const g = this.game, p = g.player;
-    if (this.stateT < 0.05) { this.lullT = 0; this.nextLull = 4 + Math.random() * 3; }
+    const L = g.diff.lull || [5, 8, 1.5, 0.55];   // every [min, max] s, for how long, at what share of speed
+    if (this.stateT < 0.05) { this.lullT = 0; this.nextLull = L[0] - 1 + Math.random() * (L[1] - L[0]); }
     let k = Math.min(1, 0.68 + this.stateT / 2.2 * 0.32);
     this.nextLull -= dt;
     if (this.nextLull <= 0 && this.lullT <= 0) {
-      this.lullT = 1.5; this.nextLull = 5 + Math.random() * 3;
+      this.lullT = L[2]; this.nextLull = L[0] + Math.random() * (L[1] - L[0]);
       g.audio.sniff && g.audio.sniff({ x: this.pos.x, y: 1.4, z: this.pos.z });
       g.stats.lulls = (g.stats.lulls || 0) + 1;
       if (this.distTo(p.pos) < 18) g.hint('lull', 'Pengejar sesekali melambat sebentar dan terengah: itu kesempatanmu memutus pandangannya.', 5);
     }
-    if (this.lullT > 0) { this.lullT -= dt; k *= 0.55; }
+    if (this.lullT > 0) { this.lullT -= dt; k *= L[3]; }
     // a big body takes corners badly: a sharp turn costs it speed for a moment
     const turn = Math.abs(angleDiff(this.prevYaw ?? this.yaw, this.yaw)) / Math.max(dt, 1e-3); this.prevYaw = this.yaw;
     this.cornerT = turn > 2.6 ? 0.45 : Math.max(0, (this.cornerT || 0) - dt);
     if (this.cornerT > 0) k *= 0.72 - Math.min(0.12, (this.radius || 0.4) * 0.15);
     // close behind a sprinting player: barely faster than them, never a sudden burst
     const d = this.distTo(p.pos), ps = Math.hypot(p.vel.x, p.vel.y);
-    if (d < 4 && ps > 3) k = Math.min(k, (ps * 1.03) / Math.max(0.1, this.run * this.speedMul));
+    if (d < 4 && ps > 3) k = Math.min(k, (ps * (g.diff.catchUp || 1.03)) / Math.max(0.1, this.run * this.speedMul));
     return k;
   }
 
