@@ -511,12 +511,14 @@ export class Monitor extends Entity {
         if (arrived || this.inspectT > 0 || this.distTo({ x: fx, z: fz }) < 0.35) {
           this.velocity = 0;
           this.faceToward(L.x, L.z, dt, 10);
+          // it stops at the spot and sniffs first - your cue - then looks in; low and open spots are quicker to check
+          if (!this.inspectT) { this.game.audio.sniff && this.game.audio.sniff({ x: L.x, y: 1.2, z: L.z }); this.inspectLen = ({ bed: 2.6, cot: 2.6, desk: 2.7, crate: 2.9, curtain: 2.9, fitting: 3.0, shower: 2.9, stall: 3.1 })[L.kind] ?? 3.4; }
           this.inspectT = (this.inspectT || 0) + dt;
           // only a breath it can actually hear for a while gives you away
           if (p.hidden === L && this.inspectT > 0.6 && !p.holdingBreath && this.game.time - (p.hideT || 0) > 1.0) this.breathHeard += dt;
           const caught = this.lockerSure || this.breathHeard > 1.3;
           if (caught && p.hidden === L) { this.game.lockerReason = this.lightLeak ? 'light' : this.lockerSure ? 'seen' : 'breath'; this.attack(L); break; }
-          if (this.inspectT > 3.4) {
+          if (this.inspectT > (this.inspectLen || 3.4)) {
             if (p.hidden === L) g.stats.inspected = (g.stats.inspected || 0) + 1;
             this.inspectT = 0; this.suspicion = 0.1; this.awareness = 0; this.lockerSure = false;
             this.clearLocker(L); g.onChaseEnd(this);
