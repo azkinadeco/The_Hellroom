@@ -262,6 +262,7 @@ export class Game {
     this.alarms = [];
     this.radioOn = def.radio !== false;
     this.installing = null;
+    this.sharedCleared = new Map(); this.sharedRooms = new Map();
     this.struggle = null; this.struggleUsed = false;
     this.trainDone = null; this.trainFinished = false;
     this.trace = null;
@@ -371,6 +372,7 @@ export class Game {
   }
   changeFloor(k, via = {}) {
     if (k === this.floorK || !this.floors[k]) return;
+    this.sharedCleared = new Map(); this.sharedRooms = new Map();
     const prev = this.floorK;
     if (this.odd) this.odd.clear();
     this.setFloor(k);

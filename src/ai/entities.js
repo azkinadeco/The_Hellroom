@@ -481,7 +481,7 @@ export class Monitor extends Entity {
             else { this.setState('patrol'); this.waitT = 1; }
           }
           else if (n.L) { const q = this.lockerPoint(n.L); if (this.goToWorld(q.x, q.z)) this.peekNext = n.L; else this.finalPoint = null; }
-          else if (n.room) { (this.roomsSearched || (this.roomsSearched = new Map())).set(n.room, g.time); if (this.goTo(...n.c)) this.peekNext = n.look; g.stats.roomsSwept = (g.stats.roomsSwept || 0) + 1; }
+          else if (n.room) { (this.roomsSearched || (this.roomsSearched = new Map())).set(n.room, g.time); (g.sharedRooms || (g.sharedRooms = new Map())).set(n.room, g.time); if (this.goTo(...n.c)) this.peekNext = n.look; g.stats.roomsSwept = (g.stats.roomsSwept || 0) + 1; }
           else this.goTo(...n);
           const [cx, cz] = this.cell(); (this.searched || (this.searched = new Map())).set(cx + cz * g.map.W, g.time);
         } else this.followPath(dt, speed);
@@ -572,8 +572,12 @@ export class Monitor extends Entity {
   }
 
   // a hiding spot it has just looked into and found empty: left alone for a while
-  clearLocker(L) { (this.cleared || (this.cleared = new Map())).set(L, this.game.time); }
-  isCleared(L, sec = 50) { return !!this.cleared && this.game.time - (this.cleared.get(L) ?? -1e9) < sec; }
+  clearLocker(L) { (this.cleared || (this.cleared = new Map())).set(L, this.game.time); (this.game.sharedCleared || (this.game.sharedCleared = new Map())).set(L, this.game.time); }
+  // its own memory, or another resident on this floor looked there in the last 30 s
+  isCleared(L, sec = 50) {
+    const t = this.game.time;
+    return (!!this.cleared && t - (this.cleared.get(L) ?? -1e9) < sec) || (!!this.game.sharedCleared && t - (this.game.sharedCleared.get(L) ?? -1e9) < Math.min(sec, 30));
+  }
   // done here: head off to a patrol point well away from (x, z) straight away
   leaveFrom(x, z) {
     const g = this.game, m = g.map, [cx, cz] = this.cell(), dist = m.bfs(cx, cz);
@@ -764,7 +768,8 @@ export class Monitor extends Entity {
     // 3. the nearest rooms off the spot, in order, each looked into from its doorway (not ones searched lately)
     { const roomAt = new Map();
       for (let i = 0; i < dist.length; i++) { const r = m.region[i]; if (r <= 0 || dist[i] < 0 || dist[i] > 8 || (m.avoid && m.avoid[i])) continue; const cur = roomAt.get(r); if (!cur || dist[i] < dist[cur]) roomAt.set(r, i); }
-      const rooms = [...roomAt.entries()].filter(([r]) => !this.roomsSearched || !(g.time - (this.roomsSearched.get(r) ?? -1e9) < 45)).sort((a, b) => dist[a[1]] - dist[b[1]]).slice(0, 2);
+      const swept = g.sharedRooms || (g.sharedRooms = new Map());
+      const rooms = [...roomAt.entries()].filter(([r]) => (!this.roomsSearched || !(g.time - (this.roomsSearched.get(r) ?? -1e9) < 45)) && !(g.time - (swept.get(r) ?? -1e9) < 30)).sort((a, b) => dist[a[1]] - dist[b[1]]).slice(0, 2);
       for (const [r, i] of rooms) {
         const room = g.gen.rooms.find((q) => q.id === r);
         const look = room ? { x: (room.x0 + room.x1 + 1) * CELL / 2, z: (room.z0 + room.z1 + 1) * CELL / 2 } : { x: m.center(i % m.W, (i / m.W) | 0)[0], z: m.center(i % m.W, (i / m.W) | 0)[1] };
