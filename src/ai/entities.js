@@ -284,6 +284,7 @@ export class Monitor extends Entity {
 
   setState(s) {
     if (this.state === s) return;
+    if (s === 'chase') this.guarded = false;
     if (this.state === 'chase' && s !== 'attack') this.awareness = Math.min(this.awareness || 0, 0.5);   // a lost chase leaves it alert, not all-seeing
     this.state = s; this.stateT = 0; this.cautious = false;
     if (s === 'chase') {
@@ -485,7 +486,22 @@ export class Monitor extends Entity {
             g.hint('confused', 'Penghuni kehilanganmu dan berdiri bingung di tempat terakhir ia melihatmu. Jangan bersuara: sedikit bunyi saja memberi tahu lokasimu.', 6);
             break;
           }
+          // you vanished into a room it is outside of: it first guards the doorway for a few seconds
+          if (!this.seenOutdoors && !this.guarded && this.lastSeen && (reached || this.lostT > 1.2)) {
+            const m = g.map, [lx, lz] = m.cellOf(this.lastSeen.x, this.lastSeen.z), rid = m.reg(lx, lz), [mx, mz] = this.cell();
+            const room = rid > 0 ? g.gen.rooms.find((q) => q.id === rid) : null;
+            if (room && m.reg(mx, mz) !== rid && room.doors.length) {
+              const d = room.doors.reduce((a, b) => (Math.hypot(b.x - this.pos.x, b.z - this.pos.z) < Math.hypot(a.x - this.pos.x, a.z - this.pos.z) ? b : a));
+              const ox = d.x - d.inX * 1.2, oz = d.z - d.inZ * 1.2;
+              if (m.reg(...m.cellOf(ox, oz)) >= 0) {
+                this.guarded = true; this.guardDoor = d; this.setState('wait'); this.lurkT = 5 + Math.random() * 2; this.afterWait = 'search';
+                this.goToWorld(ox, oz); g.stats.doorGuards = (g.stats.doorGuards || 0) + 1; g.onChaseEnd(this);
+                break;
+              }
+            }
+          }
           if (!this.seenOutdoors && (reached || this.lostT > giveUp)) {
+            this.guarded = false;
             this.setState('search');
             this.suspicion = 0.6;
             this.searchPts = this.planSearch();
@@ -519,13 +535,19 @@ export class Monitor extends Entity {
       }
       case 'wait': {   // silent, still, watching where it lost you
         this.velocity = 0;
-        if (this.lastSeen) this.faceToward(this.lastSeen.x, this.lastSeen.z, dt, 1.2);
+        if (this.guardDoor && (this.path || this.finalPoint)) { speed = this.walk * 1.6 * this.speedMul; if (this.followPath(dt, speed)) { this.path = null; this.finalPoint = null; } this.checkLockers(dt); break; }
+        if (this.guardDoor) this.faceToward(this.guardDoor.x, this.guardDoor.z, dt, 3);
+        else if (this.lastSeen) this.faceToward(this.lastSeen.x, this.lastSeen.z, dt, 1.2);
         this.yaw += Math.sin(g.time * 0.5) * dt * 0.25;
         this.checkLockers(dt);
         if (this.state !== 'wait') break;
         if (this.confused) this.yaw += Math.sin(g.time * 0.9) * dt * 1.6;   // turning this way and that
         this.lurkT -= dt;
-        if (this.lurkT <= 0) { this.confused = false; this.setState('patrol'); this.waitT = 0.5; }
+        if (this.lurkT <= 0) {
+          this.confused = false; this.guardDoor = null;
+          if (this.afterWait === 'search') { this.afterWait = null; this.setState('search'); this.suspicion = 0.6; this.searchPts = this.planSearch(); this.path = null; }
+          else { this.setState('patrol'); this.waitT = 0.5; }
+        }
         break;
       }
       case 'locker': { // walking to / inspecting a locker
