@@ -274,6 +274,7 @@ export class Game {
     this.alarms = [];
     this.radioOn = def.radio !== false;
     this.installing = null;
+    this.exitOpening = null;
     this.sharedCleared = new Map(); this.sharedRooms = new Map();
     this.struggle = null; this.struggleUsed = false;
     this.player.injuredT = 0;
@@ -1058,7 +1059,29 @@ export class Game {
 
   tryExit() {
     if (!this.powered) { this.audio.doorLocked(this.gen.exit); this.hud.toast('Tidak ada listrik. Pasang semua sekring di kotak panel.'); return; }
-    if (this.busy) return;
+    if (this.busy || this.exitOpening) return;
+    // the last stretch: the emergency door takes a few seconds to unbolt, its alarm wakes the whole floor
+    const need = this.def.training ? 0 : ({ mudah: 2, normal: 3, sulit: 3.5, mimpi: 4 })[this.diffKey] ?? 3;
+    if (!need) { this.openExit(); return; }
+    const ex = this.gen.exit;
+    this.exitOpening = { t: 0, need, bell: 0 };
+    this.audio.alarmRing({ x: ex.x, y: 2, z: ex.z }, 1.2);
+    for (const e of this.entities) { if (e.onNoise) e.onNoise(ex.x, ex.z, 1, 'alert'); }
+    this.stats.finalRuns = (this.stats.finalRuns || 0) + 1;
+    this.hint('exitalarm', 'Pintu darurat berbunyi saat dibuka: semua penghuni di lantai ini mendengarnya. Tetap di depan pintu sampai terbuka!', 5);
+  }
+  updateExitOpening(dt) {
+    const E = this.exitOpening, p = this.player;
+    if (!E) return;
+    if (!p.alive) { this.exitOpening = null; return; }
+    const ex = this.gen.exit, near = Math.hypot(p.pos.x - ex.x, p.pos.z - ex.z) < 2.2 && !p.hidden;
+    if (near) E.t += dt;                                // step away and the bolts stop turning (progress is kept)
+    E.bell -= dt; if (E.bell <= 0) { E.bell = 0.9; this.audio.alarmRing({ x: ex.x, y: 2, z: ex.z }, 0.6); }
+    this.hud.caption(near ? `Membuka pintu darurat… ${Math.round(Math.min(1, E.t / E.need) * 100)}%` : 'Kembali ke pintu darurat!', 0.3);
+    this.dread = Math.max(this.dread || 0, 0.5);
+    if (E.t >= E.need) { this.exitOpening = null; this.openExit(); }
+  }
+  openExit() {
     this.busy = true;
     this.winT = 0;
     this.audio.doorCreak({ x: this.gen.exit.x, y: 1.2, z: this.gen.exit.z }, true);
@@ -1174,6 +1197,7 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0 && !this.player.hidden) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    this.updateExitOpening(dt);
     this.myNoise = Math.max(0, (this.myNoise || 0) - dt * 22);   // the noise meter falls back after each sound
     // wounded after tearing free: slower and shorter of breath for a while
     { const p = this.player; if (p.injuredT > 0) { p.injuredT -= dt; if (p.injuredT <= 0) this.hud.toast('Lukamu tidak lagi menghambat.', 1.6); }
