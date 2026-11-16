@@ -529,6 +529,9 @@ function buildRooms() {
   $('room-god').onchange = () => { roomOpts.god = $('room-god').checked; };
   $('room-brain').checked = roomOpts.brain;
   $('room-brain').onchange = () => { roomOpts.brain = $('room-brain').checked; };
+  // testing: reveal every resident at once, or lock them all back to ??? cards
+  $('room-metall').onclick = () => { for (const k of RESIDENTS) if (!save.met.includes(k)) save.met.push(k); game.met = new Set(save.met); persist(); buildRooms(); hud.toast('Semua penghuni terbuka.', 1.4); };
+  $('room-metnone').onclick = () => { save.met = []; game.met = new Set(); persist(); buildRooms(); hud.toast('Penghuni dikunci lagi.', 1.4); };
   // model gallery
   if (!viewer) viewer = new ModelViewer($('viewer-canvas'), assets);
   const pick = $('viewer-pick'); pick.innerHTML = '';
@@ -735,6 +738,7 @@ $('btn-next').onclick = () => { if (game.def.daily) { startDaily(); return; } if
 addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && current === 'note') $('note-close').click();
   if ((e.code === 'Enter' || e.code === 'Space') && current === 'intro' && document.activeElement.tagName !== 'BUTTON') { e.preventDefault(); beginPlay(); }
+  if (e.code === 'KeyH' && game && game.state === 'playing' && game.def && game.def.test && !e.repeat) game.summon();
   if (!current || (game && game.state === 'playing')) return;
   if (e.code === 'ArrowDown' || e.code === 'ArrowUp') { e.preventDefault(); moveFocus(e.code === 'ArrowDown' ? 1 : -1); }
   else if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && document.activeElement.tagName === 'BUTTON') { e.preventDefault(); moveFocus(e.code === 'ArrowRight' ? 1 : -1); }

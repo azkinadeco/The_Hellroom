@@ -539,6 +539,18 @@ export class Game {
     this.hud.toast('Jeritan itu memanggil sesuatu…', 2.5);
     for (const e of this.entities) if (e !== src && Math.hypot(e.pos.x - x, e.pos.z - z) < 48) e.onNoise(x, z, 1, 'alert');
   }
+  // test rooms: bring the nearest resident to a spot a few rooms away, walking towards you
+  summon() {
+    if (!this.def.test || this.def.training || this.state !== 'playing' || !this.entities.length) return false;
+    const p = this.player, [cx, cz] = this.map.cellOf(p.pos.x, p.pos.z);
+    const t = randomReachableCell(this.map, Math.random, cx, cz, 3, 5); if (!t) return false;
+    let e = this.entities[0]; for (const o of this.entities) if (o.distTo(p.pos) < e.distTo(p.pos)) e = o;
+    const [x, z] = this.map.center(t[0], t[1]);
+    e.pos.set(x, 0, z); e.path = null; e.awareness = 0; e.suspicion = 0; this.chasers.delete(e);
+    if (e.setState) { e.state = 'chase'; e.setState('patrol'); e.waitT = 0; if (e.goTo) e.goTo(cx, cz); }
+    this.hud.toast('Penghuni dipanggil ke dekatmu.', 1.4);
+    return true;
+  }
   onChaseStart(e) {
     if (!this.chasers.has(e) && this.player.alive) { this.marks.push({ k: this.floorK, x: this.player.pos.x, z: this.player.pos.z, t: this.time, kind: e.kind }); if (this.marks.length > 12) this.marks.shift(); if (this.automap) this.automap.dirty = true; }
     if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); this.input.rumble(180, 0.7); }
