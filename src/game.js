@@ -724,7 +724,7 @@ export class Game {
     const side = (x, z) => Math.sign((x - d.x) * nx + (z - d.z) * nz);
     for (const e of this.chasers) {
       if (Math.hypot(e.pos.x - d.x, e.pos.z - d.z) > 1.9 || side(e.pos.x, e.pos.z) === side(p.pos.x, p.pos.z)) continue;
-      e.stunT = 0.9; e.path = null;
+      e.stunT = this.diff.slam || 0.9; e.path = null;
       this.audio.doorSlam({ x: d.x, y: 1.2, z: d.z }); this.input.rumble(120, 0.6);
       this.stats.slams = (this.stats.slams || 0) + 1;
       this.hint('slam', 'Pintu dibanting tepat di depannya: ia tertahan sesaat. Lari sekarang!', 4);
@@ -1144,7 +1144,7 @@ export class Game {
     { // the pocket radio hisses louder the nearer a resident is (within 22 m, through walls) - and a resident
       // right next to it hears it too
       let dmin = Infinity; for (const e of this.entities) if (e.form !== 'statue') dmin = Math.min(dmin, Math.hypot(e.pos.x - this.player.pos.x, e.pos.z - this.player.pos.z));
-      const k = Math.max(0, 1 - dmin / 22); this.radioK = k; if (this.radioOn) this.stats.radioMax = Math.max(this.stats.radioMax || 0, k);
+      const k = Math.max(0, 1 - dmin / (this.diff.radio || 22)); this.radioK = k; if (this.radioOn) this.stats.radioMax = Math.max(this.stats.radioMax || 0, k);
       if ((this.player.back || 0) > 0.8 && this.chasers.size && [...this.chasers].some((e) => this.isSeenByPlayer(e))) this.stats.backSpots = (this.stats.backSpots || 0) + dt;
       this.audio.setRadio(this.radioOn && this.player.alive, k, dt);
       if (this.radioOn && k > 0.25) this.hint('radio', 'Radio saku berdesis makin keras saat penghuni mendekat, bahkan dari balik tembok. Tapi dari dekat ia juga bisa mendengarnya: matikan (' + (this.input.touch ? 'tombol radio' : this.input.keyName('radio')) + ') saat bersembunyi.', 7);
@@ -1592,7 +1592,7 @@ export class Game {
         const dx = nx - e.pos.x, dz = nz - e.pos.z, rr = (e.radius || 0.4) + 0.15;
         if (dx * dx + dz * dz > rr * rr || ny < 0.4 || ny > 2.3) continue;
         const head = ny > 1.35;
-        e.stunT = Math.max(e.stunT || 0, head ? 1.1 : 0.5);
+        e.stunT = Math.max(e.stunT || 0, (head ? 1.1 : 0.5) * (this.diff.hitMul || 1));
         if (!this.chasers.has(e)) { e.awareness = Math.max(e.awareness || 0, 0.7); e.glimpse = { x: this.player.pos.x, z: this.player.pos.z, t: this.time }; }
         pr.hit = true; this.audio.clack({ x: nx, y: ny, z: nz }); if (this.audio.ready) this.audio._thud(null, this.audio.t, 0.25);
         this.stats.headshots = (this.stats.headshots || 0) + (head ? 1 : 0); this.stats.bodyHits = (this.stats.bodyHits || 0) + 1;
