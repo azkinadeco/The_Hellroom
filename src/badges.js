@@ -43,6 +43,9 @@ export const BADGES = [
   { id: 'nyaris', icon: '😶', name: 'Nyaris', desc: 'Biarkan penghuni lewat tepat di sebelahmu tanpa melihatmu.', test: (c) => (c.g.stats.nearMisses || 0) > 0 },
   { id: 'lolos2', icon: '💨', name: 'Lari Terus', desc: 'Lolos dari lima kejaran dalam satu bab, lalu selesaikan.', test: (c) => c.win && (c.g.stats.escapes || 0) >= 5 },
   { id: 'gerebek', icon: '🔍', name: 'Ketahuan dari Ganjal', desc: 'Selamat saat penghuni menggeledah ruangan yang kamu ganjal.', test: (c) => c.win && (c.g.stats.roomRaids || 0) > 0 },
+  { id: 'banting', icon: '🚪', name: 'Tepat di Wajahnya', desc: 'Banting pintu di depan pengejar.', test: (c) => (c.g.stats.slams || 0) > 0 },
+  { id: 'kepala', icon: '🎯', name: 'Kena Kepala', desc: 'Lempar penghapus tepat ke kepala penghuni.', test: (c) => (c.g.stats.headshots || 0) > 0 },
+  { id: 'neraka', icon: '🔥', name: 'Lantai Neraka', desc: 'Selesaikan Lantai Neraka di Jurang.', test: (c) => c.win && !!c.g.def.hell },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 

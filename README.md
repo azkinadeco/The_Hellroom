@@ -42,6 +42,18 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 128–137
+
+- **Pintu kedua**: ±60% ruangan berpintu satu mendapat pintu kedua (ke lorong atau ruangan sebelah) sehingga ada jalur memutar; pintu yang terhalang perabot dibatalkan.
+- **Banting pintu** di depan pengejar (≤1,9 m di sisi seberang): tertahan 0,9 detik.
+- **Pasang sekring** butuh 0,9 + 0,55 detik per sekring, berderak, bisa dibatalkan.
+- **Lemparan kena**: badan 0,5 detik, kepala 1,1 detik terhuyung.
+- **Tangan gemetar**: sorot senter bergetar mengikuti rasa takut.
+- **Kesulitan** mengatur jeda dan kecepatan dekat pengejar.
+- **Lantai Neraka** tiap lantai ke-5 Jurang: hampir gelap, dua penghuni, dua bekal.
+- **Penjaga tersangkut**: penghuni yang macet 5 detik dicarikan jalan lain atau dipindah saat tak terlihat.
+- **Lencana**: Tepat di Wajahnya, Kena Kepala, Lantai Neraka (41 lencana).
+
 ## Batch 115–127
 
 - **Kecepatan pengejar**: 8% lebih lambat, mulai 68% lalu naik dalam 2,2 detik, melambat 1,5 detik tiap 5–8 detik (ada bunyi dan ikon mata menyipit), dari jarak dekat hanya 3% lebih cepat dari larimu, melambat di tikungan tajam.
