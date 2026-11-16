@@ -14,6 +14,7 @@ export class HUD {
     this.objectives = $('objectives'); this.objT = 0;
     this.captionEl = $('caption'); this.capT = 0;
     this._last = {};
+    this.cue = $('breath-cue'); this.cueBar = $('breath-cue-bar'); this.cueKey = $('breath-cue-key');
     this.watch = $('hud-watch'); this.watchFill = $('watch-fill');
     this.ring = $('sound-ring'); this.pings = [];
   }
@@ -120,6 +121,11 @@ export class HUD {
     this.louvers.classList.toggle('show', ov === 'louvers');
     this.louvers.classList.toggle('peek', ov === 'peek');
     document.body.classList.toggle('hiding', !!p.hidden);
+    { // a resident is at your hiding spot: hold your breath, now
+      const at = p.hidden && g.entities.some((e) => e.state === 'locker' && e.lockerTarget === p.hidden && e.distTo(p.hidden) < 6);
+      this._set(this.cue, 'cue', at ? 'breath-cue show' + (p.holdingBreath ? ' held' : '') : 'breath-cue', 'className');
+      if (at) { this.cueBar.style.width = Math.round(p.breath / 100 * 100) + '%'; this._set(this.cueKey, 'cuek', p.holdingBreath ? 'jangan dilepas…' : g.input.touch ? 'tahan tombol NAPAS' : 'tahan ' + g.input.keyName('breath')); }
+    }
     document.body.classList.toggle('panting', !!p.exhausted && !p.hidden);
     document.body.classList.toggle('focusing', !!g.focusing);
     if (this._touch !== g.input.touch) { this._touch = g.input.touch; document.body.classList.toggle('touch', !!g.input.touch); }

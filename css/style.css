@@ -515,3 +515,14 @@ body.focusing #hud::before { content: ''; position: absolute; inset: 0; pointer-
 .pause-info b { color: var(--ink); font-weight: normal; }
 .pause-info .acc { color: var(--accent); }
 @media (max-width: 640px) { .pause-grid { grid-template-columns: 1fr; } .pause-info { border-left: none; padding-left: 0; } }
+
+/* batch 149: something is at your hiding spot */
+.breath-cue { position: absolute; z-index: 5; left: 50%; top: 68%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.breath-cue.show { opacity: 1; }
+.breath-cue b { display: block; font-weight: normal; font-size: 26px; letter-spacing: 0.3em; color: #ff8a80; text-shadow: 0 0 8px #000, 0 0 2px #000; animation: cuePulse .5s ease-in-out infinite alternate; }
+.breath-cue.held b { color: #bfe0ff; animation: none; }
+.breath-cue span { display: block; font-size: 14px; color: var(--dim); margin: 2px 0 6px; letter-spacing: 0.15em; }
+.breath-cue div { width: 200px; height: 5px; margin: 0 auto; background: rgba(255,255,255,0.15); }
+.breath-cue i { display: block; height: 100%; background: #bfe0ff; }
+@keyframes cuePulse { to { transform: scale(1.08); } }
+body.clear-screen .breath-cue b, body.big-text .breath-cue b { animation: none; }
