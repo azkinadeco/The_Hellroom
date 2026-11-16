@@ -50,6 +50,7 @@ export class Footprints {
     const g = this.game, p = g.player;
     if (!g.map || !p.alive) return;
     if (p.wading) { this.wetT = WET_FOR; this.dist = 0; return; }
+    if (g.def.wetFloor) this.wetT = Math.max(this.wetT, WET_FOR * 0.6);   // a flooded floor: every step prints
     if (this.wetT <= 0 || p.hidden || g.liftRide || g.slideRide) { this.wetT = Math.max(0, this.wetT - dt); return; }
     this.wetT -= dt;
     const sp = Math.hypot(p.vel.x, p.vel.y);

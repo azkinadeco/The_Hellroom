@@ -1241,7 +1241,9 @@ export class Game {
     if (input.consume('throw')) this.throwEraser();
     if (input.consume('alarm')) this.setAlarm();
     if (input.consume('knock')) this.knock();
-    if (input.consume('radio')) { this.radioOn = !this.radioOn; this.audio.click(); this.hud.toast(this.radioOn ? 'Radio saku menyala.' : 'Radio saku dimatikan.', 1.2); }
+    const radioKey = input.consume('radio');
+    if (radioKey && this.def.radioDead) this.hud.toast('Radio saku mati di lantai ini.', 1.4);
+    else if (radioKey) { this.radioOn = !this.radioOn; this.audio.click(); this.hud.toast(this.radioOn ? 'Radio saku menyala.' : 'Radio saku dimatikan.', 1.2); }
     this.updateAlarms(dt);
     this.updateProjectiles(dt);
     this.updateHints(dt);

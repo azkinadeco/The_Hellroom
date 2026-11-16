@@ -166,6 +166,8 @@ export const ENDLESS_MODS = {
   waspada: { name: 'Penghuni Waspada', desc: 'Penghuni menyadarimu jauh lebih cepat.', def: { awareMul: 1.45 } },
   berderit: { name: 'Pintu Berderit', desc: 'Setiap pintu yang kamu buka atau tutup terdengar dua kali lebih jauh.', def: { doorNoise: 2 } },
   tanpaganjal: { name: 'Tanpa Ganjal', desc: 'Tidak ada ganjal pintu di lantai ini.', def: { wedges: 0 } },
+  sunyi: { name: 'Radio Mati', desc: 'Radio sakumu tidak berfungsi di lantai ini.', def: { radio: false, radioDead: true } },
+  basah: { name: 'Lantai Basah', desc: 'Lantainya basah di mana-mana: setiap langkahmu meninggalkan jejak.', def: { wetFloor: true } },
   redup: { name: 'Senter Redup', desc: 'Senter hanya menerangi setengah jarak biasanya.', def: { torchMul: 0.55 } },
 };
 // Bekal: after each Jurang floor pick one of three; they last for the whole run and stack
