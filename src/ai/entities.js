@@ -195,7 +195,7 @@ export class Entity {
     if (open === 2) { R = Math.max(R * 2.4, 42); vis = Math.max(vis, p.crouched ? 0.55 : 0.9); }   // a figure against the open sky
     else if (open === 1) R *= 1.5;
     // a curtain of rain between you: you blur into it (until the lightning)
-    if (g.inRain && !(g.lightning > 0.5)) { R *= 0.65; vis *= 0.75; }
+    if (g.inRain && !(g.lightning > 0.5)) { R *= g.diff.rainHide || 0.65; vis *= 0.75; }
     const reach = R * (0.4 + 0.6 * Math.min(vis, 1.2) / 1.2);
     if (d > reach) return 0;
     // where in the cone
@@ -494,7 +494,7 @@ export class Monitor extends Entity {
               const d = room.doors.reduce((a, b) => (Math.hypot(b.x - this.pos.x, b.z - this.pos.z) < Math.hypot(a.x - this.pos.x, a.z - this.pos.z) ? b : a));
               const ox = d.x - d.inX * 1.2, oz = d.z - d.inZ * 1.2;
               if (m.reg(...m.cellOf(ox, oz)) >= 0) {
-                this.guarded = true; this.guardDoor = d; this.setState('wait'); this.lurkT = 5 + Math.random() * 2; this.afterWait = 'search';
+                this.guarded = true; this.guardDoor = d; this.setState('wait'); this.lurkT = (g.diff.guard || 6) - 1 + Math.random() * 2; this.afterWait = 'search';
                 this.goToWorld(ox, oz); g.stats.doorGuards = (g.stats.doorGuards || 0) + 1; g.onChaseEnd(this);
                 break;
               }
