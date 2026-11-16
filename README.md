@@ -42,6 +42,17 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 171–180
+
+- **Langkah penghuni** di kaca berderak dan di air memercik (171).
+- **Meter SUARAMU** di HUD: seberapa jauh bunyimu terdengar (172, bisa dimatikan).
+- **Pintu darurat** butuh 2–4 detik dibuka sambil alarm memanggil semua penghuni (173).
+- **Penilaian siluman** di layar menang: Bayangan … Gegabah (174).
+- **Ambil Foto** dari layar jeda, PNG dengan cap kamera (175).
+- **Penghapus tergeletak** membuat penghuni curiga (176); **lampu tersendat** saat penghuni dekat (177).
+- **Lencana**: Bayangan, Alarm Terakhir, Kenang-Kenangan (53) (178).
+- **Kesulitan** mengatur peringatan (kedip lampu, geraman, kilau; tidak ada di Mimpi Buruk) (179).
+
 ## Batch 161–170
 
 - **Meter uji mikrofon** di Pengaturan (161).
