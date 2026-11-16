@@ -1524,6 +1524,21 @@ export class Game {
         this.audio.clack({ x: o.position.x, y: o.position.y, z: o.position.z });
         this.emitNoise(o.position.x, o.position.z, NOISE.throw, 'throw');
       };
+      // a hit on a resident's head or body: it flinches (longer for a head shot), and the eraser drops
+      if (!pr.hit) for (const e of this.entities) {
+        if (e.form === 'statue' || !e.sight) continue;
+        const dx = nx - e.pos.x, dz = nz - e.pos.z, rr = (e.radius || 0.4) + 0.15;
+        if (dx * dx + dz * dz > rr * rr || ny < 0.4 || ny > 2.3) continue;
+        const head = ny > 1.35;
+        e.stunT = Math.max(e.stunT || 0, head ? 1.1 : 0.5);
+        if (!this.chasers.has(e)) { e.awareness = Math.max(e.awareness || 0, 0.7); e.glimpse = { x: this.player.pos.x, z: this.player.pos.z, t: this.time }; }
+        pr.hit = true; this.audio.clack({ x: nx, y: ny, z: nz }); if (this.audio.ready) this.audio._thud(null, this.audio.t, 0.25);
+        this.stats.headshots = (this.stats.headshots || 0) + (head ? 1 : 0); this.stats.bodyHits = (this.stats.bodyHits || 0) + 1;
+        if (head) this.hud.caption('— kena kepala —', 1.2);
+        this.hint('hit', 'Lemparan yang mengenai penghuni membuatnya terhuyung sesaat (lebih lama kalau kena kepala), tapi ia tahu dari mana datangnya.', 6);
+        v.x *= -0.2; v.z *= -0.2; nx = o.position.x; nz = o.position.z;
+        break;
+      }
       if (!this.world.los(o.position.x, o.position.z, nx, nz)) { v.x *= -0.25; v.z *= -0.25; nx = o.position.x; nz = o.position.z; impact(); }
       if (ny > 2.9) { v.y = -Math.abs(v.y) * 0.3; ny = 2.9; }
       if (ny <= 0.016) {

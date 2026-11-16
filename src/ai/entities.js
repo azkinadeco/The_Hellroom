@@ -357,6 +357,7 @@ export class Monitor extends Entity {
     } else if (this.state !== 'chase' && this.state !== 'attack' && this.state !== 'locker' && this.suspicion >= 1) this.setState('chase');
 
     let speed = 0;
+    if (this.stunT > 0 && this.state !== 'chase') { this.stunT -= dt; this.velocity = 0; this.updateCommon(dt); return; }   // reeling (chase handles its own)
     switch (this.state) {
       case 'patrol': {
         this.checkLockers(dt);
