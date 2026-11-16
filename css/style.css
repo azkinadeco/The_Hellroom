@@ -528,3 +528,10 @@ body.focusing #hud::before { content: ''; position: absolute; inset: 0; pointer-
 body.clear-screen .breath-cue b, body.big-text .breath-cue b { animation: none; }
 .custom-diff .row { font-size: 15px; padding: 5px 0; }
 #diff-list.seg { flex-wrap: wrap; }
+
+/* batch 161: mic test meter */
+.mic-test { padding: 6px 0 10px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.mic-meter { position: relative; height: 8px; margin-top: 6px; background: rgba(255,255,255,0.08); }
+.mic-meter i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); transition: width .06s; }
+.mic-meter i.loud { background: var(--danger); }
+.mic-meter b { position: absolute; top: -3px; bottom: -3px; width: 2px; left: 12%; background: var(--ink); opacity: 0.6; }

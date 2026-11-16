@@ -619,6 +619,24 @@ $('btn-share').onclick = async () => {
   const text = `THE HELLROOM · Rekaman Harian ${d.slice(6)}/${d.slice(4, 6)}/${d.slice(0, 4)}\n${game.def.name} — ${fmt(t)} (${DIFFICULTY[game.diffKey].label}, terlihat ${game.stats.spotted}×)`;
   $('btn-share').textContent = (await copyText(text)) ? 'Tersalin ✓' : 'Gagal menyalin';
 };
+// the settings screen shows the microphone level live, with a mark where it starts to be heard in the game
+let micTestOn = false;
+function micTest() {
+  if (micTestOn) return; micTestOn = true;
+  let last = performance.now();
+  const tick = (now) => {
+    if (current !== 'settings') { micTestOn = false; return; }
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const m = game && game.mic, s = save.settings;
+    if (m && m.active && s.mic) {
+      const lv = game.state === 'menu' ? m.update(dt, s.micSens || 1) : game.voiceLv || 0;
+      $('mic-meter').style.width = Math.round(lv * 100) + '%'; $('mic-meter').classList.toggle('loud', lv > 0.12);
+      $('mic-test-label').textContent = lv > 0.12 ? 'Terdengar penghuni!' : 'Bicara untuk menguji — melewati garis berarti terdengar.';
+    } else { $('mic-meter').style.width = '0%'; $('mic-test-label').textContent = s.mic ? (m && m.failed ? 'Mikrofon tidak bisa dipakai di sini (izin ditolak atau halaman tidak aman).' : 'Menyalakan mikrofon…') : 'Nyalakan mikrofon lalu bicara untuk menguji.'; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 function buildBinds() {
   const s = save.settings, list = $('bind-list'); list.innerHTML = '';
   const binds = { ...DEFAULT_BINDS, ...(s.binds || {}) };
@@ -668,7 +686,7 @@ document.addEventListener('click', (e) => {
   if (go === 'rooms') buildRooms();
   if (current === 'rooms' && go !== 'rooms' && viewer) viewer.stop();
   if (current === 'beast' && beastViewer) beastViewer.stop();
-  if (go === 'settings') { buildSettings(); returnTo = b.dataset.from === 'pause' ? 'pause' : 'title'; }
+  if (go === 'settings') { setTimeout(micTest, 0); buildSettings(); returnTo = b.dataset.from === 'pause' ? 'pause' : 'title'; }
   if (go === 'title' && current === 'settings' && returnTo === 'pause') { show('pause'); return; }
   show(go);
 });
