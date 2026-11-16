@@ -550,3 +550,15 @@ body.clear-screen.injured .injury { animation: none; }
 /* batch 181: test rooms back in the title menu, unmet residents as a blank card */
 .title-menu .dev-item { color: var(--dim); font-size: 0.8em; }
 .viewer-unknown { display: flex; align-items: center; justify-content: center; font-size: 96px; color: #3a3230; background: radial-gradient(ellipse at 50% 40%, #1d1716 0%, #060505 70%); border: 1px solid var(--line); }
+
+/* batch 185: which way the resident noticing you is */
+#aware-ind { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 6; display: none; }
+#aware-ind.show, #aware-ind.front { display: block; }
+#aware-ind.front { opacity: 0.35 !important; }
+#aware-ind i { position: absolute; left: -38px; top: -168px; width: 76px; height: 30px; border-top: 5px solid #d8392b; border-radius: 50% 50% 0 0 / 100% 100% 0 0; filter: drop-shadow(0 0 6px rgba(216, 57, 43, 0.8)); }
+@media (max-height: 500px) { #aware-ind i { top: -120px; } }
+/* meters that are not showing take no room, so the row never runs into the bottom-left text */
+.meter:not(.show) { display: none; }
+.meter.noise { width: 140px; }
+.meters { left: auto; right: 28px; transform: none; justify-content: flex-end; }
+body.touch .meters { right: auto; left: 50%; transform: translateX(-50%); bottom: auto; top: 58px; }

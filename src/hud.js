@@ -17,6 +17,8 @@ export class HUD {
     this.noiseM = $('m-noise');
     this.cue = $('breath-cue'); this.cueBar = $('breath-cue-bar'); this.cueKey = $('breath-cue-key');
     this.watch = $('hud-watch'); this.watchFill = $('watch-fill');
+    // where the resident noticing you is: an arc round the centre of the screen
+    this.aware = document.createElement('div'); this.aware.id = 'aware-ind'; this.aware.innerHTML = '<i></i>'; this.el.appendChild(this.aware);
     this.ring = $('sound-ring'); this.pings = [];
   }
   show(v) { this.el.classList.toggle('hidden', !v); }
@@ -145,6 +147,17 @@ export class HUD {
       this._set(this.watch, 'wshow', show ? 'watch show' + (hunt ? ' hunt' : '') : 'watch', 'className');
       const y = (24 - 24 * this.watchLv).toFixed(1);
       if (this._last.wy !== y) { this._last.wy = y; this.watchFill.setAttribute('y', y); }
+    }
+    { // the direction arc: the most alert resident that is not yet hunting you, if it is out of view
+      let best = null, w = 0.15;
+      if ((g.diff.warn ?? 1) > 0 && p.alive && !p.hidden && g.settings.awareArrow !== false) for (const e of g.entities) if (!g.chasers.has(e) && (e.awareness || 0) > w) { w = e.awareness; best = e; }
+      if (best) {
+        const cd = g.camera.getWorldDirection(this._v || (this._v = new g.camera.position.constructor())), tx = best.pos.x - p.pos.x, tz = best.pos.z - p.pos.z;
+        const a = Math.atan2(-tx * cd.z + tz * cd.x, tx * cd.x + tz * cd.z);
+        const deg = Math.round(a * 180 / Math.PI), op = Math.min(1, w).toFixed(2);
+        if (this._last.aw !== deg + op) { this._last.aw = deg + op; this.aware.style.transform = `rotate(${deg}deg)`; this.aware.style.opacity = op; }
+        this._set(this.aware, 'awc', Math.abs(a) < 0.5 ? 'front' : 'show', 'className');
+      } else this._set(this.aware, 'awc', '', 'className');
     }
     if (g.input.touch) {
       const tb = this._tb || (this._tb = Object.fromEntries([...document.querySelectorAll('.tbtn')].map((b) => [b.dataset.action, b])));
