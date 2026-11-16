@@ -1144,7 +1144,8 @@ export class Game {
     { // the pocket radio hisses louder the nearer a resident is (within 22 m, through walls) - and a resident
       // right next to it hears it too
       let dmin = Infinity; for (const e of this.entities) if (e.form !== 'statue') dmin = Math.min(dmin, Math.hypot(e.pos.x - this.player.pos.x, e.pos.z - this.player.pos.z));
-      const k = Math.max(0, 1 - dmin / 22); this.radioK = k;
+      const k = Math.max(0, 1 - dmin / 22); this.radioK = k; if (this.radioOn) this.stats.radioMax = Math.max(this.stats.radioMax || 0, k);
+      if ((this.player.back || 0) > 0.8 && this.chasers.size && [...this.chasers].some((e) => this.isSeenByPlayer(e))) this.stats.backSpots = (this.stats.backSpots || 0) + dt;
       this.audio.setRadio(this.radioOn && this.player.alive, k, dt);
       if (this.radioOn && k > 0.25) this.hint('radio', 'Radio saku berdesis makin keras saat penghuni mendekat, bahkan dari balik tembok. Tapi dari dekat ia juga bisa mendengarnya: matikan (' + (this.input.touch ? 'tombol radio' : this.input.keyName('radio')) + ') saat bersembunyi.', 7);
       this.radioNoiseT = (this.radioNoiseT || 0) - dt;

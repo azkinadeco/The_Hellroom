@@ -46,6 +46,9 @@ export const BADGES = [
   { id: 'banting', icon: '🚪', name: 'Tepat di Wajahnya', desc: 'Banting pintu di depan pengejar.', test: (c) => (c.g.stats.slams || 0) > 0 },
   { id: 'kepala', icon: '🎯', name: 'Kena Kepala', desc: 'Lempar penghapus tepat ke kepala penghuni.', test: (c) => (c.g.stats.headshots || 0) > 0 },
   { id: 'neraka', icon: '🔥', name: 'Lantai Neraka', desc: 'Selesaikan Lantai Neraka di Jurang.', test: (c) => c.win && !!c.g.def.hell },
+  { id: 'meronta', icon: '✊', name: 'Lepas dari Cengkeraman', desc: 'Meronta lepas saat tertangkap.', test: (c) => (c.g.stats.struggles || 0) > 0 },
+  { id: 'tengok', icon: '↩', name: 'Jangan Menoleh', desc: 'Menoleh ke belakang dan melihat pengejarmu.', test: (c) => (c.g.stats.backSpots || 0) > 0 },
+  { id: 'desis', icon: '📻', name: 'Desis di Saku', desc: 'Selesaikan satu bab setelah radiomu berdesis keras.', test: (c) => c.win && (c.g.stats.radioMax || 0) >= 0.8 },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 
