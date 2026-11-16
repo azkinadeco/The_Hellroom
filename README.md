@@ -42,6 +42,16 @@ Setiap level dihuni **satu** penghuni dengan aturannya sendiri.
 
 Jam Berlidah, Penenun Tulang, Dinding Bermata, dan Sang Pembisik menghuni mode Jurang dan Putaran Kedua. Di lantai mana pun yang penuh patung atau manekin, Gema Retak memakai aturan patungnya.
 
+## Batch 148–158
+
+- **Perbaikan loker** (148): penghuni tidak lagi bertahan di depan tempat sembunyi. Radio tidak lagi bersuara dari dalam tempat sembunyi; tempat yang sudah diperiksa kosong "dibersihkan" 50 detik; setelah memeriksa ia langsung pergi jauh; pura-pura pergi tidak terjadi dekat pemain yang bersembunyi.
+- **TAHAN NAPAS** besar saat tempat sembunyimu diperiksa (149); penghuni mengendus dulu sebelum memeriksa, durasi periksa sesuai jenis tempat (155).
+- **Penghuni berbagi pencarian** (150) dan **patroli menyebar** (151).
+- **Kutukan baru**: Radio Mati, Lantai Basah (152).
+- **Ukuran HUD** 80–140% (153); kesulitan **Kustom** dengan 4 penggeser (154).
+- **Napas** tahan lebih lama di kesulitan rendah (156).
+- **Lencana**: Tidak Ada Siapa-Siapa, Aturan Sendiri, Bukan Satu Tapi Dua (47).
+
 ## Batch 138–147
 
 - **Menoleh ke belakang** (B / tombol sentuh) sambil tetap berlari.
