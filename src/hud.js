@@ -67,6 +67,15 @@ export class HUD {
     });
   }
   showObjectives(text, dur = 4) { this.objectives.textContent = text; this.objectives.classList.add('show'); this.objT = dur; }
+  // the first time a resident is seen: its blank card turns over
+  meetCard(kind, name) {
+    let c = this.meetEl;
+    if (!c) { c = this.meetEl = document.createElement('div'); c.className = 'meet-card'; c.innerHTML = '<span class="mc-p"></span><span><small>PENGHUNI BARU</small><b></b></span>'; this.el.appendChild(c); }
+    c.querySelector('.mc-p').style.backgroundImage = `url('assets/ui/portraits/${kind}.jpg')`;
+    c.querySelector('b').textContent = name;
+    c.classList.remove('show'); void c.offsetWidth; c.classList.add('show');
+    clearTimeout(this.meetTO); this.meetTO = setTimeout(() => c.classList.remove('show'), 3200);
+  }
   _set(el, key, val, prop = 'textContent') { if (this._last[key] !== val) { this._last[key] = val; el[prop] = val; } }
 
   update(dt, g) {

@@ -562,3 +562,11 @@ body.clear-screen.injured .injury { animation: none; }
 .meter.noise { width: 140px; }
 .meters { left: auto; right: 28px; transform: none; justify-content: flex-end; }
 body.touch .meters { right: auto; left: 50%; transform: translateX(-50%); bottom: auto; top: 58px; }
+
+/* batch 186: a resident seen for the first time */
+.meet-card { position: absolute; left: 28px; top: 50%; transform: translate(-130%, -50%); display: flex; gap: 14px; align-items: center; padding: 10px 16px 10px 10px; background: rgba(8,6,6,0.82); border: 1px solid #5a2a24; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+.meet-card.show { transform: translate(0, -50%); }
+.meet-card .mc-p { width: 64px; height: 80px; background: #0b0a0a center/cover no-repeat; border: 1px solid var(--line); animation: mcflip .6s ease-out; }
+.meet-card small { display: block; font-size: 14px; letter-spacing: .2em; color: #e0645a; }
+.meet-card b { font-size: 24px; }
+@keyframes mcflip { from { transform: rotateY(90deg); filter: brightness(3); } to { transform: none; filter: none; } }

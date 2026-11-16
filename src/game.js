@@ -1355,7 +1355,7 @@ export class Game {
       for (const e of this.entities) {
         if (this.met.has(e.kind) || e.distTo(p.pos) > 22 || !this.isSeenByPlayer(e)) continue;
         this.met.add(e.kind);
-        if (this.onMeet && this.onMeet(e.kind)) this.hud.caption(`📁 Arsip Penghuni baru: ${(ENTITY_INFO[e.kind] || {}).name}`, 3);
+        if (this.onMeet && this.onMeet(e.kind)) { this.hud.caption(`📁 Arsip Penghuni baru: ${(ENTITY_INFO[e.kind] || {}).name}`, 3); this.hud.meetCard(e.kind, (ENTITY_INFO[e.kind] || {}).name || ''); }
       }
     }
     this.updateFilm(dt, zoom);
