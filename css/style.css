@@ -541,3 +541,8 @@ body.clear-screen .breath-cue b, body.big-text .breath-cue b { animation: none; 
 body.injured .injury { opacity: 1; animation: injuryBeat 1.6s ease-in-out infinite; }
 @keyframes injuryBeat { 50% { opacity: 0.55; } }
 body.clear-screen.injured .injury { animation: none; }
+
+/* batch 172: how loud you are */
+.meter.noise i { background: #8fd0ff; transition: width .08s; }
+.meter.noise.loud i { background: var(--danger); }
+.meter.noise label { color: #8fd0ff; }

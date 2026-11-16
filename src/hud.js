@@ -14,6 +14,7 @@ export class HUD {
     this.objectives = $('objectives'); this.objT = 0;
     this.captionEl = $('caption'); this.capT = 0;
     this._last = {};
+    this.noiseM = $('m-noise');
     this.cue = $('breath-cue'); this.cueBar = $('breath-cue-bar'); this.cueKey = $('breath-cue-key');
     this.watch = $('hud-watch'); this.watchFill = $('watch-fill');
     this.ring = $('sound-ring'); this.pings = [];
@@ -122,6 +123,9 @@ export class HUD {
     this.louvers.classList.toggle('show', ov === 'louvers');
     this.louvers.classList.toggle('peek', ov === 'peek');
     document.body.classList.toggle('hiding', !!p.hidden);
+    { const on = g.settings.noiseMeter !== false && p.alive && !p.hidden, lv = Math.min(1, (g.myNoise || 0) / 20);
+      this.noiseM.classList.toggle('show', on && lv > 0.02); this.noiseM.classList.toggle('loud', lv > 0.6);
+      if (on) this.noiseM.querySelector('i').style.width = Math.round(lv * 100) + '%'; }
     { // a resident is at your hiding spot: hold your breath, now
       const at = p.hidden && g.entities.some((e) => e.state === 'locker' && e.lockerTarget === p.hidden && e.distTo(p.hidden) < 6);
       this._set(this.cue, 'cue', at ? 'breath-cue show' + (p.holdingBreath ? ' held' : '') : 'breath-cue', 'className');

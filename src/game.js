@@ -513,6 +513,7 @@ export class Game {
 
   // ------------------------------------------------------------------ events
   emitNoise(x, z, radius, type) {
+    { const p = this.player; if (p && Math.hypot(x - p.pos.x, z - p.pos.z) < 1.6 && type !== 'alert') { const lv = radius * this.diff.hearing; if (lv >= (this.myNoise || 0)) { this.myNoise = lv; this.myNoiseType = type; } } }
     const m = this.map, rr = radius * this.diff.hearing * (type === 'step' ? (this.def.noiseMul || 1) * (this.inRain ? 0.55 : 1) : 1);
     let cost = null;
     for (const e of this.entities) {
@@ -1173,6 +1174,7 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0 && !this.player.hidden) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    this.myNoise = Math.max(0, (this.myNoise || 0) - dt * 22);   // the noise meter falls back after each sound
     // wounded after tearing free: slower and shorter of breath for a while
     { const p = this.player; if (p.injuredT > 0) { p.injuredT -= dt; if (p.injuredT <= 0) this.hud.toast('Lukamu tidak lagi menghambat.', 1.6); }
       document.body.classList.toggle('injured', p.injuredT > 0 && p.alive); }
