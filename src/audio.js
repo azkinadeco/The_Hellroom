@@ -372,6 +372,14 @@ export class Audio {
     const f = this._filter('lowpass', 350), g = this._out(pos, 0.6);
     src.connect(f).connect(g); this._env(g, t, 0.003, vol, 0.25); src.start(t, Math.random()); src.stop(t + 0.35);
   }
+  // a low suspicious growl
+  growl(pos) {
+    if (!this.ready) return;
+    this._cue('growl', pos);
+    const t = this.t, o = this._osc('sawtooth', 62 + Math.random() * 14), lp = this._filter('lowpass', 420), g = this._out(pos, 0.5);
+    const lfo = this.ctx.createOscillator(), lg = this.ctx.createGain(); lfo.frequency.value = 9 + Math.random() * 5; lg.gain.value = 8; lfo.connect(lg).connect(o.frequency); lfo.start(t); lfo.stop(t + 1.2);
+    o.connect(lp).connect(g); this._env(g, t, 0.18, 0.22, 1.0); o.start(t); o.stop(t + 1.2);
+  }
   // a resident sniffing the air
   sniff(pos) {
     if (!this.ready) return;

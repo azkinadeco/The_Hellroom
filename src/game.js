@@ -26,7 +26,7 @@ import { clamp, damp, angleDiff } from './util/rng.js';
 // residents throw shadows in the flashlight beam
 function shadowCaster(obj) { if (obj) obj.traverse((o) => { if (o.isMesh && !(o.material && o.material.transparent)) o.castShadow = true; }); }
 
-const CUES = { sniff: 'Sesuatu mengendus udara',
+const CUES = { growl: 'Geraman curiga', sniff: 'Sesuatu mengendus udara',
   whistle: 'Peluit melengking', step: 'Langkah berat', scrape: 'Gesekan seperti batu', scream: 'Jeritan anak',
   announce: 'Suara dari corong pengeras suara', door: 'Pintu berderit', bell: 'Bel sekolah berbunyi', chalk: 'Kapur berderit di papan', locker: 'Dentang loker', slam: 'Pintu dibanting',
   hiss: 'Desisan panjang', tick: 'Detak jam kakek', chime: 'Dentang lonceng jam', chorus: 'Jeritan banyak mulut', bones: 'Gemeretak tulang',
@@ -1650,7 +1650,7 @@ export class Game {
     // sound ring: an arc round the crosshair pointing at the sound (red for the residents' own noises)
     if (this.settings.soundRing && !((kind === 'door' || kind === 'locker' || kind === 'glass') && d < 3)) {
       const rel = angleDiff(Math.atan2(-Math.sin(p.yaw), -Math.cos(p.yaw)), Math.atan2(dx, dz));
-      this.hud.ping(-rel, Math.max(0.25, 1 - d / 32), ['step', 'whistle', 'hiss', 'chorus', 'scream', 'bones', 'squelch', 'tick', 'chime', 'whisper', 'scrape', 'sniff'].includes(kind));
+      this.hud.ping(-rel, Math.max(0.25, 1 - d / 32), ['step', 'whistle', 'hiss', 'chorus', 'scream', 'bones', 'squelch', 'tick', 'chime', 'whisper', 'scrape', 'sniff', 'growl'].includes(kind));
     }
     if (!this.settings.subs) return;
     if ((kind === 'door' || kind === 'locker') && d < 3) return; // the player's own actions
