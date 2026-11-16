@@ -92,6 +92,22 @@ const ui = {
     if (game.state !== 'playing') return;
     game.state = 'paused';
     input.enabled = false; input.unlock(); audio.suspend();
+    { // where you are and how it is going
+      const g = game, st = g.stats || {}, t = Math.floor(g.time), tt = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+      const mods = (g.def.mods || []).map((k) => ENDLESS_MODS[k] && ENDLESS_MODS[k].name).filter(Boolean), perks = (g.def.perks || []).map((k) => PERKS[k] ? PERKS[k].icon + ' ' + PERKS[k].name : '').filter(Boolean);
+      const esc = (x) => String(x).replace(/[&<]/g, (c) => ({ '&': '&amp;', '<': '&lt;' }[c]));
+      $('pause-info').innerHTML = [
+        `<b class="acc">${esc(g.def.code)} — ${esc(g.def.name)}</b>`,
+        esc(g.objectiveText().split('\n').slice(1).join('\n')),
+        '',
+        `Waktu <b>${tt}</b> · terlihat <b>${st.spotted || 0}×</b> · lolos <b>${st.escapes || 0}×</b> · ${DIFFICULTY[g.diffKey] ? DIFFICULTY[g.diffKey].label : ''}`,
+        mods.length ? `Kutukan: <b>${mods.join(', ')}</b>` : '',
+        perks.length ? `Bekal: <b>${perks.join(', ')}</b>` : '',
+        g.struggleUsed ? 'Kesempatan meronta: <b>sudah dipakai</b>' : g.diffKey === 'mimpi' ? '' : 'Kesempatan meronta: <b>masih ada</b>',
+        '',
+        input.touch ? '' : `<span>Jongkok ${input.keyName('crouch')} · condong ${input.keyName('leanLeft')}/${input.keyName('leanRight')} · ketuk ${input.keyName('knock')} · menoleh ${input.keyName('lookBack')} · radio ${input.keyName('radio')} · denah ${input.keyName('map')}</span>`,
+      ].filter((x, i, a) => x !== '' || (a[i - 1] && a[i - 1] !== '')).join('\n');
+    }
     show('pause');
   },
   resume() {
