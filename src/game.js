@@ -553,7 +553,15 @@ export class Game {
   }
   onChaseStart(e) {
     if (!this.chasers.has(e) && this.player.alive) { this.marks.push({ k: this.floorK, x: this.player.pos.x, z: this.player.pos.z, t: this.time, kind: e.kind }); if (this.marks.length > 12) this.marks.shift(); if (this.automap) this.automap.dirty = true; }
-    if (!this.chasers.has(e)) { this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); this.input.rumble(180, 0.7); }
+    if (!this.chasers.has(e)) {
+      this.chasers.add(e); this.stats.spotted++; this.audio.stinger(); this.input.rumble(180, 0.7);
+      // the call: any other resident within 25 m that is not busy comes to where you were seen
+      const p = this.player;
+      for (const o of this.entities) if (o !== e && !this.chasers.has(o) && o.setState && o.form !== 'statue' && !['attack', 'locker', 'chase'].includes(o.state) && o.distTo(p.pos) < 25) {
+        o.awareness = Math.max(o.awareness || 0, 0.6); o.glimpse = { x: p.pos.x, z: p.pos.z, t: this.time }; o.investigatePt = { x: p.pos.x, z: p.pos.z };
+        o.suspicion = Math.max(o.suspicion || 0, 0.7); o.setState('investigate'); o.goToWorld(p.pos.x, p.pos.z); this.stats.called = (this.stats.called || 0) + 1;
+      }
+    }
   }
   onChaseEnd(e) {
     if (this.chasers.delete(e) && this.player.alive) {
