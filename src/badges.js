@@ -49,6 +49,9 @@ export const BADGES = [
   { id: 'meronta', icon: '✊', name: 'Lepas dari Cengkeraman', desc: 'Meronta lepas saat tertangkap.', test: (c) => (c.g.stats.struggles || 0) > 0 },
   { id: 'tengok', icon: '↩', name: 'Jangan Menoleh', desc: 'Menoleh ke belakang dan melihat pengejarmu.', test: (c) => (c.g.stats.backSpots || 0) > 0 },
   { id: 'desis', icon: '📻', name: 'Desis di Saku', desc: 'Selesaikan satu bab setelah radiomu berdesis keras.', test: (c) => c.win && (c.g.stats.radioMax || 0) >= 0.8 },
+  { id: 'diam', icon: '🫥', name: 'Tidak Ada Siapa-Siapa', desc: 'Tahan napas sampai penghuni yang memeriksa tempat sembunyimu pergi.', test: (c) => (c.g.stats.inspected || 0) > 0 && c.win },
+  { id: 'kustom', icon: '🎛', name: 'Aturan Sendiri', desc: 'Selesaikan satu bab pada kesulitan Kustom.', test: (c) => c.win && c.story && c.g.diffKey === 'kustom' },
+  { id: 'bersama', icon: '👥', name: 'Bukan Satu, Tapi Dua', desc: 'Lolos dari pencarian dua penghuni di lantai yang sama.', test: (c) => c.win && c.g.entities && c.g.entities.length > 1 && (c.g.stats.escapes || 0) > 0 },
   { id: 'dalam10', icon: '⏬', name: 'Tidak Ada Dasar', desc: 'Lewati lantai -10 di mode Jurang.', test: (c) => c.save.bestFloor >= 10 },
 ];
 
