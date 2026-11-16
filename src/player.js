@@ -150,7 +150,7 @@ export class Player {
     const wantSprint = input.sprint() && !this.crouched && ax.y < 0 && !this.exhausted;
     if (input.sprintPress && (this.exhausted || ax.y >= 0 || this.crouched)) input.kbSprint = false;   // press-to-sprint ends when you stop or tire
     this.wading = !!(this.water && this.water.some((w) => this.pos.x > w.minX && this.pos.x < w.maxX && this.pos.z > w.minZ && this.pos.z < w.maxZ));
-    const speed = (this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint : PLAYER.walk) * (this.wading ? 0.62 : 1) * (want ? 0.4 : 1);
+    const speed = (this.crouched ? PLAYER.crouch : wantSprint ? PLAYER.sprint * (this.injuredT > 0 ? 0.82 : 1) : PLAYER.walk) * (this.wading ? 0.62 : 1) * (want ? 0.4 : 1);
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
     const tx = (ax.x * cos + ax.y * sin) * speed;
     const tz = (-ax.x * sin + ax.y * cos) * speed;
@@ -160,7 +160,7 @@ export class Player {
     const sprinting = wantSprint && sp > PLAYER.walk * 0.9;
     this.sprinting = sprinting;
     if (sprinting) {
-      this.stamina -= PLAYER.staminaDrain * dt * (game.def.staminaMul || 1);
+      this.stamina -= PLAYER.staminaDrain * dt * (game.def.staminaMul || 1) * (this.injuredT > 0 ? 1.3 : 1);
       if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; game.audio.pant(); }
     } else {
       this.stamina = Math.min(PLAYER.staminaMax, this.stamina + PLAYER.staminaRegen * dt * (sp < 0.2 ? 1.5 : 1));

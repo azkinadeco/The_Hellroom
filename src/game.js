@@ -270,6 +270,7 @@ export class Game {
     this.installing = null;
     this.sharedCleared = new Map(); this.sharedRooms = new Map();
     this.struggle = null; this.struggleUsed = false;
+    this.player.injuredT = 0;
     this.trainDone = null; this.trainFinished = false;
     this.trace = null;
     this.fearT = 0; this.fakeHunt = 0;
@@ -724,7 +725,7 @@ export class Game {
       e.pos.x = nx; e.pos.z = nz; e.stunT = 1.8; e.path = null;
       if (e.state !== 'chase') { e.lastSeen = { x: p.pos.x, z: p.pos.z, t: this.time }; e.state = 'patrol'; e.setState('chase'); }
       this.audio.impact(); this.input.rumble(220, 1); this.stats.struggles = (this.stats.struggles || 0) + 1;
-      this.hud.toast('Lepas! Lari!', 1.6);
+      this.hud.toast('Lepas! Lari! Tapi kamu terluka…', 1.8); p.injuredT = 20;
       this.hint('struggle', 'Kamu berhasil meronta lepas, tapi hanya sekali tiap bab. Lain kali cengkeramannya tidak terlepas.', 5);
       return;
     }
@@ -1166,6 +1167,9 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0 && !this.player.hidden) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    // wounded after tearing free: slower and shorter of breath for a while
+    { const p = this.player; if (p.injuredT > 0) { p.injuredT -= dt; if (p.injuredT <= 0) this.hud.toast('Lukamu tidak lagi menghambat.', 1.6); }
+      document.body.classList.toggle('injured', p.injuredT > 0 && p.alive); }
     // where you last laid eyes on each resident, for the floor plan
     this.sightT = (this.sightT || 0) - dt;
     if (this.sightT <= 0) { this.sightT = 0.25; const S = this.sightings || (this.sightings = new Map());

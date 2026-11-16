@@ -535,3 +535,9 @@ body.clear-screen .breath-cue b, body.big-text .breath-cue b { animation: none; 
 .mic-meter i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); transition: width .06s; }
 .mic-meter i.loud { background: var(--danger); }
 .mic-meter b { position: absolute; top: -3px; bottom: -3px; width: 2px; left: 12%; background: var(--ink); opacity: 0.6; }
+
+/* batch 165: wounded */
+.injury { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(120,0,0,0.45) 100%); transition: opacity .6s; }
+body.injured .injury { opacity: 1; animation: injuryBeat 1.6s ease-in-out infinite; }
+@keyframes injuryBeat { 50% { opacity: 0.55; } }
+body.clear-screen.injured .injury { animation: none; }
