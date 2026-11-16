@@ -1404,6 +1404,8 @@ export class Game {
     if (danger > 0.25 || chase || p.hidden) this.quietT = Math.max(0, this.quietT - dt * 4); else this.quietT += dt;
     p.fear = damp(p.fear, Math.max(this.danger, chase * 0.8), 2, dt);
     let interference = this.danger > 0.45 && !this.clear ? (Math.random() < this.danger * 0.25 ? 0.35 : 1) : 1;
+    // the lights stutter when something is near, even unseen behind a wall (a warning, not a strobe)
+    if (!this.calm && interference === 1) { let near = Infinity; for (const e of this.entities) if (e.form !== 'statue') near = Math.min(near, Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z)); if (near < 8 && Math.random() < (1 - near / 8) * 0.05) interference = 0.55; }
     this.world.blackout = this.blackoutT > 0;
     if (this.blackoutT > 0) { this.blackoutT -= dt; interference = this.blackoutT < 0.6 || Math.random() < 0.02 ? 0.6 : 0.1; }
     if (this.calm) { this.flickerVal = Math.max(0.88, this.flickerVal); if (this.blackoutT <= 0) interference = Math.max(interference, 0.8); else interference = 0.1; }   // no strobing
@@ -1686,7 +1688,7 @@ export class Game {
         o.position.set(nx, ny, nz);
         o.rotation.set(0, o.rotation.y, 0);
         this.projectiles.splice(i, 1);
-        this.built.items.push({ type: 'eraser', x: nx, y: 0, z: nz, obj: o, taken: false });
+        this.built.items.push({ type: 'eraser', x: nx, y: 0, z: nz, obj: o, taken: false, droppedT: this.time });
         continue;
       }
       o.position.set(nx, ny, nz);

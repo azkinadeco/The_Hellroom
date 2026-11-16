@@ -356,6 +356,13 @@ export class Monitor extends Entity {
       if (this.awareness >= 1 && gain > 0) see = 1;   // full awareness only turns into a sighting while it can actually perceive you
       this.checkDoors(dt);
       this.checkPrints(dt);
+      // something that was not there before: an eraser lying in the open draws a look, once
+      this.dropT = (this.dropT || 0) - dt;
+      if (this.dropT <= 0) { this.dropT = 1; for (const it of g.built.items || []) {
+        if (it.type !== 'eraser' || it.taken || !it.droppedT || g.time - it.droppedT > 90 || (it.noticedBy || (it.noticedBy = new Set())).has(this)) continue;
+        const dx = it.x - this.pos.x, dz = it.z - this.pos.z, d = Math.hypot(dx, dz);
+        if (d > 8 || Math.abs(angleDiff(this.yaw, Math.atan2(dx, dz))) > 1.1 || !g.world.los(this.pos.x, this.pos.z, it.x, it.z)) continue;
+        it.noticedBy.add(this); this.awareness = Math.max(this.awareness || 0, 0.5); this.glimpse = { x: it.x, z: it.z, t: g.time }; g.stats.dropNoticed = (g.stats.dropNoticed || 0) + 1; break; } }
     }
     if (see > 0) {
       this.suspicion = Math.min(1.2, this.suspicion + see * dt * (this.distTo(p.pos) < 4 ? 6 : 1.9));
