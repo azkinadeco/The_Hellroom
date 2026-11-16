@@ -99,6 +99,11 @@ export class Player {
     let flash = this.flashlight ? 1 : 0;
     if (this.flashlight && this.battery < 15) flash *= Math.random() < 0.06 ? 0.15 : 0.85 + Math.random() * 0.15;
     this.light.intensity = flash * 11 * (game.def.torchMul || 1);
+    // shaking hands: the beam trembles with fear (a slow drift plus a fast tremor)
+    { const f = game.calm ? 0 : Math.max(0, (this.fear || 0) - 0.3) / 0.7, t = game.time || 0;
+      const sx = (Math.sin(t * 1.7) * 0.6 + Math.sin(t * 13.1) * 0.25 + Math.sin(t * 23.7) * 0.15) * f * 0.35;
+      const sy = (Math.cos(t * 1.3) * 0.6 + Math.sin(t * 11.3 + 1) * 0.25 + Math.cos(t * 19.9) * 0.15) * f * 0.25;
+      this.light.target.position.set(0.1 + sx, -0.2 + sy, -5); }
     this.light.distance = 22 * (game.def.torchMul || 1);
 
     // ----- breath (only meaningful while hidden) -----
