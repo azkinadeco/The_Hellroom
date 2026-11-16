@@ -1151,6 +1151,19 @@ export class Game {
       if (this.radioOn && k > 0.6 && this.radioNoiseT <= 0) { this.radioNoiseT = 1.5; this.emitNoise(this.player.pos.x, this.player.pos.z, 3 + k * 2.5, 'radio'); }
     }
     this.updateInstall(dt);
+    { // the building is never silent: creaks in the structure, water dripping, somewhere 6-15 m off
+      this.ambT = (this.ambT ?? 4) - dt;
+      if (this.ambT <= 0 && this.map) {
+        const wet = ['pool', 'hospital', 'detention'].includes(this.def.arch), p = this.player;
+        this.ambT = 6 + Math.random() * 8;
+        for (let i = 0; i < 6; i++) {
+          const a = Math.random() * Math.PI * 2, r = 6 + Math.random() * 9, x = p.pos.x + Math.cos(a) * r, z = p.pos.z + Math.sin(a) * r, [cx, cz] = this.map.cellOf(x, z);
+          if (this.map.reg(cx, cz) === -1) continue;
+          if (Math.random() < (wet ? 0.6 : 0.3)) this.audio.dripAt({ x, y: 2.6, z }); else this.audio.creak({ x, y: 2.8, z }, 0.08 + Math.random() * 0.08);
+          break;
+        }
+      }
+    }
     this.updateStruggle(dt);
     { // where the torch beam lands: residents that cannot see you may still see your light on a dark wall
       this.beamT = (this.beamT || 0) - dt;

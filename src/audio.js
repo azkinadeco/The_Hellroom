@@ -700,6 +700,24 @@ export class Audio {
     this.crackT -= dt;
     if (on && this.radioLv > 0.15 && this.crackT <= 0) { this.crackT = 0.08 + (1 - this.radioLv) * 0.5 * Math.random(); this._thud(null, this.t, 0.04 + this.radioLv * 0.08); }
   }
+  // the building settling: a slow groan of timber or metal
+  creak(pos, vol = 0.12) {
+    if (!this.ready) return;
+    const t = this.t, src = this.ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const bp = this._filter('bandpass', 180 + Math.random() * 120, 9), g = this._out(pos, 0.5), d = 0.8 + Math.random() * 1.2;
+    bp.frequency.setValueAtTime(140 + Math.random() * 80, t); bp.frequency.linearRampToValueAtTime(260 + Math.random() * 200, t + d);
+    src.connect(bp).connect(g); this._env(g, t, 0.15, vol, d); src.start(t, Math.random()); src.stop(t + d + 0.3);
+  }
+  // water dripping somewhere
+  dripAt(pos, vol = 0.08) {
+    if (!this.ready) return;
+    const n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const t = this.t + i * (0.35 + Math.random() * 0.5), o = this._osc('sine', 1400 + Math.random() * 900), g = this._out(pos, 0.7);
+      o.frequency.setValueAtTime(o.frequency.value, t); o.frequency.exponentialRampToValueAtTime(o.frequency.value * 0.45, t + 0.08);
+      o.connect(g); this._env(g, t, 0.002, vol, 0.12); o.start(t); o.stop(t + 0.2);
+    }
+  }
   // a rising tone that climbs as a hunter closes in (silent outside a chase)
   setChaseDist(d, dt) {
     if (!this.ready) return;
